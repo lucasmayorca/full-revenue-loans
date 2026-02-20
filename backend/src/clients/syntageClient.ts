@@ -67,7 +67,7 @@ class SyntageClient {
   }
 
   async getRevenueData(merchantId: string): Promise<SyntageRevenueData> {
-    if (env.DEMO_MODE) {
+    if (env.DEMO_MODE || !env.SYNTAGE_API_KEY) {
       logger.info("syntage_demo_mode", { merchant_id: merchantId });
       await new Promise((r) => setTimeout(r, 200));
       return { ...DEMO_STUB, merchant_id: merchantId };

@@ -35,8 +35,13 @@ class PlatformClient {
 
     // Producción: consultar Merchant Data Platform de Rappi
     // Endpoint interno: GET /merchants/{merchantId}/analytics/gmv
+    // Por ahora devuelve stub hasta que se configure la integración real
     logger.warn("platform_production_not_configured", { merchant_id: merchantId });
-    return { fetched_at: new Date().toISOString() };
+    return {
+      avg_platform_gmv_6m: DEMO_STUB.avg_platform_gmv_6m,
+      tenure_months: DEMO_STUB.tenure_months,
+      fetched_at: new Date().toISOString(),
+    };
   }
 }
 

@@ -26,17 +26,17 @@ const DEMO_PLACES_STUB: PlacesResult = {
  * Extrae el Place ID de una URL de Google Maps.
  *
  * Soporta los formatos más comunes:
- *  - /maps/place/NOMBRE/...data=...!1s0x<PLACE_ID>   → hex encode en segmento !1s
- *  - maps.google.com/?cid=<CID>                      → CID numérico
- *  - maps.app.goo.gl/<shortlink>                     → requiere fetch extra (no soportado en demo)
+ *  - /maps/place/NOMBRE/...data=...!1sChIJ<PLACE_ID>  → Place ID ChIJ en segmento !1s
+ *  - /maps/place/NOMBRE/...data=...!1s0x<hex>:<hex>   → hex encode en segmento !1s
+ *  - maps.google.com/?cid=<CID>                       → CID numérico
+ *  - Nombre del negocio en la URL                     → fallback para Text Search
  */
 function extractPlaceId(mapsUrl: string): string | null {
   try {
-    // Formato: data=...!1s0x<hex>:<hex> — Place ID codificado en la URL
-    const placeIdMatch = mapsUrl.match(/!1s(0x[0-9a-f]+:[0-9a-fx]+)/i);
-    if (placeIdMatch) {
-      // Google Places API acepta este formato directamente como place_id
-      return placeIdMatch[1];
+    // Formato más común: !1sChIJ... (Place ID en base64-like, URL-encoded)
+    const chijMatch = mapsUrl.match(/!1s(ChIJ[^!&?]+)/);
+    if (chijMatch) {
+      return decodeURIComponent(chijMatch[1]);
     }
 
     // Formato CID: ?cid=12345678
@@ -45,7 +45,8 @@ function extractPlaceId(mapsUrl: string): string | null {
       return cidMatch[1];
     }
 
-    // Extraer nombre del negocio de la URL como fallback para Text Search
+    // Formato hex (!1s0x...) o cualquier otro: usar el nombre del negocio
+    // de la URL para hacer Text Search — es más confiable que pasar el hex
     const nameMatch = mapsUrl.match(/\/maps\/place\/([^/@?]+)/);
     if (nameMatch) {
       return decodeURIComponent(nameMatch[1].replace(/\+/g, " "));
@@ -61,7 +62,8 @@ function extractPlaceId(mapsUrl: string): string | null {
  * Determina si el identificador extraído es un Place ID real o un nombre de texto.
  */
 function isRealPlaceId(identifier: string): boolean {
-  return identifier.startsWith("0x") || /^\d{15,}$/.test(identifier);
+  // Place ID real: empieza con ChIJ, es hex 0x..., o es un CID numérico largo
+  return identifier.startsWith("ChIJ") || identifier.startsWith("0x") || /^\d{15,}$/.test(identifier);
 }
 
 class GooglePlacesClient {
@@ -87,8 +89,9 @@ class GooglePlacesClient {
     try {
       let placeId = identifier;
 
-      // Si es un nombre de texto, buscar primero con Text Search
-      if (!isRealPlaceId(identifier)) {
+      // Si NO es un Place ID ChIJ directo, resolver primero con Text Search
+      // (aplica para: nombres de texto, hex 0x..., CID numérico)
+      if (!identifier.startsWith("ChIJ")) {
         const searchResp = await axios.get(`${this.baseUrl}/findplacefromtext/json`, {
           params: {
             input: identifier,

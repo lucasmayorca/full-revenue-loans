@@ -35,8 +35,13 @@ class BureauClient {
 
     // Producción: integrar con Círculo de Crédito o Buró de Crédito México
     // Requiere: certificado .pem, contraseña, RFC del consultante
+    // Por ahora devuelve stub hasta que se configure la integración real
     logger.warn("bureau_production_not_configured", { tax_id: taxId });
-    return { fetched_at: new Date().toISOString() };
+    return {
+      bureau_score: DEMO_STUB.bureau_score,
+      active_debt_amount: DEMO_STUB.active_debt_amount,
+      fetched_at: new Date().toISOString(),
+    };
   }
 }
 
