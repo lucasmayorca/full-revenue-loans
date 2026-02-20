@@ -60,6 +60,8 @@ export async function submitApplication(
     decision_payload: decision.payload,
     syntage_result: decision.syntage_result,
     places_result: decision.places_result,
+    facebook_result: decision.facebook_result,
+    instagram_result: decision.instagram_result,
     bureau_result: decision.bureau_result,
     platform_result: decision.platform_result,
     updated_at: Timestamp.now(),

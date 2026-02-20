@@ -22,6 +22,11 @@ const envSchema = z
     // Habilitar en: https://console.cloud.google.com → APIs → Places API (Legacy)
     GOOGLE_PLACES_API_KEY: z.string().default(""),
 
+    // Facebook / Instagram OAuth — solo necesario si DEMO_MODE=false
+    // Crear en: https://developers.facebook.com/apps → tipo "Negocios"
+    FACEBOOK_APP_ID: z.string().default(""),
+    FACEBOOK_APP_SECRET: z.string().default(""),
+
     GCP_PROJECT_ID: z.string().default("demo-local"),
     FIRESTORE_EMULATOR_HOST: z.string().optional(),
 

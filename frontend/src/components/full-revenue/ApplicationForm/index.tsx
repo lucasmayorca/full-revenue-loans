@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { EVENTS, DEMO_MERCHANT_ID } from "@/lib/tracking";
@@ -28,6 +28,28 @@ export function ApplicationForm() {
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Social OAuth state
+  const [facebookConnected, setFacebookConnected] = useState(false);
+  const [instagramConnected, setInstagramConnected] = useState(false);
+  const [facebookToken, setFacebookToken] = useState<string>("");
+
+  // Detectar retorno desde OAuth de Facebook
+  useEffect(() => {
+    const fbStatus = searchParams.get("facebook");
+    const fbToken = searchParams.get("fb_token");
+    const appId = searchParams.get("appId");
+
+    if (fbStatus === "connected" && fbToken) {
+      setFacebookConnected(true);
+      setInstagramConnected(true); // Instagram usa el mismo token de Facebook
+      setFacebookToken(fbToken);
+      if (appId) {
+        setApplicationId(appId);
+        setCurrentStep(3);
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleStep1Complete = useCallback(
     async (data: Step1Values) => {
@@ -60,6 +82,21 @@ export function ApplicationForm() {
     [trackEvent]
   );
 
+  // Redirige al OAuth de Facebook (también trae Instagram)
+  const handleFacebookConnect = useCallback(() => {
+    if (!applicationId) {
+      setError("Primero completá el paso 1.");
+      return;
+    }
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    window.location.href = `${apiUrl}/full-revenue/oauth/facebook/redirect?applicationId=${applicationId}`;
+  }, [applicationId]);
+
+  // Instagram usa el mismo flujo que Facebook (Graph API)
+  const handleInstagramConnect = useCallback(() => {
+    handleFacebookConnect();
+  }, [handleFacebookConnect]);
+
   const handleStep3Complete = useCallback(
     async (data: Step3Values) => {
       if (!applicationId) return;
@@ -70,6 +107,11 @@ export function ApplicationForm() {
       const allData: AllFormData = {
         ...(formData as Step1Values & Step2Values),
         ...data,
+        // Incluir tokens OAuth si están disponibles
+        ...(facebookToken ? {
+          facebook_access_token: facebookToken,
+          instagram_access_token: facebookToken, // mismo token
+        } : {}),
       };
 
       try {
@@ -81,7 +123,7 @@ export function ApplicationForm() {
         setIsSubmitting(false);
       }
     },
-    [formData, applicationId, router, trackEvent]
+    [formData, applicationId, facebookToken, router, trackEvent]
   );
 
   return (
@@ -113,6 +155,10 @@ export function ApplicationForm() {
           onComplete={handleStep3Complete}
           onBack={() => setCurrentStep(2)}
           isSubmitting={isSubmitting}
+          facebookConnected={facebookConnected}
+          instagramConnected={instagramConnected}
+          onFacebookConnect={handleFacebookConnect}
+          onInstagramConnect={handleInstagramConnect}
         />
       )}
     </div>

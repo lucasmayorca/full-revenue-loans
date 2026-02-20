@@ -18,6 +18,14 @@ export interface DecisionPayload {
   places_rating?: number;
   places_review_count?: number;
 
+  // Facebook Pages
+  facebook_fan_count?: number;
+  facebook_rating?: number;
+
+  // Instagram Business
+  instagram_followers?: number;
+  instagram_media_count?: number;
+
   // Bureau de Crédito
   bureau_score?: number;
 
@@ -59,6 +67,8 @@ export interface Step2Data {
 export interface Step3Data {
   consent_given: true;
   google_business_url?: string;
+  facebook_access_token?: string;
+  instagram_access_token?: string;
 }
 
 export type AllFormData = Step1Data & Step2Data & Step3Data;

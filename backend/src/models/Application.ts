@@ -16,7 +16,12 @@ export interface FormData {
   revenue_sources: string[];
   notes?: string;
   consent_given: boolean;
+  // Opcional — URL pública de Google Maps (sin OAuth)
   google_business_url?: string;
+  // OAuth tokens — guardados tras el callback de cada plataforma
+  facebook_access_token?: string;
+  instagram_access_token?: string;
+  google_oauth_access_token?: string;
 }
 
 // ── Syntage / SAT ────────────────────────────────────────────────────────────
@@ -51,6 +56,28 @@ export interface PlacesResult {
   fetched_at: string;
 }
 
+// ── Facebook Pages ───────────────────────────────────────────────────────────
+export interface FacebookResult {
+  connected: boolean;
+  page_name?: string;
+  fan_count?: number;           // seguidores de la página
+  rating?: number;              // rating 1–5 (si tiene reseñas habilitadas)
+  review_count?: number;
+  is_verified?: boolean;
+  website?: string;
+  fetched_at: string;
+}
+
+// ── Instagram Business ───────────────────────────────────────────────────────
+export interface InstagramResult {
+  connected: boolean;
+  username?: string;
+  followers_count?: number;
+  media_count?: number;         // cantidad de posts
+  is_business?: boolean;
+  fetched_at: string;
+}
+
 // ── Bureau de Crédito ────────────────────────────────────────────────────────
 export interface BureauResult {
   bureau_score?: number;             // 300–850
@@ -80,6 +107,14 @@ export interface DecisionPayload {
   places_rating?: number;
   places_review_count?: number;
 
+  // Facebook Pages
+  facebook_fan_count?: number;
+  facebook_rating?: number;
+
+  // Instagram Business
+  instagram_followers?: number;
+  instagram_media_count?: number;
+
   // Bureau de Crédito
   bureau_score?: number;
 
@@ -104,6 +139,8 @@ export interface ApplicationDoc {
   form_data?: Partial<FormData>;
   syntage_result?: SyntageResult;
   places_result?: PlacesResult;
+  facebook_result?: FacebookResult;
+  instagram_result?: InstagramResult;
   bureau_result?: BureauResult;
   platform_result?: PlatformResult;
   decision_payload?: DecisionPayload;

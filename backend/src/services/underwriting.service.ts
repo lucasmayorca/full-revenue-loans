@@ -1,5 +1,6 @@
 import { syntageClient } from "../clients/syntageClient";
 import { googlePlacesClient } from "../clients/googleClient";
+import { facebookClient, instagramClient } from "../clients/facebookClient";
 import { bureauClient } from "../clients/bureauClient";
 import { platformClient } from "../clients/platformClient";
 import { env } from "../config/env";
@@ -11,6 +12,8 @@ import {
   DecisionStatus,
   SyntageResult,
   PlacesResult,
+  FacebookResult,
+  InstagramResult,
   BureauResult,
   PlatformResult,
 } from "../models/Application";
@@ -20,6 +23,8 @@ export interface UnderwritingDecision {
   payload: DecisionPayload;
   syntage_result?: SyntageResult;
   places_result?: PlacesResult;
+  facebook_result?: FacebookResult;
+  instagram_result?: InstagramResult;
   bureau_result?: BureauResult;
   platform_result?: PlatformResult;
 }
@@ -35,6 +40,8 @@ export async function runUnderwriting(
 
   const taxId = application.form_data?.tax_id ?? "";
   const mapsUrl = application.form_data?.google_business_url ?? "";
+  const facebookToken = application.form_data?.facebook_access_token ?? "";
+  const instagramToken = application.form_data?.instagram_access_token ?? "";
 
   // ── 1. Syntage / SAT ────────────────────────────────────────────────────────
   let syntageResult: SyntageResult | undefined;
@@ -72,15 +79,12 @@ export async function runUnderwriting(
       annual_revenue: raw.annual_revenue,
       monthly_revenue: monthlyRevenue,
       months_active: raw.months_active,
-      tax_regime: raw.tax_regime,
-      cfdi_count: raw.cfdi_count_last_12m,
-      tax_compliance: raw.tax_compliance,
     });
   } catch (err) {
     logger.warn("syntage_fetch_failed", { ...logCtx, error: String(err) });
   }
 
-  // ── 2. Google Places (si el comercio pegó su URL de Maps) ───────────────────
+  // ── 2. Google Places (URL pública de Maps) ──────────────────────────────────
   let placesResult: PlacesResult | undefined;
   let placesScore = 0;
   let placesAvailable = false;
@@ -103,7 +107,6 @@ export async function runUnderwriting(
           ...logCtx,
           business_name: places.business_name,
           rating: places.rating,
-          review_count: places.total_review_count,
           signals_score: placesScore,
         });
       }
@@ -113,10 +116,75 @@ export async function runUnderwriting(
     }
   } else {
     placesResult = { connected: false, fetched_at: new Date().toISOString() };
-    logger.info("google_places_skipped_no_url", logCtx);
   }
 
-  // ── 3. Bureau de Crédito ────────────────────────────────────────────────────
+  // ── 3. Facebook Pages (OAuth) ────────────────────────────────────────────────
+  let facebookResult: FacebookResult | undefined;
+  let facebookFanCount: number | undefined;
+  let facebookAvailable = false;
+
+  if (facebookToken || env.DEMO_MODE) {
+    try {
+      const fb = await withTimeout(
+        facebookClient.getPageData(facebookToken),
+        8000,
+        "Facebook fetch timed out"
+      );
+
+      facebookResult = fb;
+
+      if (fb.connected) {
+        facebookFanCount = fb.fan_count;
+        facebookAvailable = true;
+
+        logger.info("facebook_data_fetched", {
+          ...logCtx,
+          page_name: fb.page_name,
+          fan_count: fb.fan_count,
+        });
+      }
+    } catch (err) {
+      logger.warn("facebook_fetch_failed", { ...logCtx, error: String(err) });
+      facebookResult = { connected: false, fetched_at: new Date().toISOString() };
+    }
+  } else {
+    facebookResult = { connected: false, fetched_at: new Date().toISOString() };
+  }
+
+  // ── 4. Instagram Business (OAuth via Facebook) ───────────────────────────────
+  let instagramResult: InstagramResult | undefined;
+  let instagramFollowers: number | undefined;
+  let instagramAvailable = false;
+
+  if (instagramToken || facebookToken || env.DEMO_MODE) {
+    try {
+      const ig = await withTimeout(
+        instagramClient.getProfileData(instagramToken || facebookToken),
+        8000,
+        "Instagram fetch timed out"
+      );
+
+      instagramResult = ig;
+
+      if (ig.connected) {
+        instagramFollowers = ig.followers_count;
+        instagramAvailable = true;
+
+        logger.info("instagram_data_fetched", {
+          ...logCtx,
+          username: ig.username,
+          followers: ig.followers_count,
+        });
+      }
+    } catch (err) {
+      logger.warn("instagram_fetch_failed", { ...logCtx, error: String(err) });
+      instagramResult = { connected: false, fetched_at: new Date().toISOString() };
+    }
+  } else {
+    instagramResult = { connected: false, fetched_at: new Date().toISOString() };
+  }
+
+  // ── 5. Bureau de Crédito ────────────────────────────────────────────────────
   let bureauResult: BureauResult | undefined;
   let bureauScore: number | undefined;
   let bureauAvailable = false;
@@ -137,14 +205,13 @@ export async function runUnderwriting(
       logger.info("bureau_data_fetched", {
         ...logCtx,
         bureau_score: bureauScore,
-        active_debt: bureau.active_debt_amount,
       });
     }
   } catch (err) {
     logger.warn("bureau_fetch_failed", { ...logCtx, error: String(err) });
   }
 
-  // ── 4. Platform (Rappi interno) ─────────────────────────────────────────────
+  // ── 6. Platform (Rappi interno) ─────────────────────────────────────────────
   let platformResult: PlatformResult | undefined;
   let platformGmv: number | undefined;
   let tenureMonths: number | undefined;
@@ -174,10 +241,12 @@ export async function runUnderwriting(
     logger.warn("platform_fetch_failed", { ...logCtx, error: String(err) });
   }
 
-  // ── 5. Consolidar y calcular total ponderado ────────────────────────────────
+  // ── 7. Consolidar y calcular total ponderado ────────────────────────────────
   const dataSources = [
     ...(syntageAvailable ? ["syntage"] : []),
     ...(placesAvailable ? ["google_places"] : []),
+    ...(facebookAvailable ? ["facebook"] : []),
+    ...(instagramAvailable ? ["instagram"] : []),
     ...(bureauAvailable ? ["bureau"] : []),
     ...(platformAvailable ? ["platform"] : []),
   ];
@@ -187,7 +256,9 @@ export async function runUnderwriting(
     placesScore,
     bureauScore,
     tenureMonths,
-    syntageCompliance
+    syntageCompliance,
+    facebookFanCount,
+    instagramFollowers
   );
 
   const status: DecisionStatus = "MANUAL_REVIEW";
@@ -196,6 +267,8 @@ export async function runUnderwriting(
     reason: buildReason({
       syntageAvailable,
       placesAvailable,
+      facebookAvailable,
+      instagramAvailable,
       bureauAvailable,
       platformAvailable,
       syntageMonthlyRevenue,
@@ -203,6 +276,8 @@ export async function runUnderwriting(
       bureauScore,
       platformGmv,
       syntageCompliance,
+      facebookFanCount,
+      instagramFollowers,
     }),
     syntage_monthly_revenue: syntageMonthlyRevenue,
     syntage_tax_compliance: syntageCompliance,
@@ -211,6 +286,10 @@ export async function runUnderwriting(
     places_signals_score: placesScore,
     places_rating: placesResult?.rating,
     places_review_count: placesResult?.total_review_count,
+    facebook_fan_count: facebookFanCount,
+    facebook_rating: facebookResult?.rating,
+    instagram_followers: instagramFollowers,
+    instagram_media_count: instagramResult?.media_count,
     bureau_score: bureauScore,
     platform_gmv_6m: platformGmv,
     platform_tenure_months: tenureMonths,
@@ -223,10 +302,6 @@ export async function runUnderwriting(
   logger.info("underwriting_completed", {
     ...logCtx,
     status,
-    syntage_monthly_revenue: syntageMonthlyRevenue,
-    places_signals_score: placesScore,
-    bureau_score: bureauScore,
-    platform_gmv_6m: platformGmv,
     total_revenue: totalRevenue,
     data_sources: dataSources,
   });
@@ -236,6 +311,8 @@ export async function runUnderwriting(
     payload,
     syntage_result: syntageResult,
     places_result: placesResult,
+    facebook_result: facebookResult,
+    instagram_result: instagramResult,
     bureau_result: bureauResult,
     platform_result: platformResult,
   };
@@ -243,23 +320,37 @@ export async function runUnderwriting(
 
 /**
  * Ingreso total ponderado para el analista.
- *
- * total = syntage_monthly
- *       × (1 + places_score/100 × 0.20)   ← boost máx 20% por Google Places
- *       × bureau_multiplier                 ← 1.10 / 1.0 / 0.90
- *       × tenure_multiplier                 ← 1.05 / 1.0 / 0.95
- *       × (tax_compliance ? 1.0 : 0.80)    ← penalidad si tiene deuda SAT
+ * Boost máximo acumulable por fuentes digitales: ~35%
  */
 function computeTotalRevenue(
   syntageMonthly: number,
   placesScore: number,
   bureauScore: number | undefined,
   tenureMonths: number | undefined,
-  taxCompliance: boolean
+  taxCompliance: boolean,
+  facebookFans: number | undefined,
+  instagramFollowers: number | undefined
 ): number {
   if (syntageMonthly === 0) return 0;
 
+  // Google Places: boost máx 20%
   const placesBoost = 1 + (placesScore / 100) * 0.20;
+
+  // Facebook: boost máx 8% según tamaño de comunidad
+  const facebookBoost =
+    facebookFans === undefined ? 0
+    : facebookFans >= 5000     ? 0.08
+    : facebookFans >= 1000     ? 0.05
+    :                            0.02;
+
+  // Instagram: boost máx 7% según seguidores
+  const instagramBoost =
+    instagramFollowers === undefined ? 0
+    : instagramFollowers >= 5000     ? 0.07
+    : instagramFollowers >= 1000     ? 0.04
+    :                                  0.01;
+
+  const socialBoost = 1 + facebookBoost + instagramBoost;
 
   const bureauMultiplier =
     bureauScore === undefined ? 1.0
@@ -276,16 +367,15 @@ function computeTotalRevenue(
   const complianceMultiplier = taxCompliance ? 1.0 : 0.80;
 
   return Math.round(
-    syntageMonthly * placesBoost * bureauMultiplier * tenureMultiplier * complianceMultiplier
+    syntageMonthly * placesBoost * socialBoost * bureauMultiplier * tenureMultiplier * complianceMultiplier
   );
 }
 
-/**
- * Mensaje descriptivo para el analista humano.
- */
 function buildReason(params: {
   syntageAvailable: boolean;
   placesAvailable: boolean;
+  facebookAvailable: boolean;
+  instagramAvailable: boolean;
   bureauAvailable: boolean;
   platformAvailable: boolean;
   syntageMonthlyRevenue: number;
@@ -293,6 +383,8 @@ function buildReason(params: {
   bureauScore: number | undefined;
   platformGmv: number | undefined;
   syntageCompliance: boolean;
+  facebookFanCount: number | undefined;
+  instagramFollowers: number | undefined;
 }): string {
   const parts: string[] = [
     "Solicitud en revisión manual para determinar nuevo monto Préstamo MÁS.",
@@ -310,15 +402,17 @@ function buildReason(params: {
   if (params.placesAvailable) {
     parts.push(`Score Google Places: ${params.placesScore}/100.`);
   }
-
+  if (params.facebookAvailable && params.facebookFanCount !== undefined) {
+    parts.push(`Facebook: ${params.facebookFanCount.toLocaleString("es-MX")} seguidores.`);
+  }
+  if (params.instagramAvailable && params.instagramFollowers !== undefined) {
+    parts.push(`Instagram: ${params.instagramFollowers.toLocaleString("es-MX")} seguidores.`);
+  }
   if (params.bureauAvailable && params.bureauScore !== undefined) {
     parts.push(`Score Buró de Crédito: ${params.bureauScore}/850.`);
   }
-
   if (params.platformAvailable && params.platformGmv !== undefined) {
-    parts.push(
-      `GMV en Rappi: $${params.platformGmv.toLocaleString("es-MX")} MXN/mes.`
-    );
+    parts.push(`GMV en Rappi: $${params.platformGmv.toLocaleString("es-MX")} MXN/mes.`);
   }
 
   return parts.join(" ");
