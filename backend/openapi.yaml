@@ -1,0 +1,407 @@
+openapi: "3.1.0"
+info:
+  title: Full Revenue Loan API
+  version: "1.0.0"
+  description: |
+    Backend API for the Rappi Full Revenue Loan Option feature.
+
+    Set `DEMO_MODE=true` to use stub data and skip real Syntage/Google calls.
+
+servers:
+  - url: http://localhost:3001
+    description: Local development
+  - url: https://full-revenue-backend-HASH-uc.a.run.app
+    description: Production (Cloud Run) — replace HASH with actual service hash
+
+tags:
+  - name: Applications
+    description: Loan application lifecycle
+  - name: Events
+    description: Analytics event tracking
+  - name: OAuth
+    description: Google OAuth flow
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  demo_mode:
+                    type: boolean
+
+  /full-revenue/applications:
+    post:
+      tags: [Applications]
+      summary: Create a new loan application
+      description: |
+        Creates an application record with status UNDERWRITING_PENDING.
+        Returns the application ID used in all subsequent calls.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateApplicationRequest"
+            example:
+              merchant_id: "rappi-merchant-12345"
+      responses:
+        "201":
+          description: Application created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /full-revenue/applications/{id}:
+    get:
+      tags: [Applications]
+      summary: Get application by ID
+      description: Returns full application data. Poll this endpoint every 5 seconds to check underwriting status.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        "200":
+          description: Application data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApplicationResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /full-revenue/applications/{id}/submit:
+    post:
+      tags: [Applications]
+      summary: Submit application and trigger underwriting
+      description: |
+        Validates the complete form payload, stores it, and runs the
+        underwriting engine synchronously. Returns the final decision status.
+
+        Decision logic:
+        - APPROVED: total monthly revenue > APPROVAL_THRESHOLD env var
+        - MANUAL_REVIEW: insufficient data sources or no data at all
+        - REJECTED: revenue below threshold with sufficient data
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitApplicationRequest"
+      responses:
+        "200":
+          description: Underwriting completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  status:
+                    $ref: "#/components/schemas/DecisionStatus"
+                  message:
+                    type: string
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /full-revenue/oauth/google/redirect:
+    get:
+      tags: [OAuth]
+      summary: Redirect user to Google OAuth consent screen
+      description: |
+        Backend builds the Google authorization URL with `state=applicationId`
+        and redirects the browser. The `state` parameter carries the applicationId
+        through the OAuth round-trip as a CSRF token.
+      parameters:
+        - name: applicationId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID of the application to associate Google tokens with
+      responses:
+        "302":
+          description: Redirect to Google OAuth consent screen
+
+  /full-revenue/oauth/google/callback:
+    get:
+      tags: [OAuth]
+      summary: Handle Google OAuth callback
+      description: |
+        Called by Google after the user grants consent. Exchanges the
+        authorization code for tokens, stores them in Firestore for the
+        application identified by `state`, then redirects back to the frontend.
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Authorization code from Google
+        - name: state
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Application ID (passed as state in the initial redirect)
+      responses:
+        "302":
+          description: Redirect to frontend /full-revenue/apply?google=connected&appId={id}
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /events:
+    post:
+      tags: [Events]
+      summary: Store a tracking event
+      description: Fire-and-forget. Returns 204 on success.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrackingEvent"
+            examples:
+              banner_viewed:
+                value:
+                  event_name: full_revenue_banner_viewed
+                  merchant_id: demo-merchant-001
+              step_completed:
+                value:
+                  event_name: full_revenue_step_completed
+                  merchant_id: demo-merchant-001
+                  metadata:
+                    step: 1
+      responses:
+        "204":
+          description: Event stored successfully (no body)
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+components:
+  schemas:
+    DecisionStatus:
+      type: string
+      enum:
+        - UNDERWRITING_PENDING
+        - APPROVED
+        - REJECTED
+        - MANUAL_REVIEW
+      description: |
+        - UNDERWRITING_PENDING: Application submitted, evaluation in progress
+        - APPROVED: Revenue exceeds threshold, loan approved
+        - REJECTED: Revenue below threshold
+        - MANUAL_REVIEW: Insufficient data or edge case requiring human review
+
+    CreateApplicationRequest:
+      type: object
+      required: [merchant_id]
+      properties:
+        merchant_id:
+          type: string
+          minLength: 1
+          example: rappi-merchant-12345
+
+    FormData:
+      type: object
+      required:
+        - legal_name
+        - tax_id
+        - address
+        - bank_account
+        - email
+        - monthly_revenue_estimate
+        - revenue_sources
+        - consent_given
+        - google_connected
+      properties:
+        legal_name:
+          type: string
+          minLength: 2
+          maxLength: 200
+          example: "Restaurante El Buen Sabor S.A. de C.V."
+        tax_id:
+          type: string
+          minLength: 8
+          maxLength: 20
+          example: "REST123456ABC"
+        address:
+          type: string
+          minLength: 5
+          maxLength: 500
+          example: "Av. Insurgentes Sur 1234, Col. Del Valle, CDMX"
+        bank_account:
+          type: string
+          minLength: 10
+          maxLength: 30
+          example: "012345678901234567"
+        email:
+          type: string
+          format: email
+          example: "contacto@restaurante.com"
+        monthly_revenue_estimate:
+          type: number
+          minimum: 0.01
+          example: 85000
+        revenue_sources:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            enum:
+              - ventas_rappi
+              - ventas_propias
+              - exportaciones
+              - servicios
+              - otros
+          example: ["ventas_rappi", "ventas_propias"]
+        notes:
+          type: string
+          maxLength: 1000
+          nullable: true
+          example: "Tenemos un catering adicional los fines de semana"
+        consent_given:
+          type: boolean
+          enum: [true]
+          description: Must be exactly `true`. Any other value is rejected.
+        google_connected:
+          type: boolean
+          description: Whether the user completed the Google OAuth flow
+
+    SubmitApplicationRequest:
+      type: object
+      required: [form_data]
+      properties:
+        form_data:
+          $ref: "#/components/schemas/FormData"
+
+    DecisionPayload:
+      type: object
+      properties:
+        reason:
+          type: string
+        total_revenue:
+          type: number
+          description: Monthly revenue used for decision (max of available sources)
+        threshold_used:
+          type: number
+          description: APPROVAL_THRESHOLD value at time of decision
+        data_sources:
+          type: array
+          items:
+            type: string
+            enum: [syntage, google]
+        decided_at:
+          type: string
+          format: date-time
+
+    ApplicationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        merchant_id:
+          type: string
+        decision_status:
+          $ref: "#/components/schemas/DecisionStatus"
+        form_data:
+          $ref: "#/components/schemas/FormData"
+          nullable: true
+        decision_payload:
+          $ref: "#/components/schemas/DecisionPayload"
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    TrackingEvent:
+      type: object
+      required: [event_name, merchant_id]
+      properties:
+        event_name:
+          type: string
+          maxLength: 100
+          example: full_revenue_banner_viewed
+          enum:
+            - full_revenue_banner_viewed
+            - full_revenue_banner_clicked
+            - full_revenue_product_page_viewed
+            - full_revenue_continue_clicked
+            - full_revenue_form_started
+            - full_revenue_step_completed
+            - full_revenue_form_submitted
+        merchant_id:
+          type: string
+          example: demo-merchant-001
+        metadata:
+          type: object
+          additionalProperties: true
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+          nullable: true
+
+  responses:
+    ValidationError:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Validation failed
+              details:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    field:
+                      type: string
+                    message:
+                      type: string
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Application not found

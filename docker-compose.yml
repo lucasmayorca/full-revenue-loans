@@ -1,0 +1,23 @@
+version: "3.9"
+
+# Para correr localmente sin Docker, ver README.md — sección "Desarrollo local"
+# Prerrequisito: tener backend/.env copiado desde backend/.env.example
+
+services:
+  backend:
+    build:
+      context: ./backend
+    ports:
+      - "3001:3001"
+    env_file:
+      - ./backend/.env
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: "http://localhost:3001"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
