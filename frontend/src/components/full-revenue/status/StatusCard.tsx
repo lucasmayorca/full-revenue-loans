@@ -74,14 +74,52 @@ export function StatusCard({ application }: Props) {
                   </span>
                 </div>
               )}
-              {/* Score Google */}
-              {application.decision_payload.google_signals_score > 0 && (
+              {/* Score Buró de Crédito */}
+              {application.decision_payload.bureau_score !== undefined && (
+                <div className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                  <span className="text-xs text-gray-500 flex items-center gap-1.5">
+                    <span>📋</span> Score Buró de Crédito
+                  </span>
+                  <span className="text-sm font-semibold text-gray-800">
+                    {application.decision_payload.bureau_score}/850
+                  </span>
+                </div>
+              )}
+              {/* GMV Rappi */}
+              {application.decision_payload.platform_gmv_6m !== undefined && (
+                <div className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                  <span className="text-xs text-gray-500 flex items-center gap-1.5">
+                    <span>🛍️</span> GMV en Rappi (últ. 6m)
+                  </span>
+                  <span className="text-sm font-semibold text-gray-800">
+                    ${application.decision_payload.platform_gmv_6m.toLocaleString("es-MX")} MXN/mes
+                  </span>
+                </div>
+              )}
+              {/* Rating Google Places */}
+              {application.decision_payload.places_rating !== undefined && (
+                <div className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                  <span className="text-xs text-gray-500 flex items-center gap-1.5">
+                    <span>⭐</span> Rating Google
+                  </span>
+                  <span className="text-sm font-semibold text-gray-800">
+                    {application.decision_payload.places_rating.toFixed(1)}★
+                    {application.decision_payload.places_review_count !== undefined && (
+                      <span className="text-gray-400 font-normal ml-1">
+                        ({application.decision_payload.places_review_count} reseñas)
+                      </span>
+                    )}
+                  </span>
+                </div>
+              )}
+              {/* Score Google Places */}
+              {application.decision_payload.places_signals_score > 0 && (
                 <div className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
                   <span className="text-xs text-gray-500 flex items-center gap-1.5">
                     <span>📊</span> Score digital Google
                   </span>
                   <span className="text-sm font-semibold text-gray-800">
-                    {application.decision_payload.google_signals_score}/100
+                    {application.decision_payload.places_signals_score}/100
                   </span>
                 </div>
               )}
@@ -89,7 +127,7 @@ export function StatusCard({ application }: Props) {
               {application.decision_payload.total_revenue > 0 && (
                 <div className="flex items-center justify-between bg-rappi-orange-light rounded-lg px-3 py-2 border border-orange-100">
                   <span className="text-xs text-rappi-orange font-medium flex items-center gap-1.5">
-                    <span>💰</span> Ventas estimadas totales
+                    <span>💰</span> Ventas ponderadas totales
                   </span>
                   <span className="text-sm font-bold text-rappi-orange">
                     ${application.decision_payload.total_revenue.toLocaleString("es-MX")} MXN/mes

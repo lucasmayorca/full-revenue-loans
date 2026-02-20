@@ -44,7 +44,6 @@ export const step3Schema = z.object({
   consent_given: z.literal(true, {
     errorMap: () => ({ message: "Debés aceptar los términos para continuar" }),
   }),
-  google_connected: z.boolean(),
   google_business_url: z.string().url("Ingresá una URL válida").optional().or(z.literal("")),
 });
 

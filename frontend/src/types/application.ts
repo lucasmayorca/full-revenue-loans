@@ -6,9 +6,27 @@ export type DecisionStatus =
 
 export interface DecisionPayload {
   reason: string;
-  syntage_monthly_revenue: number;   // ventas SAT (Syntage)
-  google_signals_score: number;      // score 0-100 de señales Google
-  total_revenue: number;             // ventas SAT + boost Google
+
+  // Syntage / SAT
+  syntage_monthly_revenue: number;
+  syntage_tax_compliance: boolean;
+  syntage_cfdi_count?: number;
+  syntage_tax_regime?: string;
+
+  // Google Places
+  places_signals_score: number;       // 0–100
+  places_rating?: number;
+  places_review_count?: number;
+
+  // Bureau de Crédito
+  bureau_score?: number;
+
+  // Platform (Rappi interno)
+  platform_gmv_6m?: number;
+  platform_tenure_months?: number;
+
+  // Total ponderado
+  total_revenue: number;
   threshold_used: number;
   data_sources: string[];
   decided_at: string;
@@ -40,7 +58,6 @@ export interface Step2Data {
 
 export interface Step3Data {
   consent_given: true;
-  google_connected: boolean;
   google_business_url?: string;
 }
 

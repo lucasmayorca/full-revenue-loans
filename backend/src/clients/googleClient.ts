@@ -1,255 +1,176 @@
 import axios from "axios";
 import { env } from "../config/env";
 import { logger } from "../utils/logger";
-import { GoogleBusinessData } from "../models/Application";
+import { PlacesResult } from "../models/Application";
 
-export interface GoogleTokens {
-  access_token: string;
-  refresh_token: string;
-  expiry_date: number;
-}
-
-// Datos demo realistas para DEMO_MODE
-const DEMO_BUSINESS_DATA: GoogleBusinessData = {
-  // Google Business Profile
-  business_name: "Restaurante Demo MX",
-  rating: 4.3,
-  review_count: 187,
+// Datos demo realistas — "Los Aguacates", Puebla MX
+const DEMO_PLACES_STUB: PlacesResult = {
+  connected: true,
+  place_id: "ChIJM8FgMXnHxYURW1vYTA2hgcg",
+  business_name: "Los Aguacates",
+  rating: 4.2,
+  total_review_count: 143,
+  rating_trend_3m: +0.1,
+  listing_age_years: 6,
+  location_count: 1,
+  price_level_index: 2,
   is_verified: true,
-  categories: ["Restaurante mexicano", "Comida para llevar"],
-  // Performance últimos 90 días
-  profile_views: 3240,
-  search_impressions: 8900,
-  direction_requests: 412,
-  phone_calls: 98,
-  website_clicks: 560,
-  // Google Analytics (GA4)
-  ga4_monthly_sessions: 1850,
-  ga4_monthly_users: 1200,
-  ga4_estimated_revenue: 38000, // MXN/mes — ingresos digitales estimados
-  data_points: 90,
+  categories: ["Mexican restaurant", "Taquería"],
+  has_website: false,
+  business_status: "OPERATIONAL",
+  signals_score: 72,
   fetched_at: new Date().toISOString(),
 };
 
-class GoogleClient {
-  buildAuthUrl(applicationId: string): string {
-    const params = new URLSearchParams({
-      client_id: env.GOOGLE_CLIENT_ID,
-      redirect_uri: env.GOOGLE_REDIRECT_URI,
-      response_type: "code",
-      scope: [
-        // Business Profile — reseñas, performance, verificación
-        "https://www.googleapis.com/auth/business.manage",
-        // Analytics — tráfico y tendencias
-        "https://www.googleapis.com/auth/analytics.readonly",
-        "profile",
-        "email",
-      ].join(" "),
-      access_type: "offline",
-      prompt: "consent",
-      state: applicationId,
-    });
-
-    return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-  }
-
-  async exchangeCode(code: string): Promise<GoogleTokens> {
-    if (env.DEMO_MODE) {
-      logger.info("google_demo_mode_exchange");
-      return {
-        access_token: "demo_access_token_" + Date.now(),
-        refresh_token: "demo_refresh_token_" + Date.now(),
-        expiry_date: Date.now() + 3600 * 1000,
-      };
+/**
+ * Extrae el Place ID de una URL de Google Maps.
+ *
+ * Soporta los formatos más comunes:
+ *  - /maps/place/NOMBRE/...data=...!1s0x<PLACE_ID>   → hex encode en segmento !1s
+ *  - maps.google.com/?cid=<CID>                      → CID numérico
+ *  - maps.app.goo.gl/<shortlink>                     → requiere fetch extra (no soportado en demo)
+ */
+function extractPlaceId(mapsUrl: string): string | null {
+  try {
+    // Formato: data=...!1s0x<hex>:<hex> — Place ID codificado en la URL
+    const placeIdMatch = mapsUrl.match(/!1s(0x[0-9a-f]+:[0-9a-fx]+)/i);
+    if (placeIdMatch) {
+      // Google Places API acepta este formato directamente como place_id
+      return placeIdMatch[1];
     }
 
-    const response = await axios.post(
-      "https://oauth2.googleapis.com/token",
-      new URLSearchParams({
-        code,
-        client_id: env.GOOGLE_CLIENT_ID,
-        client_secret: env.GOOGLE_CLIENT_SECRET,
-        redirect_uri: env.GOOGLE_REDIRECT_URI,
-        grant_type: "authorization_code",
-      }).toString(),
-      { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
-    );
+    // Formato CID: ?cid=12345678
+    const cidMatch = mapsUrl.match(/[?&]cid=(\d+)/);
+    if (cidMatch) {
+      return cidMatch[1];
+    }
 
-    logger.info("google_token_exchanged", {
-      has_refresh_token: !!response.data.refresh_token,
-    });
+    // Extraer nombre del negocio de la URL como fallback para Text Search
+    const nameMatch = mapsUrl.match(/\/maps\/place\/([^/@?]+)/);
+    if (nameMatch) {
+      return decodeURIComponent(nameMatch[1].replace(/\+/g, " "));
+    }
 
-    return {
-      access_token: response.data.access_token,
-      refresh_token: response.data.refresh_token,
-      expiry_date: Date.now() + response.data.expires_in * 1000,
-    };
+    return null;
+  } catch {
+    return null;
   }
+}
+
+/**
+ * Determina si el identificador extraído es un Place ID real o un nombre de texto.
+ */
+function isRealPlaceId(identifier: string): boolean {
+  return identifier.startsWith("0x") || /^\d{15,}$/.test(identifier);
+}
+
+class GooglePlacesClient {
+  private readonly baseUrl = "https://maps.googleapis.com/maps/api/place";
 
   /**
-   * Obtiene todos los datos útiles para underwriting:
-   * - Google Business Profile: reseñas, rating, categorías, verificación
-   * - Business Performance API: vistas, búsquedas, solicitudes de ruta, llamadas
-   * - Google Analytics GA4: sesiones, usuarios, ingresos estimados
+   * Obtiene datos del negocio desde Google Places API usando la URL de Maps.
+   * En DEMO_MODE devuelve datos stub sin consumir la API.
    */
-  async getBusinessData(accessToken: string): Promise<GoogleBusinessData> {
-    if (env.DEMO_MODE || accessToken.startsWith("demo_")) {
-      logger.info("google_demo_mode_business_data");
-      await new Promise((r) => setTimeout(r, 300)); // simular latencia
-      return { ...DEMO_BUSINESS_DATA, fetched_at: new Date().toISOString() };
+  async getPlacesData(mapsUrl: string): Promise<PlacesResult> {
+    if (env.DEMO_MODE || !env.GOOGLE_PLACES_API_KEY) {
+      logger.info("google_places_demo_mode", { url: mapsUrl });
+      await new Promise((r) => setTimeout(r, 300));
+      return { ...DEMO_PLACES_STUB, fetched_at: new Date().toISOString() };
     }
 
-    const now = new Date().toISOString();
-    let businessData: GoogleBusinessData = {
-      data_points: 0,
-      fetched_at: now,
-    };
-
-    // 1. Google Business Profile — info básica y reseñas
-    try {
-      const accountsResp = await axios.get(
-        "https://mybusinessaccountmanagement.googleapis.com/v1/accounts",
-        { headers: { Authorization: `Bearer ${accessToken}` }, timeout: 8000 }
-      );
-      const accountName = accountsResp.data.accounts?.[0]?.name;
-
-      if (accountName) {
-        const locationsResp = await axios.get(
-          `https://mybusinessbusinessinformation.googleapis.com/v1/${accountName}/locations?readMask=name,title,categories,metadata`,
-          { headers: { Authorization: `Bearer ${accessToken}` }, timeout: 8000 }
-        );
-        const location = locationsResp.data.locations?.[0];
-        if (location) {
-          businessData.business_name = location.title;
-          businessData.is_verified = location.metadata?.mapsUri ? true : false;
-          businessData.categories = location.categories?.additionalCategories?.map(
-            (c: { displayName: string }) => c.displayName
-          ) ?? [];
-
-          // Reviews
-          const reviewsResp = await axios.get(
-            `https://mybusiness.googleapis.com/v4/${location.name}/reviews?pageSize=1`,
-            { headers: { Authorization: `Bearer ${accessToken}` }, timeout: 8000 }
-          );
-          businessData.rating = reviewsResp.data.averageRating;
-          businessData.review_count = reviewsResp.data.totalReviewCount;
-          businessData.data_points += 1;
-        }
-
-        // 2. Business Performance API — últimos 90 días
-        try {
-          const startDate = new Date();
-          startDate.setDate(startDate.getDate() - 90);
-          const perfResp = await axios.post(
-            `https://businessprofileperformance.googleapis.com/v1/${accountName}/locations:fetchMultiDailyMetricsTimeSeries`,
-            {
-              dailyMetrics: [
-                "BUSINESS_IMPRESSIONS_DESKTOP_MAPS",
-                "BUSINESS_IMPRESSIONS_MOBILE_MAPS",
-                "BUSINESS_IMPRESSIONS_DESKTOP_SEARCH",
-                "BUSINESS_IMPRESSIONS_MOBILE_SEARCH",
-                "BUSINESS_DIRECTION_REQUESTS",
-                "CALL_CLICKS",
-                "WEBSITE_CLICKS",
-              ],
-              dailyRange: {
-                startDate: {
-                  year: startDate.getFullYear(),
-                  month: startDate.getMonth() + 1,
-                  day: startDate.getDate(),
-                },
-                endDate: {
-                  year: new Date().getFullYear(),
-                  month: new Date().getMonth() + 1,
-                  day: new Date().getDate(),
-                },
-              },
-            },
-            { headers: { Authorization: `Bearer ${accessToken}` }, timeout: 10000 }
-          );
-
-          const sumMetric = (metricName: string): number => {
-            const series = perfResp.data.multiDailyMetricTimeSeries?.find(
-              (s: { dailyMetric: string }) => s.dailyMetric === metricName
-            );
-            return (
-              series?.timeSeries?.datedValues?.reduce(
-                (acc: number, v: { value?: string }) => acc + Number(v.value ?? 0),
-                0
-              ) ?? 0
-            );
-          };
-
-          businessData.profile_views =
-            sumMetric("BUSINESS_IMPRESSIONS_DESKTOP_MAPS") +
-            sumMetric("BUSINESS_IMPRESSIONS_MOBILE_MAPS");
-          businessData.search_impressions =
-            sumMetric("BUSINESS_IMPRESSIONS_DESKTOP_SEARCH") +
-            sumMetric("BUSINESS_IMPRESSIONS_MOBILE_SEARCH");
-          businessData.direction_requests = sumMetric("BUSINESS_DIRECTION_REQUESTS");
-          businessData.phone_calls = sumMetric("CALL_CLICKS");
-          businessData.website_clicks = sumMetric("WEBSITE_CLICKS");
-          businessData.data_points += 1;
-        } catch (perfErr) {
-          logger.warn("google_performance_api_failed", { error: String(perfErr) });
-        }
-      }
-    } catch (bpErr) {
-      logger.warn("google_business_profile_failed", { error: String(bpErr) });
+    const identifier = extractPlaceId(mapsUrl);
+    if (!identifier) {
+      logger.warn("google_places_invalid_url", { url: mapsUrl });
+      return { connected: false, fetched_at: new Date().toISOString() };
     }
 
-    // 3. Google Analytics GA4 — tráfico e ingresos digitales
     try {
-      const propertiesResp = await axios.get(
-        "https://analyticsadmin.googleapis.com/v1beta/properties?filter=parent:accounts/-",
-        { headers: { Authorization: `Bearer ${accessToken}` }, timeout: 8000 }
-      );
-      const propertyId = propertiesResp.data.properties?.[0]?.name?.replace(
-        "properties/",
-        ""
-      );
+      let placeId = identifier;
 
-      if (propertyId) {
-        const gaResp = await axios.post(
-          `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
-          {
-            dateRanges: [{ startDate: "90daysAgo", endDate: "today" }],
-            metrics: [
-              { name: "sessions" },
-              { name: "activeUsers" },
-              { name: "purchaseRevenue" },
-            ],
+      // Si es un nombre de texto, buscar primero con Text Search
+      if (!isRealPlaceId(identifier)) {
+        const searchResp = await axios.get(`${this.baseUrl}/findplacefromtext/json`, {
+          params: {
+            input: identifier,
+            inputtype: "textquery",
+            fields: "place_id",
+            key: env.GOOGLE_PLACES_API_KEY,
           },
-          {
-            headers: { Authorization: `Bearer ${accessToken}` },
-            timeout: 10000,
-          }
-        );
-
-        const row = gaResp.data.rows?.[0]?.metricValues;
-        if (row) {
-          businessData.ga4_monthly_sessions = Math.round(Number(row[0]?.value ?? 0) / 3);
-          businessData.ga4_monthly_users = Math.round(Number(row[1]?.value ?? 0) / 3);
-          businessData.ga4_estimated_revenue = Math.round(Number(row[2]?.value ?? 0) / 3);
-          businessData.data_points += 1;
+          timeout: 8000,
+        });
+        placeId = searchResp.data.candidates?.[0]?.place_id;
+        if (!placeId) {
+          logger.warn("google_places_not_found", { identifier });
+          return { connected: false, fetched_at: new Date().toISOString() };
         }
       }
-    } catch (gaErr) {
-      logger.warn("google_analytics_failed", { error: String(gaErr) });
-    }
 
-    businessData.fetched_at = new Date().toISOString();
-    return businessData;
+      // Place Details — obtener todos los campos útiles para underwriting
+      const detailsResp = await axios.get(`${this.baseUrl}/details/json`, {
+        params: {
+          place_id: placeId,
+          fields: [
+            "name",
+            "rating",
+            "user_ratings_total",
+            "price_level",
+            "types",
+            "website",
+            "opening_hours",
+            "business_status",
+            "geometry",
+            "permanently_closed",
+          ].join(","),
+          key: env.GOOGLE_PLACES_API_KEY,
+          language: "es-419",
+        },
+        timeout: 8000,
+      });
+
+      const p = detailsResp.data.result;
+      if (!p) {
+        return { connected: false, fetched_at: new Date().toISOString() };
+      }
+
+      const result: PlacesResult = {
+        connected: true,
+        place_id: placeId,
+        business_name: p.name,
+        rating: p.rating,
+        total_review_count: p.user_ratings_total,
+        price_level_index: p.price_level,
+        categories: p.types ?? [],
+        has_website: !!p.website,
+        business_status: p.business_status ?? "UNKNOWN",
+        is_verified: true, // Place Details solo devuelve negocios verificados
+        fetched_at: new Date().toISOString(),
+      };
+
+      result.signals_score = this.computeSignalsScore(result);
+
+      logger.info("google_places_fetched", {
+        place_id: placeId,
+        business_name: result.business_name,
+        rating: result.rating,
+        review_count: result.total_review_count,
+        signals_score: result.signals_score,
+      });
+
+      return result;
+    } catch (err) {
+      logger.error("google_places_fetch_failed", { error: String(err), url: mapsUrl });
+      return { connected: false, fetched_at: new Date().toISOString() };
+    }
   }
 
   /**
-   * Calcula un score compuesto 0–100 basado en señales de negocio de Google.
-   * Usado como input al underwriting (no reemplaza ventas SAT, sino que las complementa).
+   * Score compuesto 0–100 basado en señales públicas de Google Places.
+   * Tabla de pesos alineada con la tabla consolidada de underwriting.
    */
-  computeSignalsScore(data: GoogleBusinessData): number {
+  computeSignalsScore(data: PlacesResult): number {
     let score = 0;
 
-    // Rating: hasta 25 pts (4.5+ = 25, 4.0 = 20, 3.5 = 12, <3 = 0)
+    // Rating — Operational Quality (25 pts)
     if (data.rating) {
       if (data.rating >= 4.5) score += 25;
       else if (data.rating >= 4.0) score += 20;
@@ -257,49 +178,35 @@ class GoogleClient {
       else score += 5;
     }
 
-    // Cantidad de reseñas: hasta 15 pts
-    if (data.review_count) {
-      if (data.review_count >= 200) score += 15;
-      else if (data.review_count >= 100) score += 10;
-      else if (data.review_count >= 50) score += 6;
-      else if (data.review_count >= 10) score += 3;
+    // Reseñas — Business Scale (20 pts)
+    if (data.total_review_count) {
+      if (data.total_review_count >= 200) score += 20;
+      else if (data.total_review_count >= 100) score += 15;
+      else if (data.total_review_count >= 50) score += 10;
+      else if (data.total_review_count >= 10) score += 5;
     }
 
-    // Negocio verificado: 10 pts
+    // Verificado en Google (10 pts)
     if (data.is_verified) score += 10;
 
-    // Vistas de perfil (90 días): hasta 15 pts
-    if (data.profile_views) {
-      if (data.profile_views >= 5000) score += 15;
-      else if (data.profile_views >= 2000) score += 10;
-      else if (data.profile_views >= 500) score += 5;
-    }
+    // Tiene sitio web — señal de formalidad (10 pts)
+    if (data.has_website) score += 10;
 
-    // Solicitudes de dirección (señal de tráfico físico): hasta 10 pts
-    if (data.direction_requests) {
-      if (data.direction_requests >= 500) score += 10;
-      else if (data.direction_requests >= 200) score += 7;
-      else if (data.direction_requests >= 50) score += 3;
-    }
+    // Negocio operativo (10 pts)
+    if (data.business_status === "OPERATIONAL") score += 10;
 
-    // Llamadas + clicks web: hasta 10 pts
-    const engagement = (data.phone_calls ?? 0) + (data.website_clicks ?? 0);
-    if (engagement >= 500) score += 10;
-    else if (engagement >= 200) score += 6;
-    else if (engagement >= 50) score += 3;
+    // Categoría es comercio real, no domicilio (10 pts)
+    const commercialTypes = ["restaurant", "food", "store", "bakery", "cafe", "bar", "supermarket", "pharmacy"];
+    const hasCommercialType = data.categories?.some((c) =>
+      commercialTypes.some((t) => c.toLowerCase().includes(t))
+    );
+    if (hasCommercialType) score += 10;
 
-    // GA4 — sesiones mensuales: hasta 10 pts
-    if (data.ga4_monthly_sessions) {
-      if (data.ga4_monthly_sessions >= 2000) score += 10;
-      else if (data.ga4_monthly_sessions >= 500) score += 6;
-      else if (data.ga4_monthly_sessions >= 100) score += 3;
-    }
-
-    // GA4 — ingresos digitales: hasta 5 pts
-    if (data.ga4_estimated_revenue && data.ga4_estimated_revenue > 0) score += 5;
+    // Price level 3–4 → mayor ticket promedio, mejor margen (5 pts)
+    if (data.price_level_index && data.price_level_index >= 3) score += 5;
 
     return Math.min(score, 100);
   }
 }
 
-export const googleClient = new GoogleClient();
+export const googlePlacesClient = new GooglePlacesClient();

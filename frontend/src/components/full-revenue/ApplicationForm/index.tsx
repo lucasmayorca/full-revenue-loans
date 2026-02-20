@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { EVENTS, DEMO_MERCHANT_ID } from "@/lib/tracking";
@@ -26,22 +26,8 @@ export function ApplicationForm() {
   const [applicationId, setApplicationId] = useState<string | null>(
     searchParams.get("appId")
   );
-  const [googleConnected, setGoogleConnected] = useState(
-    searchParams.get("google") === "connected"
-  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // If returning from OAuth with google=connected, jump to step 3
-  useEffect(() => {
-    if (searchParams.get("google") === "connected") {
-      setGoogleConnected(true);
-      // Only jump to step 3 if we already have an applicationId
-      if (searchParams.get("appId")) {
-        setCurrentStep(3);
-      }
-    }
-  }, []); // run once on mount
 
   const handleStep1Complete = useCallback(
     async (data: Step1Values) => {
@@ -74,15 +60,6 @@ export function ApplicationForm() {
     [trackEvent]
   );
 
-  const handleGoogleConnect = useCallback(() => {
-    if (!applicationId) {
-      setError("Primero completá el paso 1.");
-      return;
-    }
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    window.location.href = `${apiUrl}/full-revenue/oauth/google/redirect?applicationId=${applicationId}`;
-  }, [applicationId]);
-
   const handleStep3Complete = useCallback(
     async (data: Step3Values) => {
       if (!applicationId) return;
@@ -93,7 +70,6 @@ export function ApplicationForm() {
       const allData: AllFormData = {
         ...(formData as Step1Values & Step2Values),
         ...data,
-        google_connected: googleConnected,
       };
 
       try {
@@ -105,7 +81,7 @@ export function ApplicationForm() {
         setIsSubmitting(false);
       }
     },
-    [formData, applicationId, googleConnected, router, trackEvent]
+    [formData, applicationId, router, trackEvent]
   );
 
   return (
@@ -134,11 +110,9 @@ export function ApplicationForm() {
       {currentStep === 3 && applicationId && (
         <Step3Consent
           applicationId={applicationId}
-          googleConnected={googleConnected}
           onComplete={handleStep3Complete}
           onBack={() => setCurrentStep(2)}
           isSubmitting={isSubmitting}
-          onGoogleConnect={handleGoogleConnect}
         />
       )}
     </div>

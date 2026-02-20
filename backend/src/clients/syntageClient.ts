@@ -8,14 +8,21 @@ export interface SyntageRevenueData {
   months_active: number;
   currency: string;
   last_updated: string;
+  // Campos fiscales adicionales (tabla consolidada de underwriting)
+  tax_regime?: string;               // Régimen fiscal SAT
+  cfdi_count_last_12m?: number;      // CFDIs emitidos últimos 12 meses
+  tax_compliance?: boolean;          // true = sin deuda activa con SAT
 }
 
 const DEMO_STUB: SyntageRevenueData = {
   merchant_id: "DEMO-MERCHANT",
-  annual_revenue: 720000, // 60k/month — above default 50k threshold
-  months_active: 18,
+  annual_revenue: 720000,            // 60k MXN/mes
+  months_active: 36,
   currency: "MXN",
   last_updated: new Date().toISOString(),
+  tax_regime: "Régimen Simplificado de Confianza",
+  cfdi_count_last_12m: 847,
+  tax_compliance: true,
 };
 
 class SyntageClient {

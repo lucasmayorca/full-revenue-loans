@@ -18,13 +18,9 @@ const envSchema = z
     SYNTAGE_API_KEY: z.string().optional(),
     SYNTAGE_TIMEOUT_MS: z.coerce.number().default(10000),
 
-    // En DEMO_MODE estas variables no se usan — se vuelven opcionales.
-    // En producción (DEMO_MODE=false) son requeridas y se validan en superRefine.
-    GOOGLE_CLIENT_ID: z.string().default(""),
-    GOOGLE_CLIENT_SECRET: z.string().default(""),
-    GOOGLE_REDIRECT_URI: z
-      .string()
-      .default("http://localhost:3001/full-revenue/oauth/google/callback"),
+    // Google Places API — solo necesario si DEMO_MODE=false
+    // Habilitar en: https://console.cloud.google.com → APIs → Places API (Legacy)
+    GOOGLE_PLACES_API_KEY: z.string().default(""),
 
     GCP_PROJECT_ID: z.string().default("demo-local"),
     FIRESTORE_EMULATOR_HOST: z.string().optional(),
@@ -34,18 +30,11 @@ const envSchema = z
   .superRefine((data, ctx) => {
     // En producción, las credenciales reales son obligatorias
     if (!data.DEMO_MODE) {
-      if (!data.GOOGLE_CLIENT_ID) {
+      if (!data.GOOGLE_PLACES_API_KEY) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: "GOOGLE_CLIENT_ID is required when DEMO_MODE=false",
-          path: ["GOOGLE_CLIENT_ID"],
-        });
-      }
-      if (!data.GOOGLE_CLIENT_SECRET) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "GOOGLE_CLIENT_SECRET is required when DEMO_MODE=false",
-          path: ["GOOGLE_CLIENT_SECRET"],
+          message: "GOOGLE_PLACES_API_KEY is required when DEMO_MODE=false",
+          path: ["GOOGLE_PLACES_API_KEY"],
         });
       }
       if (!data.GCP_PROJECT_ID || data.GCP_PROJECT_ID === "demo-local") {

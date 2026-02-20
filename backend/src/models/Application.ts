@@ -16,24 +16,10 @@ export interface FormData {
   revenue_sources: string[];
   notes?: string;
   consent_given: boolean;
-  google_connected: boolean;
   google_business_url?: string;
 }
 
-export interface DecisionPayload {
-  reason: string;
-  // Ventas estimadas (Syntage — SAT fiscal)
-  syntage_monthly_revenue: number;
-  // Señales digitales de Google (reseñas, tráfico, etc.)
-  google_signals_score: number; // 0–100, score compuesto
-  // Total ponderado para el underwriting
-  total_revenue: number;
-  threshold_used: number;
-  data_sources: string[];
-  decided_at: string;
-}
-
-// Datos completos de Syntage (SAT / fiscal)
+// ── Syntage / SAT ────────────────────────────────────────────────────────────
 export interface SyntageResult {
   merchant_id: string;
   annual_revenue: number;
@@ -41,41 +27,74 @@ export interface SyntageResult {
   months_active: number;
   tax_regime?: string;
   cfdi_count_last_12m?: number;
+  tax_compliance?: boolean;          // true si no tiene deuda activa con SAT
   raw_response: Record<string, unknown>;
   fetched_at: string;
 }
 
-// Datos completos de Google (Business Profile + Analytics)
-export interface GoogleBusinessData {
-  // Google Business Profile
+// ── Google Places (sin OAuth — solo URL pública de Maps) ─────────────────────
+export interface PlacesResult {
+  connected: boolean;
+  place_id?: string;
   business_name?: string;
-  rating?: number;           // 1.0 – 5.0
-  review_count?: number;
+  rating?: number;                   // avg_rating (1.0–5.0)
+  total_review_count?: number;       // total_review_count
+  rating_trend_3m?: number;          // delta rating últimos 3 meses (estimado demo)
+  listing_age_years?: number;        // business_maturity
+  location_count?: number;           // diversification (número de sucursales)
+  price_level_index?: number;        // 1–4 (proxy de margen)
   is_verified?: boolean;
   categories?: string[];
-  // Performance API (últimos 90 días)
-  profile_views?: number;
-  search_impressions?: number;
-  direction_requests?: number;
-  phone_calls?: number;
-  website_clicks?: number;
-  // Google Analytics (si tiene GA4 vinculado)
-  ga4_monthly_sessions?: number;
-  ga4_monthly_users?: number;
-  ga4_estimated_revenue?: number; // purchaseRevenue MXN/mes
-  // Meta
-  data_points: number;
+  has_website?: boolean;
+  business_status?: string;          // OPERATIONAL / CLOSED_TEMPORARILY / etc.
+  signals_score?: number;            // 0–100 compuesto
   fetched_at: string;
 }
 
-export interface GoogleResult {
-  connected: boolean;
-  business_data?: GoogleBusinessData;
-  signals_score?: number; // 0–100 calculado
-  raw_response?: Record<string, unknown>;
+// ── Bureau de Crédito ────────────────────────────────────────────────────────
+export interface BureauResult {
+  bureau_score?: number;             // 300–850
+  active_debt_amount?: number;       // MXN
   fetched_at: string;
 }
 
+// ── Platform (datos internos Rappi) ─────────────────────────────────────────
+export interface PlatformResult {
+  avg_platform_gmv_6m?: number;     // MXN/mes promedio últimos 6 meses en Rappi
+  tenure_months?: number;            // meses activo en la plataforma
+  fetched_at: string;
+}
+
+// ── Decision Payload (consolidado para analista) ─────────────────────────────
+export interface DecisionPayload {
+  reason: string;
+
+  // Syntage / SAT
+  syntage_monthly_revenue: number;
+  syntage_tax_compliance: boolean;
+  syntage_cfdi_count?: number;
+  syntage_tax_regime?: string;
+
+  // Google Places
+  places_signals_score: number;      // 0–100
+  places_rating?: number;
+  places_review_count?: number;
+
+  // Bureau de Crédito
+  bureau_score?: number;
+
+  // Platform (Rappi interno)
+  platform_gmv_6m?: number;
+  platform_tenure_months?: number;
+
+  // Total ponderado para el analista
+  total_revenue: number;
+  threshold_used: number;
+  data_sources: string[];
+  decided_at: string;
+}
+
+// ── Application Document ─────────────────────────────────────────────────────
 export interface ApplicationDoc {
   id: string;
   merchant_id: string;
@@ -84,9 +103,9 @@ export interface ApplicationDoc {
   decision_status: DecisionStatus;
   form_data?: Partial<FormData>;
   syntage_result?: SyntageResult;
-  google_result?: GoogleResult;
-  google_access_token?: string;
-  google_refresh_token?: string;
+  places_result?: PlacesResult;
+  bureau_result?: BureauResult;
+  platform_result?: PlatformResult;
   decision_payload?: DecisionPayload;
-  underwriting_notes?: string; // notas internas del revisor manual
+  underwriting_notes?: string;
 }

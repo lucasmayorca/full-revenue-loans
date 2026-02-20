@@ -59,28 +59,13 @@ export async function submitApplication(
     decision_status: decision.status,
     decision_payload: decision.payload,
     syntage_result: decision.syntage_result,
-    google_result: decision.google_result,
+    places_result: decision.places_result,
+    bureau_result: decision.bureau_result,
+    platform_result: decision.platform_result,
     updated_at: Timestamp.now(),
   };
 
   memStore.set(id, updated);
   logger.info("application_submitted", { id, status: decision.status });
   return updated;
-}
-
-export async function storeGoogleTokens(
-  applicationId: string,
-  accessToken: string,
-  refreshToken: string
-): Promise<void> {
-  const app = memStore.get(applicationId);
-  if (app) {
-    memStore.set(applicationId, {
-      ...app,
-      google_access_token: accessToken,
-      google_refresh_token: refreshToken,
-      updated_at: Timestamp.now(),
-    });
-  }
-  logger.info("google_tokens_stored", { application_id: applicationId });
 }

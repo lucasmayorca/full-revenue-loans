@@ -18,9 +18,6 @@ function serializeApp(app: ApplicationDoc) {
       app.updated_at instanceof Timestamp
         ? app.updated_at.toDate().toISOString()
         : app.updated_at,
-    // Remove sensitive token fields from response
-    google_access_token: undefined,
-    google_refresh_token: undefined,
   };
 }
 
@@ -63,7 +60,7 @@ export async function submit(
 ): Promise<void> {
   try {
     const { id } = req.params;
-    const { form_data } = req.body as { form_data: Record<string, unknown> };
+    const { form_data } = req.body as { form_data: unknown };
     const app = await submitApplication(id, form_data as Parameters<typeof submitApplication>[1]);
     res.json({
       id: app.id,

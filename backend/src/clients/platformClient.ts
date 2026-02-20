@@ -1,0 +1,43 @@
+import { env } from "../config/env";
+import { logger } from "../utils/logger";
+import { PlatformResult } from "../models/Application";
+
+export interface PlatformData {
+  avg_platform_gmv_6m: number;   // MXN/mes — GMV promedio en Rappi últimos 6 meses
+  tenure_months: number;          // Meses activo como comercio en Rappi
+  fetched_at: string;
+}
+
+// Stub demo realista: comercio maduro con buen volumen
+const DEMO_STUB: PlatformData = {
+  avg_platform_gmv_6m: 900_000,  // 900K MXN/mes en Rappi (de la tabla)
+  tenure_months: 36,              // 3 años en la plataforma
+  fetched_at: new Date().toISOString(),
+};
+
+class PlatformClient {
+  /**
+   * Obtiene datos internos de la plataforma Rappi para un merchant dado.
+   *
+   * En DEMO_MODE devuelve datos stub (900K MXN/mes, 36 meses).
+   * En producción, consultar la DB interna de Rappi (Merchant Data Platform).
+   */
+  async getMerchantData(merchantId: string): Promise<PlatformResult> {
+    if (env.DEMO_MODE) {
+      logger.info("platform_demo_mode", { merchant_id: merchantId });
+      await new Promise((r) => setTimeout(r, 100));
+      return {
+        avg_platform_gmv_6m: DEMO_STUB.avg_platform_gmv_6m,
+        tenure_months: DEMO_STUB.tenure_months,
+        fetched_at: new Date().toISOString(),
+      };
+    }
+
+    // Producción: consultar Merchant Data Platform de Rappi
+    // Endpoint interno: GET /merchants/{merchantId}/analytics/gmv
+    logger.warn("platform_production_not_configured", { merchant_id: merchantId });
+    return { fetched_at: new Date().toISOString() };
+  }
+}
+
+export const platformClient = new PlatformClient();
