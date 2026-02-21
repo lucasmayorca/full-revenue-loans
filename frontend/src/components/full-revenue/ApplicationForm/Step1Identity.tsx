@@ -64,6 +64,15 @@ export function Step1Identity({ defaultValues, onComplete }: Props) {
       />
 
       <Input
+        label="Teléfono de contacto"
+        type="tel"
+        placeholder="Ej: 5512345678"
+        hint="10 dígitos, sin espacios ni guiones. Usado para verificar tu identidad."
+        error={errors.phone?.message}
+        {...register("phone")}
+      />
+
+      <Input
         label="Email de contacto"
         type="email"
         placeholder="nombre@empresa.com"

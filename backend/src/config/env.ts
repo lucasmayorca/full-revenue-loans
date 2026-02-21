@@ -27,6 +27,11 @@ const envSchema = z
     FACEBOOK_APP_ID: z.string().default(""),
     FACEBOOK_APP_SECRET: z.string().default(""),
 
+    // Twilio — Lookup Identity Match + WhatsApp Business
+    // Crear en: https://console.twilio.com → Account Info
+    TWILIO_ACCOUNT_SID: z.string().default(""),
+    TWILIO_AUTH_TOKEN: z.string().default(""),
+
     GCP_PROJECT_ID: z.string().default("demo-local"),
     FIRESTORE_EMULATOR_HOST: z.string().optional(),
 

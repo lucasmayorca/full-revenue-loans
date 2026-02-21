@@ -1,6 +1,7 @@
 import { syntageClient } from "../clients/syntageClient";
 import { googlePlacesClient } from "../clients/googleClient";
 import { facebookClient, instagramClient } from "../clients/facebookClient";
+import { twilioClient } from "../clients/twilioClient";
 import { bureauClient } from "../clients/bureauClient";
 import { platformClient } from "../clients/platformClient";
 import { env } from "../config/env";
@@ -14,6 +15,7 @@ import {
   PlacesResult,
   FacebookResult,
   InstagramResult,
+  TwilioResult,
   BureauResult,
   PlatformResult,
 } from "../models/Application";
@@ -25,6 +27,7 @@ export interface UnderwritingDecision {
   places_result?: PlacesResult;
   facebook_result?: FacebookResult;
   instagram_result?: InstagramResult;
+  twilio_result?: TwilioResult;
   bureau_result?: BureauResult;
   platform_result?: PlatformResult;
 }
@@ -42,6 +45,11 @@ export async function runUnderwriting(
   const mapsUrl = application.form_data?.google_business_url ?? "";
   const facebookToken = application.form_data?.facebook_access_token ?? "";
   const instagramToken = application.form_data?.instagram_access_token ?? "";
+  // Datos de identidad para Twilio Lookup
+  const phone = application.form_data?.phone ?? "";
+  const legalName = application.form_data?.legal_name ?? "";
+  const [firstName, ...lastParts] = legalName.trim().split(" ");
+  const lastName = lastParts.join(" ");
 
   // ── 1. Syntage / SAT ────────────────────────────────────────────────────────
   let syntageResult: SyntageResult | undefined;
@@ -184,7 +192,41 @@ export async function runUnderwriting(
     instagramResult = { connected: false, fetched_at: new Date().toISOString() };
   }
 
-  // ── 5. Bureau de Crédito ────────────────────────────────────────────────────
+  // ── 5. Twilio Lookup (Identity Match + WhatsApp Business) ───────────────────
+  let twilioResult: TwilioResult | undefined;
+  let twilioIdentityMatch: boolean | undefined;
+  let twilioWhatsapp: boolean | undefined;
+  let twilioSimSwap: boolean | undefined;
+  let twilioAvailable = false;
+
+  try {
+    const twilio = await withTimeout(
+      twilioClient.verifyPhone(phone || "+525500000000", firstName, lastName),
+      8000,
+      "Twilio Lookup timed out"
+    );
+
+    twilioResult = twilio;
+
+    if (twilio.connected) {
+      twilioIdentityMatch = twilio.identity_match;
+      twilioWhatsapp = twilio.whatsapp_business;
+      twilioSimSwap = twilio.sim_swap_detected;
+      twilioAvailable = true;
+
+      logger.info("twilio_lookup_done", {
+        ...logCtx,
+        identity_match: twilioIdentityMatch,
+        whatsapp_business: twilioWhatsapp,
+        sim_swap: twilioSimSwap,
+      });
+    }
+  } catch (err) {
+    logger.warn("twilio_lookup_failed", { ...logCtx, error: String(err) });
+    twilioResult = { connected: false, fetched_at: new Date().toISOString() };
+  }
+
+  // ── 7. Bureau de Crédito ────────────────────────────────────────────────────
   let bureauResult: BureauResult | undefined;
   let bureauScore: number | undefined;
   let bureauAvailable = false;
@@ -211,7 +253,7 @@ export async function runUnderwriting(
     logger.warn("bureau_fetch_failed", { ...logCtx, error: String(err) });
   }
 
-  // ── 6. Platform (Rappi interno) ─────────────────────────────────────────────
+  // ── 8. Platform (Rappi interno) ─────────────────────────────────────────────
   let platformResult: PlatformResult | undefined;
   let platformGmv: number | undefined;
   let tenureMonths: number | undefined;
@@ -241,12 +283,13 @@ export async function runUnderwriting(
     logger.warn("platform_fetch_failed", { ...logCtx, error: String(err) });
   }
 
-  // ── 7. Consolidar y calcular total ponderado ────────────────────────────────
+  // ── 9. Consolidar y calcular total ponderado ────────────────────────────────
   const dataSources = [
     ...(syntageAvailable ? ["syntage"] : []),
     ...(placesAvailable ? ["google_places"] : []),
     ...(facebookAvailable ? ["facebook"] : []),
     ...(instagramAvailable ? ["instagram"] : []),
+    ...(twilioAvailable ? ["twilio"] : []),
     ...(bureauAvailable ? ["bureau"] : []),
     ...(platformAvailable ? ["platform"] : []),
   ];
@@ -258,7 +301,10 @@ export async function runUnderwriting(
     tenureMonths,
     syntageCompliance,
     facebookFanCount,
-    instagramFollowers
+    instagramFollowers,
+    twilioIdentityMatch,
+    twilioWhatsapp,
+    twilioSimSwap
   );
 
   const status: DecisionStatus = "MANUAL_REVIEW";
@@ -269,6 +315,7 @@ export async function runUnderwriting(
       placesAvailable,
       facebookAvailable,
       instagramAvailable,
+      twilioAvailable,
       bureauAvailable,
       platformAvailable,
       syntageMonthlyRevenue,
@@ -278,6 +325,9 @@ export async function runUnderwriting(
       syntageCompliance,
       facebookFanCount,
       instagramFollowers,
+      twilioIdentityMatch,
+      twilioWhatsapp,
+      twilioSimSwap,
     }),
     syntage_monthly_revenue: syntageMonthlyRevenue,
     syntage_tax_compliance: syntageCompliance,
@@ -290,6 +340,10 @@ export async function runUnderwriting(
     facebook_rating: facebookResult?.rating,
     instagram_followers: instagramFollowers,
     instagram_media_count: instagramResult?.media_count,
+    twilio_identity_match: twilioIdentityMatch,
+    twilio_whatsapp_business: twilioWhatsapp,
+    twilio_sim_swap_detected: twilioSimSwap,
+    twilio_line_type: twilioResult?.line_type,
     bureau_score: bureauScore,
     platform_gmv_6m: platformGmv,
     platform_tenure_months: tenureMonths,
@@ -313,6 +367,7 @@ export async function runUnderwriting(
     places_result: placesResult,
     facebook_result: facebookResult,
     instagram_result: instagramResult,
+    twilio_result: twilioResult,
     bureau_result: bureauResult,
     platform_result: platformResult,
   };
@@ -329,7 +384,10 @@ function computeTotalRevenue(
   tenureMonths: number | undefined,
   taxCompliance: boolean,
   facebookFans: number | undefined,
-  instagramFollowers: number | undefined
+  instagramFollowers: number | undefined,
+  twilioIdentityMatch: boolean | undefined,
+  twilioWhatsapp: boolean | undefined,
+  twilioSimSwap: boolean | undefined
 ): number {
   if (syntageMonthly === 0) return 0;
 
@@ -352,6 +410,15 @@ function computeTotalRevenue(
 
   const socialBoost = 1 + facebookBoost + instagramBoost;
 
+  // Twilio Identity Match: +5% si nombre coincide con operador (confianza de identidad)
+  const identityBoost = twilioIdentityMatch === true ? 1.05 : 1.0;
+
+  // WhatsApp Business: +3% si tiene cuenta de WhatsApp Business activa
+  const whatsappBoost = twilioWhatsapp === true ? 1.03 : 1.0;
+
+  // SIM Swap reciente: penalización -10% (señal de fraude)
+  const simSwapPenalty = twilioSimSwap === true ? 0.90 : 1.0;
+
   const bureauMultiplier =
     bureauScore === undefined ? 1.0
     : bureauScore > 700       ? 1.10
@@ -367,7 +434,15 @@ function computeTotalRevenue(
   const complianceMultiplier = taxCompliance ? 1.0 : 0.80;
 
   return Math.round(
-    syntageMonthly * placesBoost * socialBoost * bureauMultiplier * tenureMultiplier * complianceMultiplier
+    syntageMonthly *
+    placesBoost *
+    socialBoost *
+    identityBoost *
+    whatsappBoost *
+    simSwapPenalty *
+    bureauMultiplier *
+    tenureMultiplier *
+    complianceMultiplier
   );
 }
 
@@ -376,6 +451,7 @@ function buildReason(params: {
   placesAvailable: boolean;
   facebookAvailable: boolean;
   instagramAvailable: boolean;
+  twilioAvailable: boolean;
   bureauAvailable: boolean;
   platformAvailable: boolean;
   syntageMonthlyRevenue: number;
@@ -385,6 +461,9 @@ function buildReason(params: {
   syntageCompliance: boolean;
   facebookFanCount: number | undefined;
   instagramFollowers: number | undefined;
+  twilioIdentityMatch: boolean | undefined;
+  twilioWhatsapp: boolean | undefined;
+  twilioSimSwap: boolean | undefined;
 }): string {
   const parts: string[] = [
     "Solicitud en revisión manual para determinar nuevo monto Préstamo MÁS.",
@@ -407,6 +486,13 @@ function buildReason(params: {
   }
   if (params.instagramAvailable && params.instagramFollowers !== undefined) {
     parts.push(`Instagram: ${params.instagramFollowers.toLocaleString("es-MX")} seguidores.`);
+  }
+  if (params.twilioAvailable) {
+    const twilioNotes: string[] = [];
+    if (params.twilioIdentityMatch === true) twilioNotes.push("identidad verificada ✓");
+    if (params.twilioWhatsapp === true) twilioNotes.push("WhatsApp Business activo ✓");
+    if (params.twilioSimSwap === true) twilioNotes.push("⚠️ SIM swap reciente detectado");
+    if (twilioNotes.length > 0) parts.push(`Twilio Lookup: ${twilioNotes.join(", ")}.`);
   }
   if (params.bureauAvailable && params.bureauScore !== undefined) {
     parts.push(`Score Buró de Crédito: ${params.bureauScore}/850.`);

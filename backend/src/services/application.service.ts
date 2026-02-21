@@ -62,6 +62,7 @@ export async function submitApplication(
     places_result: decision.places_result,
     facebook_result: decision.facebook_result,
     instagram_result: decision.instagram_result,
+    twilio_result: decision.twilio_result,
     bureau_result: decision.bureau_result,
     platform_result: decision.platform_result,
     updated_at: Timestamp.now(),

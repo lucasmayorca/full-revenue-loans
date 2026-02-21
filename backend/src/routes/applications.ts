@@ -23,6 +23,7 @@ const formDataSchema = z.object({
   consent_given: z.literal(true, {
     errorMap: () => ({ message: "Consent is required" }),
   }),
+  phone: z.string().optional(),
   google_business_url: z.string().url().optional().or(z.literal("")),
   facebook_access_token: z.string().optional(),
   instagram_access_token: z.string().optional(),

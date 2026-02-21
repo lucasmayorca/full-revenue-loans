@@ -11,6 +11,7 @@ export interface FormData {
   tax_id: string;
   ciec: string;
   address: string;
+  phone?: string;
   email: string;
   monthly_revenue_estimate: number;
   revenue_sources: string[];
@@ -78,6 +79,24 @@ export interface InstagramResult {
   fetched_at: string;
 }
 
+// ── Twilio Lookup (Identity Match + WhatsApp Business) ───────────────────────
+export interface TwilioResult {
+  connected: boolean;
+  phone_number?: string;
+  // Identity Match
+  identity_match?: boolean;         // true si nombre coincide con registros del operador
+  name_match_score?: string;        // "high" | "medium" | "low" | "no_data"
+  // WhatsApp Business
+  whatsapp_business?: boolean;      // true si tiene cuenta de WhatsApp Business activa
+  // Line Intelligence
+  line_type?: string;               // "mobile" | "landline" | "voip" | "toll_free"
+  // Antifraude
+  sim_swap_detected?: boolean;      // true si hubo cambio de SIM en últimas 24-72h
+  carrier_name?: string;
+  country_code?: string;
+  fetched_at: string;
+}
+
 // ── Bureau de Crédito ────────────────────────────────────────────────────────
 export interface BureauResult {
   bureau_score?: number;             // 300–850
@@ -115,6 +134,12 @@ export interface DecisionPayload {
   instagram_followers?: number;
   instagram_media_count?: number;
 
+  // Twilio Lookup
+  twilio_identity_match?: boolean;
+  twilio_whatsapp_business?: boolean;
+  twilio_sim_swap_detected?: boolean;
+  twilio_line_type?: string;
+
   // Bureau de Crédito
   bureau_score?: number;
 
@@ -141,6 +166,7 @@ export interface ApplicationDoc {
   places_result?: PlacesResult;
   facebook_result?: FacebookResult;
   instagram_result?: InstagramResult;
+  twilio_result?: TwilioResult;
   bureau_result?: BureauResult;
   platform_result?: PlatformResult;
   decision_payload?: DecisionPayload;

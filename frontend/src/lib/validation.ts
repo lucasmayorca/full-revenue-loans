@@ -15,6 +15,11 @@ export const step1Schema = z.object({
     .min(8, "La Clave CIEC debe tener al menos 8 caracteres")
     .max(20, "La Clave CIEC es demasiado larga"),
   address: z.string().min(5, "La dirección es demasiado corta").max(500),
+  phone: z
+    .string()
+    .min(10, "El teléfono debe tener al menos 10 dígitos")
+    .max(15)
+    .regex(/^\+?[0-9]{10,15}$/, "Formato inválido (ej: 5512345678)"),
   email: z.string().email("Email inválido"),
 });
 

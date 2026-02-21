@@ -26,6 +26,12 @@ export interface DecisionPayload {
   instagram_followers?: number;
   instagram_media_count?: number;
 
+  // Twilio Lookup
+  twilio_identity_match?: boolean;
+  twilio_whatsapp_business?: boolean;
+  twilio_sim_swap_detected?: boolean;
+  twilio_line_type?: string;
+
   // Bureau de Crédito
   bureau_score?: number;
 
@@ -55,6 +61,7 @@ export interface Step1Data {
   tax_id: string;
   ciec: string;
   address: string;
+  phone?: string;
   email: string;
 }
 
