@@ -146,18 +146,30 @@ export function Step3Consent({
   onFacebookConnect,
   onInstagramConnect,
 }: Props) {
+  const savedUrl = typeof window !== "undefined"
+    ? (sessionStorage.getItem("fr_google_url") ?? "")
+    : "";
+
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm<Step3Values>({
     resolver: zodResolver(step3Schema),
-    defaultValues: { google_business_url: "" },
+    defaultValues: { google_business_url: savedUrl },
   });
+
+  // Persistir la URL en sessionStorage mientras el usuario escribe
+  const googleUrl = watch("google_business_url");
+  if (typeof window !== "undefined" && googleUrl !== undefined) {
+    sessionStorage.setItem("fr_google_url", googleUrl);
+  }
 
   const anyConnected = facebookConnected || instagramConnected;
 
   function onSubmit(data: Step3Values) {
+    sessionStorage.removeItem("fr_google_url");
     onComplete(data);
   }
 
