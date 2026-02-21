@@ -46,6 +46,14 @@ export function ApplicationForm() {
       setFacebookToken(fbToken);
       if (appId) {
         setApplicationId(appId);
+        // Restaurar formData desde sessionStorage si existe
+        const saved = sessionStorage.getItem("fr_form_data");
+        if (saved) {
+          try {
+            setFormData(JSON.parse(saved));
+          } catch { /* ignore */ }
+          sessionStorage.removeItem("fr_form_data");
+        }
         setCurrentStep(3);
       }
     }
@@ -88,9 +96,11 @@ export function ApplicationForm() {
       setError("Primero completá el paso 1.");
       return;
     }
+    // Guardar formData en sessionStorage antes del redirect (se pierde al navegar)
+    sessionStorage.setItem("fr_form_data", JSON.stringify(formData));
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
     window.location.href = `${apiUrl}/full-revenue/oauth/facebook/redirect?applicationId=${applicationId}`;
-  }, [applicationId]);
+  }, [applicationId, formData]);
 
   // Instagram usa el mismo flujo que Facebook (Graph API)
   const handleInstagramConnect = useCallback(() => {

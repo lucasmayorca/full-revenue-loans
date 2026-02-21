@@ -19,6 +19,7 @@ export function createApp(): express.Application {
   });
 
   app.use("/full-revenue/applications", applicationsRouter);
+  app.use("/full-revenue", applicationsRouter);
   app.use("/events", eventsRouter);
 
   app.use((_req, res) => {

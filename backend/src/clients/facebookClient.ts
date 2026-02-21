@@ -89,7 +89,7 @@ class FacebookClient {
     const params = new URLSearchParams({
       client_id: env.FACEBOOK_APP_ID,
       redirect_uri: `${env.FRONTEND_URL.replace("3000", "3001")}/full-revenue/oauth/facebook/callback`,
-      scope: "pages_show_list,pages_read_engagement,instagram_basic,business_management",
+      scope: "public_profile",
       state: applicationId,
       response_type: "code",
     });
