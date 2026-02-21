@@ -168,26 +168,26 @@ export function StatusCard({ application }: Props) {
                   </span>
                 </div>
               )}
-              {/* Twilio Lookup */}
-              {application.decision_payload.twilio_identity_match !== undefined && (
+              {/* Twilio Lookup — solo mostrar si hay algo positivo o una alerta de fraude */}
+              {(application.decision_payload.twilio_identity_match === true ||
+                application.decision_payload.twilio_whatsapp_business === true ||
+                application.decision_payload.twilio_sim_swap_detected === true) && (
                 <div className="flex items-center justify-between bg-indigo-50 rounded-lg px-3 py-2">
                   <span className="text-xs text-indigo-600 flex items-center gap-1.5">
                     <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="#F22F46">
                       <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 4a8 8 0 110 16A8 8 0 0112 4zm-1 4v4.586l3.707 3.707-1.414 1.414L9 13.414V8h2z"/>
                     </svg>
-                    Verificación de identidad
+                    Verificación Twilio
                   </span>
                   <span className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-                    {application.decision_payload.twilio_identity_match ? (
+                    {application.decision_payload.twilio_identity_match && (
                       <span className="text-green-600 font-medium">Identidad ✓</span>
-                    ) : (
-                      <span className="text-gray-400 font-normal">Sin match</span>
                     )}
                     {application.decision_payload.twilio_whatsapp_business && (
-                      <span className="text-green-600 font-medium">· WhatsApp ✓</span>
+                      <span className="text-green-600 font-medium">WhatsApp ✓</span>
                     )}
                     {application.decision_payload.twilio_sim_swap_detected && (
-                      <span className="text-red-500 font-medium">· SIM swap ⚠️</span>
+                      <span className="text-red-500 font-medium">SIM swap ⚠️</span>
                     )}
                   </span>
                 </div>
