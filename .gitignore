@@ -33,3 +33,4 @@ Thumbs.db
 !package.json
 !tsconfig.json
 !package-lock.json
+!railway.json

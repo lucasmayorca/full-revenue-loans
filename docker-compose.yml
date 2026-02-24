@@ -1,22 +1,38 @@
 version: "3.9"
 
-# Para correr localmente sin Docker, ver README.md — sección "Desarrollo local"
-# Prerrequisito: tener backend/.env copiado desde backend/.env.example
+# Desarrollo local:
+#   1. cp backend/.env.example backend/.env
+#   2. docker-compose up --build
+#   Frontend: http://localhost:3000  |  Backend: http://localhost:3001
+#
+# Deploy en Railway:
+#   Railway detecta este archivo automáticamente.
+#   Variables a configurar en el servicio "backend":
+#     DEMO_MODE=true  PORT=3001  NODE_ENV=production
+#   Variables a configurar en el servicio "frontend" (build arg):
+#     NEXT_PUBLIC_API_URL=https://<url-backend>.up.railway.app/full-revenue
 
 services:
   backend:
     build:
       context: ./backend
+      dockerfile: Dockerfile
     ports:
       - "3001:3001"
     env_file:
       - ./backend/.env
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   frontend:
     build:
       context: ./frontend
+      dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: "http://localhost:3001"
+        NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL:-http://localhost:3001/full-revenue}"
     ports:
       - "3000:3000"
     depends_on:
