@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { ApplicationForm } from "@/components/full-revenue/ApplicationForm";
+import { GamifiedApplicationForm } from "@/components/full-revenue/GamifiedFlow";
 import { Spinner } from "@/components/ui/Spinner";
 
 export default function ApplyPage() {
@@ -11,7 +11,7 @@ export default function ApplyPage() {
         </div>
       }
     >
-      <ApplicationForm />
+      <GamifiedApplicationForm />
     </Suspense>
   );
 }

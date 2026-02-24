@@ -48,17 +48,17 @@ export function FullRevenueBanner() {
         Préstamo MÁS
       </p>
 
-      {/* Monto destacado */}
-      <p className="text-3xl font-bold leading-tight mb-1">
-        Hasta 5x
+      {/* Headline sin monto fijo */}
+      <p className="text-2xl font-bold leading-tight mb-1">
+        Crédito ampliado
       </p>
       <p className="text-base font-semibold opacity-90 mb-2">
-        más crédito disponible
+        basado en tus ingresos reales
       </p>
 
       {/* Descripción */}
       <p className="text-sm opacity-75 leading-relaxed flex-1">
-        Conectá tus datos fiscales y plataformas digitales para acceder a más financiamiento
+        Conectá tus datos fiscales y plataformas digitales. Calculamos tu oferta personalizada en minutos.
       </p>
 
       {/* Características rápidas */}

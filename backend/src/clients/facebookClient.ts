@@ -88,7 +88,7 @@ class FacebookClient {
   buildAuthUrl(applicationId: string): string {
     const params = new URLSearchParams({
       client_id: env.FACEBOOK_APP_ID,
-      redirect_uri: `${env.FRONTEND_URL.replace("3000", "3001")}/full-revenue/oauth/facebook/callback`,
+      redirect_uri: `${env.BACKEND_URL}/full-revenue/oauth/facebook/callback`,
       scope: "public_profile",
       state: applicationId,
       response_type: "code",
@@ -104,7 +104,7 @@ class FacebookClient {
       params: {
         client_id: env.FACEBOOK_APP_ID,
         client_secret: env.FACEBOOK_APP_SECRET,
-        redirect_uri: `${env.FRONTEND_URL.replace("3000", "3001")}/full-revenue/oauth/facebook/callback`,
+        redirect_uri: `${env.BACKEND_URL}/full-revenue/oauth/facebook/callback`,
         code,
       },
       timeout: 8000,

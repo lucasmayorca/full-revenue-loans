@@ -13,9 +13,6 @@ export interface FormData {
   address: string;
   phone?: string;
   email: string;
-  monthly_revenue_estimate: number;
-  revenue_sources: string[];
-  notes?: string;
   consent_given: boolean;
   // Opcional — URL pública de Google Maps (sin OAuth)
   google_business_url?: string;
@@ -108,7 +105,19 @@ export interface BureauResult {
 export interface PlatformResult {
   avg_platform_gmv_6m?: number;     // MXN/mes promedio últimos 6 meses en Rappi
   tenure_months?: number;            // meses activo en la plataforma
+  pre_approved_amount?: number;      // oferta de crédito pre-aprobada basada en ventas Rappi
   fetched_at: string;
+}
+
+// ── Oferta de crédito calculada ──────────────────────────────────────────────
+export interface CreditOffer {
+  approved_amount: number;        // Monto aprobado en MXN
+  interest_rate_monthly: number;  // Tasa mensual ej: 0.035 = 3.5%
+  installments: number;           // Cantidad de cuotas (meses)
+  monthly_payment: number;        // Cuota mensual total en MXN
+  withholding_amount: number;     // Monto retenido por la plataforma por mes
+  direct_debit_amount: number;    // Monto cobrado por débito directo si retención insuficiente
+  currency: string;               // "MXN"
 }
 
 // ── Decision Payload (consolidado para analista) ─────────────────────────────
@@ -152,6 +161,58 @@ export interface DecisionPayload {
   threshold_used: number;
   data_sources: string[];
   decided_at: string;
+
+  // Oferta de crédito calculada
+  credit_offer?: CreditOffer;
+}
+
+// ── KYC Data (post-aprobación) ───────────────────────────────────────────────
+export type KycStatus = "NOT_STARTED" | "SUBMITTED" | "VERIFIED" | "REJECTED";
+
+export interface KycPersonalData {
+  first_name: string;
+  last_name: string;
+  birth_date: string;
+  curp: string;
+  nationality: string;
+  marital_status: string;
+}
+
+export interface KycAddressData {
+  street: string;
+  neighborhood: string;
+  postal_code: string;
+  city: string;
+  state: string;
+}
+
+export interface KycBankData {
+  clabe: string;
+  bank_name: string;
+  account_type: string;
+  account_holder: string;
+}
+
+export interface KycDocuments {
+  id_front_path: string;
+  id_back_path: string;
+  proof_of_address_path: string;
+}
+
+export interface KycData {
+  personal: KycPersonalData;
+  address: KycAddressData;
+  bank: KycBankData;
+  documents: KycDocuments;
+  submitted_at: string;
+}
+
+// ── Consent data ────────────────────────────────────────────────────────────
+export interface ConsentData {
+  bureau_consent: boolean;
+  twilio_consent: boolean;
+  data_processing_consent: boolean;
+  consented_at: string;
 }
 
 // ── Application Document ─────────────────────────────────────────────────────
@@ -162,6 +223,7 @@ export interface ApplicationDoc {
   updated_at: Timestamp;
   decision_status: DecisionStatus;
   form_data?: Partial<FormData>;
+  consent_data?: ConsentData;
   syntage_result?: SyntageResult;
   places_result?: PlacesResult;
   facebook_result?: FacebookResult;
@@ -171,4 +233,6 @@ export interface ApplicationDoc {
   platform_result?: PlatformResult;
   decision_payload?: DecisionPayload;
   underwriting_notes?: string;
+  kyc_status?: KycStatus;
+  kyc_data?: KycData;
 }

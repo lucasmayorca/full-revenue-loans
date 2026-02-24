@@ -10,11 +10,12 @@ export default function StatusPage() {
   const applicationId = params.applicationId;
   const { application, error, isLoading } = useApplicationStatus(applicationId);
 
+  // Cargando datos del servidor (primera petición)
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <Spinner size="lg" />
-        <p className="text-gray-500">Procesando tu solicitud...</p>
+        <p className="text-gray-500">Cargando estado de tu solicitud...</p>
       </div>
     );
   }
@@ -32,9 +33,18 @@ export default function StatusPage() {
     );
   }
 
+  if (!application) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <Spinner size="lg" />
+        <p className="text-gray-500">Procesando...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="px-4 py-8">
-      <StatusCard application={application!} />
+    <div className="px-4 py-8 max-w-md mx-auto w-full">
+      <StatusCard application={application} />
     </div>
   );
 }

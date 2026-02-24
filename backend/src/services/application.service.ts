@@ -1,7 +1,16 @@
 import { v4 as uuidv4 } from "uuid";
 import { Timestamp } from "@google-cloud/firestore";
-import { ApplicationDoc, FormData } from "../models/Application";
-import { runUnderwriting } from "./underwriting.service";
+import {
+  ApplicationDoc,
+  FormData,
+  ConsentData,
+  KycData,
+  KycPersonalData,
+  KycAddressData,
+  KycBankData,
+  KycDocuments,
+} from "../models/Application";
+import { runUnderwriting, runPrequalification } from "./underwriting.service";
 import { logger } from "../utils/logger";
 
 // In-memory store — works without Firestore for local dev / DEMO_MODE
@@ -71,4 +80,94 @@ export async function submitApplication(
   memStore.set(id, updated);
   logger.info("application_submitted", { id, status: decision.status });
   return updated;
+}
+
+export async function updateConsent(
+  id: string,
+  consent: Omit<ConsentData, "consented_at">
+): Promise<ApplicationDoc> {
+  const application = memStore.get(id);
+  if (!application) {
+    const err = new Error(`Application ${id} not found`) as Error & {
+      statusCode: number;
+      isOperational: boolean;
+    };
+    err.statusCode = 404;
+    err.isOperational = true;
+    throw err;
+  }
+
+  const updated: ApplicationDoc = {
+    ...application,
+    consent_data: {
+      ...consent,
+      consented_at: new Date().toISOString(),
+    },
+    updated_at: Timestamp.now(),
+  };
+
+  memStore.set(id, updated);
+  logger.info("consent_updated", { id });
+  return updated;
+}
+
+export async function submitKyc(
+  id: string,
+  personal: KycPersonalData,
+  address: KycAddressData,
+  bank: KycBankData,
+  documents: KycDocuments
+): Promise<ApplicationDoc> {
+  const application = memStore.get(id);
+  if (!application) {
+    const err = new Error(`Application ${id} not found`) as Error & {
+      statusCode: number;
+      isOperational: boolean;
+    };
+    err.statusCode = 404;
+    err.isOperational = true;
+    throw err;
+  }
+
+  if (application.decision_status !== "APPROVED" && application.decision_status !== "MANUAL_REVIEW") {
+    const err = new Error("KYC can only be submitted for approved applications") as Error & {
+      statusCode: number;
+      isOperational: boolean;
+    };
+    err.statusCode = 400;
+    err.isOperational = true;
+    throw err;
+  }
+
+  const kycData: KycData = {
+    personal,
+    address,
+    bank,
+    documents,
+    submitted_at: new Date().toISOString(),
+  };
+
+  const updated: ApplicationDoc = {
+    ...application,
+    kyc_status: "SUBMITTED",
+    kyc_data: kycData,
+    updated_at: Timestamp.now(),
+  };
+
+  memStore.set(id, updated);
+  logger.info("kyc_submitted", { id });
+  return updated;
+}
+
+export interface PrequalResult {
+  bureau_offer: number;
+  social_offer: number;
+  base_amount: number;
+}
+
+export async function prequalify(
+  id: string,
+  merchantId: string
+): Promise<PrequalResult> {
+  return runPrequalification(merchantId);
 }

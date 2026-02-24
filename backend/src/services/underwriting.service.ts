@@ -9,6 +9,7 @@ import { logger } from "../utils/logger";
 import { withTimeout } from "../utils/timeout";
 import {
   ApplicationDoc,
+  CreditOffer,
   DecisionPayload,
   DecisionStatus,
   SyntageResult,
@@ -277,6 +278,7 @@ export async function runUnderwriting(
         ...logCtx,
         gmv_6m: platformGmv,
         tenure_months: tenureMonths,
+        pre_approved_amount: platform.pre_approved_amount,
       });
     }
   } catch (err) {
@@ -307,9 +309,28 @@ export async function runUnderwriting(
     twilioSimSwap
   );
 
-  const status: DecisionStatus = "MANUAL_REVIEW";
+  // ── 10. Calcular oferta de crédito ─────────────────────────────────────────
+  // Base = oferta pre-aprobada de Rappi (ventas plataforma), multiplicadores fijos por tier
+  const preApprovedBase = platformResult?.pre_approved_amount ?? 50_000;
+  const hasSocial = placesAvailable || facebookAvailable || instagramAvailable;
+  const hasFiscal = syntageAvailable;
+  const creditOffer = computeCreditOffer(
+    preApprovedBase,
+    bureauScore,
+    dataSources.length,
+    hasSocial,
+    hasFiscal
+  );
+
+  // ── 11. Determinar estado ─────────────────────────────────────────────────
+  const status: DecisionStatus = totalRevenue >= env.APPROVAL_THRESHOLD
+    ? "APPROVED"
+    : totalRevenue > 0
+    ? "MANUAL_REVIEW"
+    : "REJECTED";
 
   const payload: DecisionPayload = {
+    credit_offer: creditOffer,
     reason: buildReason({
       syntageAvailable,
       placesAvailable,
@@ -502,4 +523,96 @@ function buildReason(params: {
   }
 
   return parts.join(" ");
+}
+
+/**
+ * Calcula la oferta de crédito usando multiplicadores fijos sobre el ingreso base.
+ *
+ * La base (syntageMonthly) varía por merchant. Los multiplicadores son fijos:
+ *  - Solo buró:               base × 1.5
+ *  - Buró + social:           base × 2.0
+ *  - Buró + social + fiscal:  base × 4.0
+ *
+ * La tasa y condiciones varían según el bureau score.
+ * Repago: 20% retención de ventas Rappi + débito directo del remanente.
+ */
+function computeCreditOffer(
+  baseRevenue: number,
+  bureauScore: number | undefined,
+  dataSourceCount: number,
+  hasSocial: boolean = false,
+  hasFiscal: boolean = false
+): CreditOffer {
+  // Fixed multipliers, variable base
+  const multiplier = hasFiscal ? 4.0 : hasSocial ? 2.0 : 1.5;
+  const approvedAmount = Math.round((baseRevenue * multiplier) / 1000) * 1000;
+
+  // Tasa mensual basada en bureau score
+  const rate =
+    bureauScore !== undefined && bureauScore > 700 ? 0.030
+    : bureauScore !== undefined && bureauScore > 600 ? 0.034
+    :                                                  0.038;
+
+  const installments = 12;
+
+  // Cuota mensual: fórmula de anualidad
+  const monthlyPayment = Math.round(
+    (approvedAmount * rate) / (1 - Math.pow(1 + rate, -installments))
+  );
+
+  // Repago: 20% retención Rappi + débito directo del remanente
+  const withholdingAmount = Math.round(monthlyPayment * 0.20);
+  const directDebitAmount = monthlyPayment - withholdingAmount;
+
+  return {
+    approved_amount: approvedAmount,
+    interest_rate_monthly: rate,
+    installments,
+    monthly_payment: monthlyPayment,
+    withholding_amount: withholdingAmount,
+    direct_debit_amount: directDebitAmount,
+    currency: "MXN",
+  };
+}
+
+/**
+ * Pre-calificación ligera: obtiene la oferta pre-aprobada de Rappi (ventas plataforma)
+ * y aplica los multiplicadores fijos:
+ *  - Base:   pre_approved_amount (oferta pre-aprobada de Rappi)
+ *  - Buró:   base × 1.5
+ *  - Social: base × 2.0
+ *  - Fiscal: base × 4.0
+ */
+export async function runPrequalification(
+  merchantId: string
+): Promise<{ base_amount: number; bureau_offer: number; social_offer: number; fiscal_offer: number }> {
+  let baseAmount = 50_000; // fallback
+
+  try {
+    const platform = await withTimeout(
+      platformClient.getMerchantData(merchantId),
+      5000,
+      "Platform prequal timed out"
+    );
+    if (platform.pre_approved_amount) {
+      baseAmount = platform.pre_approved_amount;
+    }
+  } catch {
+    // fallback to default
+  }
+
+  // Fixed multipliers applied to pre-approved base
+  const bureauOffer = Math.round((baseAmount * 1.5) / 1000) * 1000;
+  const socialOffer = Math.round((baseAmount * 2.0) / 1000) * 1000;
+  const fiscalOffer = Math.round((baseAmount * 4.0) / 1000) * 1000;
+
+  logger.info("prequal_completed", {
+    merchant_id: merchantId,
+    base_amount: baseAmount,
+    bureau_offer: bureauOffer,
+    social_offer: socialOffer,
+    fiscal_offer: fiscalOffer,
+  });
+
+  return { base_amount: baseAmount, bureau_offer: bureauOffer, social_offer: socialOffer, fiscal_offer: fiscalOffer };
 }

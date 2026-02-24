@@ -28,7 +28,7 @@ export function Step1Identity({ defaultValues, onComplete }: Props) {
           Datos del negocio
         </h2>
         <p className="text-sm text-gray-500">
-          Información fiscal de tu empresa para consultar tus ingresos
+          Información básica de tu empresa para iniciar la evaluación
         </p>
       </div>
 
@@ -37,23 +37,6 @@ export function Step1Identity({ defaultValues, onComplete }: Props) {
         placeholder="Ej: Restaurante El Buen Sabor S.A. de C.V."
         error={errors.legal_name?.message}
         {...register("legal_name")}
-      />
-
-      <Input
-        label="RFC"
-        placeholder="Ej: REST123456ABC"
-        error={errors.tax_id?.message}
-        hint="12 o 13 caracteres, tal como aparece en tu constancia fiscal"
-        {...register("tax_id")}
-      />
-
-      <Input
-        label="Clave CIEC"
-        type="password"
-        placeholder="Tu contraseña del SAT"
-        error={errors.ciec?.message}
-        hint="Usamos tu CIEC para consultar tus datos fiscales en el SAT vía Syntage"
-        {...register("ciec")}
       />
 
       <Input
@@ -66,8 +49,8 @@ export function Step1Identity({ defaultValues, onComplete }: Props) {
       <Input
         label="Teléfono de contacto"
         type="tel"
-        placeholder="Ej: 5512345678"
-        hint="10 dígitos, sin espacios ni guiones. Usado para verificar tu identidad."
+        placeholder="Ej: 55 1234-5678 o +52 55 1234 5678"
+        hint="Podés incluir espacios, guiones o el código de país. Usado para verificar tu identidad."
         error={errors.phone?.message}
         {...register("phone")}
       />
@@ -79,11 +62,6 @@ export function Step1Identity({ defaultValues, onComplete }: Props) {
         error={errors.email?.message}
         {...register("email")}
       />
-
-      <div className="bg-blue-50 rounded-xl p-3 text-xs text-blue-700">
-        🔒 Tu Clave CIEC se transmite de forma encriptada y solo se usa para
-        consultar tu historial fiscal. No la almacenamos.
-      </div>
 
       <Button type="submit" fullWidth size="lg">
         Continuar

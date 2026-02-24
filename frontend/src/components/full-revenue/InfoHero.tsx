@@ -20,9 +20,8 @@ export function InfoHero() {
         Más crédito, más posibilidades
       </h2>
       <p className="text-gray-600 leading-relaxed">
-        Evaluamos tu ingreso total — ventas en Rappi y fuera de la plataforma
-        — para darte hasta <strong>5 veces más monto</strong> que con el
-        préstamo básico.
+        Evaluamos tus datos fiscales, ventas en Rappi y presencia digital
+        para darte una oferta de crédito <strong>personalizada</strong> basada en tus ingresos reales.
       </p>
     </div>
   );

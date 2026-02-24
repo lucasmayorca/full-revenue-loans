@@ -36,6 +36,7 @@ const envSchema = z
     FIRESTORE_EMULATOR_HOST: z.string().optional(),
 
     FRONTEND_URL: z.string().url().default("http://localhost:3000"),
+    BACKEND_URL: z.string().url().default("http://localhost:3001"),
   })
   .superRefine((data, ctx) => {
     // En producción, las credenciales reales son obligatorias

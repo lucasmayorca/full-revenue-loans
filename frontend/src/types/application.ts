@@ -44,6 +44,19 @@ export interface DecisionPayload {
   threshold_used: number;
   data_sources: string[];
   decided_at: string;
+
+  // Oferta de crédito final
+  credit_offer?: CreditOffer;
+}
+
+export interface CreditOffer {
+  approved_amount: number;        // Monto aprobado en MXN
+  interest_rate_monthly: number;  // Tasa mensual ej: 0.035 = 3.5%
+  installments: number;           // Cantidad de cuotas (meses)
+  monthly_payment: number;        // Cuota mensual total en MXN
+  withholding_amount: number;     // Monto retenido por la plataforma por mes
+  direct_debit_amount: number;    // Monto cobrado por débito directo si retención insuficiente
+  currency: string;               // "MXN"
 }
 
 export interface Application {
@@ -58,24 +71,21 @@ export interface Application {
 
 export interface Step1Data {
   legal_name: string;
-  tax_id: string;
-  ciec: string;
+  tax_id?: string;
+  ciec?: string;
   address: string;
   phone?: string;
   email: string;
 }
 
 export interface Step2Data {
-  monthly_revenue_estimate: number;
-  revenue_sources: string[];
-  notes?: string;
+  google_business_url?: string;
+  facebook_access_token?: string;
+  instagram_access_token?: string;
 }
 
 export interface Step3Data {
   consent_given: true;
-  google_business_url?: string;
-  facebook_access_token?: string;
-  instagram_access_token?: string;
 }
 
 export type AllFormData = Step1Data & Step2Data & Step3Data;

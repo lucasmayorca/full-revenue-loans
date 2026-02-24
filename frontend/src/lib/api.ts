@@ -54,6 +54,49 @@ export const api = {
   getApplication: (id: string) =>
     request<Application>(`/full-revenue/applications/${id}`),
 
+  prequalify: (id: string) =>
+    request<{ base_amount: number; bureau_offer: number; social_offer: number; fiscal_offer: number }>(
+      `/full-revenue/applications/${id}/prequal`
+    ),
+
+  submitConsent: (id: string, consent: { bureau_consent: true; twilio_consent: true; data_processing_consent: true }) =>
+    request<{ message: string }>(
+      `/full-revenue/applications/${id}/consent`,
+      {
+        method: "POST",
+        body: JSON.stringify(consent),
+      }
+    ),
+
+  submitKyc: async (
+    id: string,
+    personal: Record<string, string>,
+    address: Record<string, string>,
+    bank: Record<string, string>,
+    files: { id_front: File; id_back: File; proof_of_address: File }
+  ) => {
+    const formData = new FormData();
+    formData.append("personal", JSON.stringify(personal));
+    formData.append("address", JSON.stringify(address));
+    formData.append("bank", JSON.stringify(bank));
+    formData.append("id_front", files.id_front);
+    formData.append("id_back", files.id_back);
+    formData.append("proof_of_address", files.proof_of_address);
+
+    const res = await fetch(`${BASE_URL}/full-revenue/applications/${id}/kyc`, {
+      method: "POST",
+      body: formData,
+      // No Content-Type header — browser sets multipart boundary automatically
+    });
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new ApiError(res.status, body.error ?? "KYC submission failed", body.details);
+    }
+
+    return res.json() as Promise<{ id: string; kyc_status: string; message: string }>;
+  },
+
   trackEvent: (
     eventName: string,
     merchantId: string,

@@ -1,9 +1,39 @@
 import { Router, Request, Response, NextFunction } from "express";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 import { z } from "zod";
 import { validateBody } from "../middleware/validateRequest";
 import * as ctrl from "../controllers/applications.controller";
 import { facebookClient } from "../clients/facebookClient";
 import { env } from "../config/env";
+
+// ── Multer config for KYC document uploads ──
+const uploadsDir = path.join(process.cwd(), "uploads", "kyc");
+fs.mkdirSync(uploadsDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadsDir),
+  filename: (_req, file, cb) => {
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
+    const ext = path.extname(file.originalname);
+    cb(null, `${unique}${ext}`);
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max per file
+  fileFilter: (_req, file, cb) => {
+    const allowed = [".jpg", ".jpeg", ".png", ".pdf"];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`File type ${ext} not allowed. Use JPG, PNG, or PDF.`));
+    }
+  },
+});
 
 const router = Router();
 
@@ -13,13 +43,10 @@ const createSchema = z.object({
 
 const formDataSchema = z.object({
   legal_name: z.string().min(2).max(200),
-  tax_id: z.string().min(12).max(13),
-  ciec: z.string().min(8).max(20),
+  tax_id: z.string().min(12).max(13).optional().or(z.literal("")),
+  ciec: z.string().min(8).max(20).optional().or(z.literal("")),
   address: z.string().min(5).max(500),
   email: z.string().email(),
-  monthly_revenue_estimate: z.number().positive(),
-  revenue_sources: z.array(z.string()).min(1),
-  notes: z.string().max(1000).optional(),
   consent_given: z.literal(true, {
     errorMap: () => ({ message: "Consent is required" }),
   }),
@@ -52,6 +79,15 @@ router.get(
       res.status(400).json({ error: "applicationId query param required" });
       return;
     }
+
+    // En demo mode, simular conexión exitosa sin ir a Facebook
+    if (env.DEMO_MODE) {
+      res.redirect(
+        `${env.FRONTEND_URL}/full-revenue/apply?facebook=connected&fb_token=demo_token_${Date.now()}&appId=${applicationId}`
+      );
+      return;
+    }
+
     if (!env.FACEBOOK_APP_ID) {
       res.status(503).json({ error: "Facebook OAuth not configured" });
       return;
@@ -71,8 +107,16 @@ router.get(
         res.status(400).json({ error: "Missing code or state param" });
         return;
       }
+
+      // En demo mode no hace falta intercambiar el code
+      if (env.DEMO_MODE) {
+        res.redirect(
+          `${env.FRONTEND_URL}/full-revenue/apply?facebook=connected&fb_token=demo_token_${Date.now()}&appId=${applicationId}`
+        );
+        return;
+      }
+
       const accessToken = await facebookClient.exchangeCode(code);
-      // Redirigir al frontend con el token (se guardará en el form state)
       res.redirect(
         `${env.FRONTEND_URL}/full-revenue/apply?facebook=connected&fb_token=${accessToken}&appId=${applicationId}`
       );
@@ -81,5 +125,33 @@ router.get(
     }
   }
 );
+
+// ── Consent schema ──
+const consentSchema = z.object({
+  bureau_consent: z.literal(true),
+  twilio_consent: z.literal(true),
+  data_processing_consent: z.literal(true),
+});
+
+// POST /full-revenue/applications/:id/consent
+router.post(
+  "/:id([0-9a-f-]{36})/consent",
+  validateBody(consentSchema),
+  ctrl.updateConsent
+);
+
+// POST /full-revenue/applications/:id/kyc  (multipart/form-data)
+router.post(
+  "/:id([0-9a-f-]{36})/kyc",
+  upload.fields([
+    { name: "id_front", maxCount: 1 },
+    { name: "id_back", maxCount: 1 },
+    { name: "proof_of_address", maxCount: 1 },
+  ]),
+  ctrl.submitKyc
+);
+
+// GET /full-revenue/applications/:id/prequal
+router.get("/:id([0-9a-f-]{36})/prequal", ctrl.prequalify);
 
 export default router;
