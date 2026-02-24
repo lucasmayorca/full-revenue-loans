@@ -100,14 +100,14 @@ const kycPersonalSchema = z.object({
   first_name: z.string().min(2),
   last_name: z.string().min(2),
   birth_date: z.string().min(8),
-  curp: z.string().length(18),
+  cedula: z.string().min(12).max(13),  // RFC: 12 personas físicas, 13 morales
   nationality: z.string().min(2),
   marital_status: z.string().min(2),
 });
 
 const kycAddressSchema = z.object({
   street: z.string().min(3),
-  neighborhood: z.string().min(2),
+  neighborhood: z.string().optional().default(""),
   postal_code: z.string().length(5),
   city: z.string().min(2),
   state: z.string().min(2),
@@ -135,15 +135,15 @@ export async function submitKyc(
 
     // Get uploaded file paths
     const files = req.files as Record<string, Express.Multer.File[]>;
-    if (!files?.id_front?.[0] || !files?.id_back?.[0] || !files?.proof_of_address?.[0]) {
-      res.status(400).json({ error: "Missing required documents: id_front, id_back, proof_of_address" });
+    if (!files?.id_front?.[0] || !files?.id_back?.[0]) {
+      res.status(400).json({ error: "Missing required documents: id_front, id_back" });
       return;
     }
 
     const documents = {
       id_front_path: files.id_front[0].path,
       id_back_path: files.id_back[0].path,
-      proof_of_address_path: files.proof_of_address[0].path,
+      proof_of_address_path: files.proof_of_address?.[0]?.path ?? null,
     };
 
     const app = await submitKycService(id, personal, address, bank, documents);

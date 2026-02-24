@@ -191,21 +191,21 @@ export function OfferRevealCard({ amount, previousAmount = 0, stage, isAnimating
             </div>
             <div className="border-t border-gray-100 pt-2.5">
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Método de repago</p>
-              <div className="bg-orange-50 rounded-xl px-4 py-3 space-y-2">
+              <div className="bg-gray-50 rounded-xl px-4 py-3 space-y-2">
                 <div className="flex items-start gap-2.5">
                   <span className="text-base flex-shrink-0">🛒</span>
                   <div>
-                    <p className="text-xs font-bold text-orange-800">Retención Rappi — 20% de tus ventas</p>
-                    <p className="text-[10px] text-orange-600 leading-relaxed mt-0.5">
+                    <p className="text-xs font-bold text-gray-700">Retención Rappi — 20% de tus ventas</p>
+                    <p className="text-[10px] text-gray-500 leading-relaxed mt-0.5">
                       Se retiene automáticamente el 20% de tus ventas en Rappi hasta cubrir la cuota del mes.
                     </p>
                   </div>
                 </div>
-                <div className="border-t border-orange-100 pt-2 flex items-start gap-2.5">
+                <div className="border-t border-gray-200 pt-2 flex items-start gap-2.5">
                   <span className="text-base flex-shrink-0">🏦</span>
                   <div>
-                    <p className="text-xs font-bold text-orange-800">Débito directo — remanente</p>
-                    <p className="text-[10px] text-orange-600 leading-relaxed mt-0.5">
+                    <p className="text-xs font-bold text-gray-700">Débito directo — remanente</p>
+                    <p className="text-[10px] text-gray-500 leading-relaxed mt-0.5">
                       Si la retención no cubre la cuota mínima del mes, el saldo pendiente se cobra por débito directo de tu cuenta bancaria.
                     </p>
                   </div>

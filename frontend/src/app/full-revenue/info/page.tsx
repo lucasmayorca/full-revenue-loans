@@ -39,7 +39,7 @@ const STEPS = [
     icon: "📋",
     title: "Buró de crédito",
     description: "Autorizás la consulta al buró e identidad vía Twilio. Tu oferta inicial se revela.",
-    unlocks: "1.5X",
+    unlocks: "hasta $75k",
     color: "bg-orange-50",
     textColor: "text-orange-700",
   },
@@ -48,7 +48,7 @@ const STEPS = [
     icon: "📍",
     title: "Presencia digital",
     description: "Conectás Google Maps y redes sociales para ampliar tu monto.",
-    unlocks: "2X",
+    unlocks: "hasta $100k",
     color: "bg-orange-50",
     textColor: "text-orange-700",
   },
@@ -57,7 +57,7 @@ const STEPS = [
     icon: "🏛️",
     title: "Datos fiscales",
     description: "Compartís tus datos del SAT para que calculemos tu capacidad real de pago.",
-    unlocks: "4X",
+    unlocks: "hasta $200k",
     color: "bg-orange-50",
     textColor: "text-orange-700",
   },
@@ -110,7 +110,7 @@ export default function FullRevenueInfoPage() {
           <div className="space-y-2">
             <div className="flex justify-between text-xs opacity-80">
               <span>Potencial máximo</span>
-              <span className="font-semibold">hasta 4X tu ingreso</span>
+              <span className="font-semibold">hasta $200,000 MXN</span>
             </div>
             <div className="h-2 bg-white bg-opacity-20 rounded-full overflow-hidden">
               <div

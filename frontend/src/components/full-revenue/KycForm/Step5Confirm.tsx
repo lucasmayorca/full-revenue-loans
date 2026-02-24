@@ -54,7 +54,7 @@ export function Step5Confirm({ personal, address, bank, onConfirm, onBack, isSub
       <Section title="Datos personales">
         <Row label="Nombre completo"   value={`${personal.first_name} ${personal.last_name}`} />
         <Row label="Fecha de nacimiento" value={personal.birth_date} />
-        <Row label="CURP"              value={personal.curp} />
+        <Row label="RFC"               value={personal.cedula} />
         <Row label="Nacionalidad"      value={personal.nationality} />
         <Row label="Estado civil"      value={MARITAL_LABELS[personal.marital_status] ?? personal.marital_status} />
       </Section>
@@ -74,8 +74,8 @@ export function Step5Confirm({ personal, address, bank, onConfirm, onBack, isSub
 
       {/* Documentos — solo checkmarks, no re-mostramos los archivos */}
       <Section title="Documentos">
-        <Row label="INE / Pasaporte" value="✅ Cargado (frente y reverso)" />
-        <Row label="Comprobante de domicilio" value="✅ Cargado" />
+        <Row label="INE — Frente"  value="✅ Cargado" />
+        <Row label="INE — Reverso" value="✅ Cargado" />
       </Section>
 
       {/* Autorización */}

@@ -10,13 +10,13 @@ export type FlowStep =
   | "offer3";      // 7. Oferta máxima (4X)
 
 const STEPS: { key: FlowStep; label: string; icon: string }[] = [
-  { key: "identity",    label: "Negocio",     icon: "🏢" },
-  { key: "consent",     label: "Autorizar",   icon: "✅" },
-  { key: "offer1",      label: "1.5X",        icon: "🎯" },
-  { key: "connections", label: "Digital",      icon: "📍" },
-  { key: "offer2",      label: "2X",          icon: "🚀" },
-  { key: "fiscal",      label: "Fiscal",      icon: "🏛️" },
-  { key: "offer3",      label: "4X",          icon: "🏆" },
+  { key: "identity",    label: "Negocio",   icon: "🏢" },
+  { key: "consent",     label: "Autorizar", icon: "✅" },
+  { key: "offer1",      label: "$75k",      icon: "🎯" },
+  { key: "connections", label: "Digital",   icon: "📍" },
+  { key: "offer2",      label: "$100k",     icon: "🚀" },
+  { key: "fiscal",      label: "Fiscal",    icon: "🏛️" },
+  { key: "offer3",      label: "$200k",     icon: "🏆" },
 ];
 
 const STEP_ORDER = STEPS.map((s) => s.key);
@@ -24,10 +24,26 @@ const STEP_ORDER = STEPS.map((s) => s.key);
 interface Props {
   current: FlowStep;
   onBack?: () => void;
+  offerAmounts?: { bureau: number; social: number; fiscal: number };
 }
 
-export function GamifiedProgressBar({ current, onBack }: Props) {
+function fmtK(n: number) {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000)     return `$${Math.round(n / 1_000)}k`;
+  return `$${n}`;
+}
+
+export function GamifiedProgressBar({ current, onBack, offerAmounts }: Props) {
   const currentIdx = STEP_ORDER.indexOf(current);
+
+  // Build dynamic labels from real offer amounts when available
+  const steps = STEPS.map((s) => {
+    if (!offerAmounts) return s;
+    if (s.key === "offer1") return { ...s, label: fmtK(offerAmounts.bureau) };
+    if (s.key === "offer2") return { ...s, label: fmtK(offerAmounts.social) };
+    if (s.key === "offer3") return { ...s, label: fmtK(offerAmounts.fiscal) };
+    return s;
+  });
 
   return (
     <div className="space-y-3">
@@ -53,7 +69,7 @@ export function GamifiedProgressBar({ current, onBack }: Props) {
 
       {/* Mini stepper visual */}
       <div className="flex items-center gap-1">
-        {STEPS.map((step, idx) => {
+        {steps.map((step, idx) => {
           const stepIdx = STEP_ORDER.indexOf(step.key);
           const isDone = stepIdx < currentIdx;
           const isActive = stepIdx === currentIdx;
@@ -83,7 +99,7 @@ export function GamifiedProgressBar({ current, onBack }: Props) {
                   {step.label}
                 </p>
               </div>
-              {idx < STEPS.length - 1 && (
+              {idx < steps.length - 1 && (
                 <div className={`h-0.5 flex-shrink-0 w-4 mx-0.5 rounded-full transition-all duration-500 ${
                   stepIdx < currentIdx ? "bg-green-300" : "bg-gray-200"
                 }`} />

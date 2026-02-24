@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
 const schema = z.object({
-  street:       z.string().min(3, "Ingresá la calle y número"),
-  neighborhood: z.string().min(2, "Ingresá la colonia"),
+  street:       z.string().min(3, "Ingresá la dirección"),
+  neighborhood: z.string().optional().default(""),   // incluido en street
   postal_code:  z.string().regex(/^\d{5}$/, "El CP debe tener 5 dígitos"),
   city:         z.string().min(2, "Ingresá la ciudad"),
   state:        z.string().min(2, "Ingresá el estado"),
@@ -43,18 +43,18 @@ export function Step2Address({ defaultValues, onComplete, onBack }: Props) {
 
   return (
     <form onSubmit={handleSubmit(onComplete)} noValidate className="space-y-4">
+      {/* Header de sección */}
+      <div className="pb-1">
+        <h2 className="text-base font-bold text-gray-900">Dirección del negocio</h2>
+        <p className="text-xs text-gray-400 mt-0.5">Confirmá o editá la dirección fiscal de tu negocio</p>
+      </div>
+
+      {/* Dirección completa en una sola línea */}
       <Input
-        label="Calle y número"
-        placeholder="Av. Insurgentes Sur 123, Int. 4B"
+        label="Calle, número y colonia"
+        placeholder="Av. Insurgentes Sur 123, Col. Del Valle"
         error={errors.street?.message}
         {...register("street")}
-      />
-
-      <Input
-        label="Colonia"
-        placeholder="Colonia Del Valle"
-        error={errors.neighborhood?.message}
-        {...register("neighborhood")}
       />
 
       <div className="grid grid-cols-2 gap-3">

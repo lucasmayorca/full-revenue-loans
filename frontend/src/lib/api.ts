@@ -73,7 +73,7 @@ export const api = {
     personal: Record<string, string>,
     address: Record<string, string>,
     bank: Record<string, string>,
-    files: { id_front: File; id_back: File; proof_of_address: File }
+    files: { id_front: File; id_back: File; proof_of_address: File | null }
   ) => {
     const formData = new FormData();
     formData.append("personal", JSON.stringify(personal));
@@ -81,7 +81,9 @@ export const api = {
     formData.append("bank", JSON.stringify(bank));
     formData.append("id_front", files.id_front);
     formData.append("id_back", files.id_back);
-    formData.append("proof_of_address", files.proof_of_address);
+    if (files.proof_of_address) {
+      formData.append("proof_of_address", files.proof_of_address);
+    }
 
     const res = await fetch(`${BASE_URL}/full-revenue/applications/${id}/kyc`, {
       method: "POST",

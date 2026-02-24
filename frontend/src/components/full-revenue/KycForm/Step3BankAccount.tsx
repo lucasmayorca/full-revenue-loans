@@ -41,6 +41,12 @@ export function Step3BankAccount({ defaultValues, onComplete, onBack }: Props) {
 
   return (
     <form onSubmit={handleSubmit(onComplete)} noValidate className="space-y-4">
+      {/* Header de sección */}
+      <div className="pb-1">
+        <h2 className="text-base font-bold text-gray-900">Cuenta bancaria</h2>
+        <p className="text-xs text-gray-400 mt-0.5">Donde Rappi realizará el desembolso del crédito</p>
+      </div>
+
       {/* Info box */}
       <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 flex items-start gap-2">
         <svg className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>

@@ -173,14 +173,14 @@ export interface KycPersonalData {
   first_name: string;
   last_name: string;
   birth_date: string;
-  curp: string;
+  cedula: string;  // RFC (12-13 chars)
   nationality: string;
   marital_status: string;
 }
 
 export interface KycAddressData {
   street: string;
-  neighborhood: string;
+  neighborhood?: string;
   postal_code: string;
   city: string;
   state: string;
@@ -196,7 +196,7 @@ export interface KycBankData {
 export interface KycDocuments {
   id_front_path: string;
   id_back_path: string;
-  proof_of_address_path: string;
+  proof_of_address_path: string | null;
 }
 
 export interface KycData {

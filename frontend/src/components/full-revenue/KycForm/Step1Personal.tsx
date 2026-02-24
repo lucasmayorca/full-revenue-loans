@@ -7,11 +7,11 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
 const schema = z.object({
-  first_name:    z.string().min(2, "Ingresá tu nombre"),
-  last_name:     z.string().min(2, "Ingresá tu apellido"),
-  birth_date:    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato: AAAA-MM-DD"),
-  curp:          z.string().length(18, "La CURP tiene 18 caracteres").toUpperCase(),
-  nationality:   z.string().min(2, "Ingresá tu nacionalidad"),
+  first_name:     z.string().min(2, "Ingresá tu nombre"),
+  last_name:      z.string().min(2, "Ingresá tu apellido"),
+  birth_date:     z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Formato: AAAA-MM-DD"),
+  cedula:         z.string().min(12, "El RFC tiene 12 o 13 caracteres").max(13, "El RFC tiene 12 o 13 caracteres").toUpperCase(),
+  nationality:    z.string().min(2, "Ingresá tu nacionalidad"),
   marital_status: z.enum(["soltero", "casado", "divorciado", "viudo", "union_libre"], {
     errorMap: () => ({ message: "Seleccioná un estado civil" }),
   }),
@@ -44,9 +44,20 @@ export function Step1Personal({ defaultValues, onComplete }: Props) {
 
   return (
     <form onSubmit={handleSubmit(onComplete)} noValidate className="space-y-4">
+      {/* Nombre y apellido — pre-completado por Rappi vía API */}
       <div className="grid grid-cols-2 gap-3">
-        <Input label="Nombre(s)" placeholder="Juan" error={errors.first_name?.message} {...register("first_name")} />
-        <Input label="Apellido(s)" placeholder="García López" error={errors.last_name?.message} {...register("last_name")} />
+        <Input
+          label="Nombre(s)"
+          placeholder="Guillermo"
+          error={errors.first_name?.message}
+          {...register("first_name")}
+        />
+        <Input
+          label="Apellido(s)"
+          placeholder="Bravo"
+          error={errors.last_name?.message}
+          {...register("last_name")}
+        />
       </div>
 
       <Input
@@ -56,11 +67,13 @@ export function Step1Personal({ defaultValues, onComplete }: Props) {
         {...register("birth_date")}
       />
 
+      {/* RFC — el usuario lo completa, Rappi no lo comparte */}
       <Input
-        label="CURP"
-        placeholder="GALO800101HDFRCR09"
-        error={errors.curp?.message}
-        {...register("curp")}
+        label="RFC"
+        placeholder="GALO800101AB2"
+        hint="12 caracteres para personas físicas, 13 para morales"
+        error={errors.cedula?.message}
+        {...register("cedula")}
       />
 
       <Input

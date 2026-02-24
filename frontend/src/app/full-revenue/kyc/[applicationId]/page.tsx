@@ -60,5 +60,10 @@ export default function KycPage({ params }: Props) {
 
   if (!application) return null;
 
-  return <KycForm applicationId={params.applicationId} />;
+  return (
+    <KycForm
+      applicationId={params.applicationId}
+      prefillData={application.form_data as Record<string, string> | undefined}
+    />
+  );
 }

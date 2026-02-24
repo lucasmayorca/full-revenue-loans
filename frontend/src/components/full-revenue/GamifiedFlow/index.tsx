@@ -131,6 +131,10 @@ export function GamifiedApplicationForm() {
       const result = await api.createApplication(DEMO_MERCHANT_ID);
       setApplicationId(result.id);
       sessionStorage.setItem(SS_APP_ID, result.id);
+      // Record flow start time for success page stats
+      if (!sessionStorage.getItem("fr_started_at")) {
+        sessionStorage.setItem("fr_started_at", Date.now().toString());
+      }
       trackEvent(EVENTS.FORM_STARTED, { application_id: result.id });
       return result.id;
     } catch {
@@ -285,6 +289,9 @@ export function GamifiedApplicationForm() {
 
     try {
       await api.submitApplication(appId, allData);
+      // Save offer amounts and approval time for success page stats
+      sessionStorage.setItem("fr_offer_amounts", JSON.stringify(offerAmounts));
+      sessionStorage.setItem("fr_approved_at", Date.now().toString());
       sessionStorage.removeItem(SS_APP_ID);
       sessionStorage.removeItem(SS_FORM_DATA);
       sessionStorage.removeItem(SS_GOOGLE_URL);
@@ -350,6 +357,11 @@ export function GamifiedApplicationForm() {
         <GamifiedProgressBar
           current={flowStep}
           onBack={showBack ? handleBack : undefined}
+          offerAmounts={{
+            bureau: offerAmounts.bureau,
+            social: offerAmounts.social,
+            fiscal: offerAmounts.fiscal,
+          }}
         />
       </div>
 
