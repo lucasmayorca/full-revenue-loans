@@ -64,6 +64,9 @@ const submitSchema = z.object({
 // POST /full-revenue/applications
 router.post("/", validateBody(createSchema), ctrl.create);
 
+// GET /full-revenue/applications — lista todas para el dashboard admin
+router.get("/", ctrl.listAll);
+
 // GET /full-revenue/applications/:id
 router.get("/:id([0-9a-f-]{36})", ctrl.getById);
 

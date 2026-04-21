@@ -41,6 +41,23 @@ export async function getApplicationById(
   return memStore.get(id) ?? null;
 }
 
+/**
+ * Lista TODAS las aplicaciones para el dashboard admin.
+ * En prototipo: devuelve memStore completo (luego se reemplaza por query Firestore).
+ */
+export async function listAllApplications(options?: {
+  limit?: number;
+  orderDesc?: boolean;
+}): Promise<ApplicationDoc[]> {
+  const all = Array.from(memStore.values());
+  all.sort((a, b) => {
+    const aTs = a.updated_at?.seconds ?? 0;
+    const bTs = b.updated_at?.seconds ?? 0;
+    return options?.orderDesc === false ? aTs - bTs : bTs - aTs;
+  });
+  return options?.limit ? all.slice(0, options.limit) : all;
+}
+
 export async function submitApplication(
   id: string,
   formData: FormData

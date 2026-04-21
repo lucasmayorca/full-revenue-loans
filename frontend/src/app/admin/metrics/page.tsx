@@ -1,42 +1,63 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   api,
   type MetricsResponse,
   type EventsListResponse,
+  type ApplicationsListResponse,
 } from "@/lib/api";
+
+/* ── R2 palette (ref: deck) ── */
+const R2 = {
+  bg: "#0C101B",
+  bgPanel: "#141826",
+  bgPanelHover: "#1B2030",
+  border: "#222A3C",
+  borderSubtle: "#1A2030",
+  primary: "#2C9AFF",
+  primaryDim: "#45A4FF",
+  teal: "#38B7D2",
+  orange: "#FE7D38",
+  positive: "#22D47A",
+  danger: "#F24E4E",
+  textPrimary: "#FFFFFF",
+  textSecondary: "#9BA4B6",
+  textMuted: "#666E80",
+};
 
 const STEP_LABELS: Record<string, string> = {
   identity: "1. Identidad",
   consent: "2. Autorizaciones",
-  offer1: "3. Oferta Buró ($60k)",
+  offer1: "3. Oferta Buró",
   connections: "4. Conexiones digitales",
-  offer2: "5. Oferta Social ($70k)",
+  offer2: "5. Oferta Social",
   fiscal: "6. Datos fiscales SAT",
-  offer3: "7. Oferta Final ($100k)",
+  offer3: "7. Oferta Final",
 };
 
-function fmtPct(ratio: number): string {
-  if (!isFinite(ratio) || isNaN(ratio)) return "—";
-  return (ratio * 100).toFixed(1) + "%";
-}
+type TabId = "overview" | "funnel" | "applications" | "events";
 
 export default function MetricsDashboardPage() {
   const [metrics, setMetrics] = useState<MetricsResponse | null>(null);
   const [events, setEvents] = useState<EventsListResponse | null>(null);
+  const [applications, setApplications] =
+    useState<ApplicationsListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabId>("overview");
 
   const load = useCallback(async () => {
     try {
-      const [m, ev] = await Promise.all([
+      const [m, ev, apps] = await Promise.all([
         api.getMetrics(),
-        api.listEvents({ limit: 100 }),
+        api.listEvents({ limit: 200 }),
+        api.listApplications(500),
       ]);
       setMetrics(m);
       setEvents(ev);
+      setApplications(apps);
       setError(null);
     } catch (err) {
       const msg =
@@ -61,70 +82,255 @@ export default function MetricsDashboardPage() {
 
   if (loading) {
     return (
-      <div className="max-w-[1200px] mx-auto px-8 py-16 text-center">
-        <div className="inline-block w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-[14px] text-uber-gray-700">Cargando métricas…</p>
-      </div>
+      <Shell>
+        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+          <div
+            className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin mb-3"
+            style={{ borderColor: R2.primary, borderTopColor: "transparent" }}
+          />
+          <p className="text-[13px]" style={{ color: R2.textSecondary }}>
+            Cargando métricas…
+          </p>
+        </div>
+      </Shell>
     );
   }
 
   if (error || !metrics) {
     return (
-      <div className="max-w-[1200px] mx-auto px-8 py-16">
-        <div className="bg-uber-danger-bg border border-uber-danger/30 rounded-card p-6 text-uber-danger text-[14px]">
-          <p className="font-bold mb-1">No se pudieron cargar las métricas</p>
-          <p>{error ?? "Respuesta vacía del backend."}</p>
+      <Shell>
+        <div
+          className="max-w-2xl mx-auto mt-16 rounded-xl p-6"
+          style={{
+            background: R2.bgPanel,
+            border: `1px solid ${R2.danger}`,
+          }}
+        >
+          <p className="font-bold mb-1" style={{ color: R2.danger }}>
+            No se pudieron cargar las métricas
+          </p>
+          <p className="text-[13px]" style={{ color: R2.textSecondary }}>
+            {error ?? "Respuesta vacía del backend."}
+          </p>
           <button
             onClick={load}
-            className="mt-3 bg-black text-white font-bold px-4 h-10 rounded-btn text-[14px]"
+            className="mt-3 font-bold px-4 h-10 rounded-md text-[13px]"
+            style={{ background: R2.primary, color: R2.textPrimary }}
           >
             Reintentar
           </button>
         </div>
-      </div>
+      </Shell>
     );
   }
 
-  const bannerSessions = metrics.offers_page.banner_sessions_clicked;
-  const cardSessions = metrics.offers_page.card_sessions_clicked;
-  const totalClicks = bannerSessions + cardSessions;
-
   return (
-    <div className="max-w-[1200px] mx-auto px-8 py-8 space-y-8">
-      {/* Header */}
-      <div className="flex items-end justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-[40px] font-bold text-black leading-[1.1] tracking-tight mb-2">
-            Métricas
-          </h1>
-          <p className="text-[14px] text-uber-gray-700">
-            Actualizado:{" "}
-            <span className="font-mono">
-              {new Date(metrics.generated_at).toLocaleString("es-MX")}
-            </span>{" "}
-            · {metrics.total_events.toLocaleString("es-MX")} eventos ·{" "}
-            {metrics.unique_sessions.toLocaleString("es-MX")} sesiones únicas
-          </p>
+    <Shell>
+      <Header
+        generatedAt={metrics.generated_at}
+        totalEvents={metrics.total_events}
+        uniqueSessions={metrics.unique_sessions}
+        autoRefresh={autoRefresh}
+        onToggleAutoRefresh={setAutoRefresh}
+        onRefresh={load}
+      />
+
+      <Tabs active={activeTab} onChange={setActiveTab} />
+
+      <div className="max-w-[1400px] mx-auto px-8 pb-12">
+        {activeTab === "overview" && (
+          <OverviewTab
+            metrics={metrics}
+            applications={applications}
+          />
+        )}
+        {activeTab === "funnel" && <FunnelTab metrics={metrics} />}
+        {activeTab === "applications" && (
+          <ApplicationsTab data={applications} />
+        )}
+        {activeTab === "events" && <EventsTab data={events} />}
+      </div>
+    </Shell>
+  );
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+ * Layout primitives
+ * ═════════════════════════════════════════════════════════════════════════ */
+
+function Shell({ children }: { children: React.ReactNode }) {
+  return <div className="min-h-screen w-full">{children}</div>;
+}
+
+function Header({
+  generatedAt,
+  totalEvents,
+  uniqueSessions,
+  autoRefresh,
+  onToggleAutoRefresh,
+  onRefresh,
+}: {
+  generatedAt: string;
+  totalEvents: number;
+  uniqueSessions: number;
+  autoRefresh: boolean;
+  onToggleAutoRefresh: (v: boolean) => void;
+  onRefresh: () => void;
+}) {
+  return (
+    <header
+      className="sticky top-0 z-10 backdrop-blur"
+      style={{
+        background: `${R2.bg}EE`,
+        borderBottom: `1px solid ${R2.border}`,
+      }}
+    >
+      <div className="max-w-[1400px] mx-auto px-8 py-5 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div
+            className="flex items-center gap-2 font-bold text-[18px] tracking-tight"
+            style={{ color: R2.textPrimary }}
+          >
+            <div
+              className="w-7 h-7 rounded flex items-center justify-center font-black text-[14px]"
+              style={{ background: R2.primary, color: R2.bg }}
+            >
+              R2
+            </div>
+            <span>Full Revenue · Métricas</span>
+          </div>
+          <div
+            className="hidden sm:flex items-center gap-4 text-[12px] ml-4 pl-4"
+            style={{
+              color: R2.textSecondary,
+              borderLeft: `1px solid ${R2.border}`,
+            }}
+          >
+            <span>
+              <span className="font-mono">
+                {totalEvents.toLocaleString("es-MX")}
+              </span>{" "}
+              eventos
+            </span>
+            <span>·</span>
+            <span>
+              <span className="font-mono">
+                {uniqueSessions.toLocaleString("es-MX")}
+              </span>{" "}
+              sesiones únicas
+            </span>
+            <span>·</span>
+            <span>
+              {new Date(generatedAt).toLocaleTimeString("es-MX", {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+              })}
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <label className="inline-flex items-center gap-2 text-[13px] text-uber-gray-700 cursor-pointer">
+        <div className="flex items-center gap-3">
+          <label
+            className="inline-flex items-center gap-2 text-[12px] cursor-pointer"
+            style={{ color: R2.textSecondary }}
+          >
             <input
               type="checkbox"
               checked={autoRefresh}
-              onChange={(e) => setAutoRefresh(e.target.checked)}
-              className="w-4 h-4 accent-black"
+              onChange={(e) => onToggleAutoRefresh(e.target.checked)}
+              className="w-4 h-4"
+              style={{ accentColor: R2.primary }}
             />
-            Auto-refresh 10s
+            Auto 10s
           </label>
           <button
-            onClick={load}
-            className="border-2 border-black rounded-pill px-4 py-2 text-[14px] font-bold text-black hover:bg-uber-gray-100 transition-colors"
+            onClick={onRefresh}
+            className="px-3 h-9 rounded-md text-[13px] font-medium transition-colors"
+            style={{
+              background: R2.bgPanel,
+              color: R2.textPrimary,
+              border: `1px solid ${R2.border}`,
+            }}
           >
             Refrescar
           </button>
         </div>
       </div>
+    </header>
+  );
+}
 
+function Tabs({
+  active,
+  onChange,
+}: {
+  active: TabId;
+  onChange: (id: TabId) => void;
+}) {
+  const tabs: Array<{ id: TabId; label: string }> = [
+    { id: "overview", label: "Resumen" },
+    { id: "funnel", label: "Embudo" },
+    { id: "applications", label: "Aplicaciones" },
+    { id: "events", label: "Eventos" },
+  ];
+  return (
+    <nav
+      style={{ borderBottom: `1px solid ${R2.border}` }}
+      className="sticky z-[5]"
+    >
+      <div className="max-w-[1400px] mx-auto px-8 flex items-center gap-1">
+        {tabs.map((t) => {
+          const isActive = active === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => onChange(t.id)}
+              className="relative h-12 px-4 text-[13px] font-medium transition-colors"
+              style={{
+                color: isActive ? R2.textPrimary : R2.textSecondary,
+              }}
+            >
+              {t.label}
+              {isActive && (
+                <span
+                  className="absolute left-0 right-0 bottom-0 h-[2px]"
+                  style={{ background: R2.primary }}
+                />
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+ * Tabs
+ * ═════════════════════════════════════════════════════════════════════════ */
+
+function OverviewTab({
+  metrics,
+  applications,
+}: {
+  metrics: MetricsResponse;
+  applications: ApplicationsListResponse | null;
+}) {
+  const bannerSessions = metrics.offers_page.banner_sessions_clicked;
+  const cardSessions = metrics.offers_page.card_sessions_clicked;
+  const totalClicks = bannerSessions + cardSessions;
+  const bannerShare = totalClicks > 0 ? bannerSessions / totalClicks : 0;
+  const cardShare = totalClicks > 0 ? cardSessions / totalClicks : 0;
+
+  const applicationsSubmitted = applications?.applications.filter(
+    (a) =>
+      a.decision_status === "APPROVED" ||
+      a.decision_status === "MANUAL_REVIEW" ||
+      a.decision_status === "REJECTED"
+  ).length ?? 0;
+
+  return (
+    <div className="mt-8 space-y-6">
       {/* KPIs top row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Kpi
@@ -132,58 +338,55 @@ export default function MetricsDashboardPage() {
           value={metrics.offers_page.total_sessions}
         />
         <Kpi
-          label="Clickearon banner Préstamo MÁS"
+          label="Clicks banner Préstamo MÁS"
           value={bannerSessions}
           helper={
-            totalClicks > 0
-              ? `${fmtPct(bannerSessions / totalClicks)} del share`
-              : undefined
+            totalClicks > 0 ? `${fmtPct(bannerShare)} del total` : "—"
           }
+          accent={bannerShare > cardShare ? R2.primary : undefined}
         />
         <Kpi
-          label="Clickearon una oferta RBF"
+          label="Clicks ofertas RBF"
           value={cardSessions}
-          helper={
-            totalClicks > 0
-              ? `${fmtPct(cardSessions / totalClicks)} del share`
-              : undefined
-          }
+          helper={totalClicks > 0 ? `${fmtPct(cardShare)} del total` : "—"}
+          accent={cardShare > bannerShare ? R2.primary : undefined}
         />
         <Kpi
-          label="Completaron KYC"
-          value={metrics.kyc_submitted_sessions}
+          label="Aplicaciones enviadas"
+          value={applicationsSubmitted}
           helper={
-            metrics.form_started_sessions > 0
-              ? `${fmtPct(
-                  metrics.kyc_submitted_sessions / metrics.form_started_sessions
-                )} de los que arrancaron flow`
+            applications?.count
+              ? `de ${applications.count} creadas`
               : undefined
           }
         />
       </div>
 
-      {/* Banner vs Cards comparison */}
-      <Section
+      {/* Banner vs Cards */}
+      <Panel
         title="Interés: Banner vs Ofertas RBF"
-        subtitle="Qué clickearon los usuarios cuando vieron el feed. Mide la fuerza visual de cada superficie."
+        subtitle="Qué superficie clickean los usuarios cuando ven el feed."
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <ShareCard
             label="Banner Préstamo MÁS"
             value={bannerSessions}
             total={totalClicks}
-            accentClass="bg-black"
+            color={R2.primary}
           />
           <ShareCard
-            label="Ofertas RBF (cualquiera)"
+            label="Ofertas RBF (3 cards)"
             value={cardSessions}
             total={totalClicks}
-            accentClass="bg-uber-green"
+            color={R2.teal}
           />
         </div>
         {Object.keys(metrics.offers_page.card_clicks_by_offer).length > 0 && (
-          <div className="mt-4">
-            <p className="text-[12px] font-bold text-uber-gray-500 uppercase tracking-wider mb-2">
+          <div className="mt-5">
+            <p
+              className="text-[11px] font-bold uppercase tracking-wider mb-2"
+              style={{ color: R2.textMuted }}
+            >
               Click por oferta RBF
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -191,12 +394,22 @@ export default function MetricsDashboardPage() {
                 ([offerId, count]) => (
                   <div
                     key={offerId}
-                    className="bg-uber-gray-100 rounded-card px-3 py-2 flex items-center justify-between"
+                    className="flex items-center justify-between rounded-md px-3 py-2"
+                    style={{
+                      background: R2.bgPanelHover,
+                      border: `1px solid ${R2.borderSubtle}`,
+                    }}
                   >
-                    <span className="text-[14px] text-uber-gray-700">
+                    <span
+                      className="text-[13px] font-mono"
+                      style={{ color: R2.textSecondary }}
+                    >
                       {offerId}
                     </span>
-                    <span className="text-[14px] font-bold text-black">
+                    <span
+                      className="text-[14px] font-bold"
+                      style={{ color: R2.textPrimary }}
+                    >
                       {count}
                     </span>
                   </div>
@@ -205,78 +418,51 @@ export default function MetricsDashboardPage() {
             </div>
           </div>
         )}
-        <p className="text-[12px] text-uber-gray-500 mt-3">
-          Banner CTR (sesiones): {fmtPct(metrics.offers_page.banner_click_through_rate)}
+        <p
+          className="text-[11px] mt-4"
+          style={{ color: R2.textMuted }}
+        >
+          Banner CTR: {fmtPct(metrics.offers_page.banner_click_through_rate)}
         </p>
-      </Section>
+      </Panel>
 
-      {/* Funnel Préstamo MÁS */}
-      <Section
-        title="Embudo Préstamo MÁS (sesiones únicas)"
-        subtitle="Cuántas sesiones llegan a cada paso y cuántas avanzan."
+      {/* Mini funnel preview */}
+      <Panel
+        title="Vista rápida del embudo"
+        subtitle="Click en tab 'Embudo' para el desglose completo."
       >
-        <div className="space-y-2">
-          {metrics.funnel.map((f, idx) => {
-            const prev = idx > 0 ? metrics.funnel[idx - 1].sessions_viewed : null;
-            const dropoff =
-              prev !== null && prev > 0
-                ? (prev - f.sessions_viewed) / prev
-                : null;
-            const pctOfMax =
-              metrics.funnel[0].sessions_viewed > 0
-                ? (f.sessions_viewed / metrics.funnel[0].sessions_viewed) * 100
-                : 0;
-            return (
-              <div key={f.step}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[14px] font-bold text-black">
-                    {STEP_LABELS[f.step] ?? f.step}
-                  </span>
-                  <span className="text-[13px] text-uber-gray-700">
-                    {f.sessions_viewed} vistas ·{" "}
-                    <span className="font-bold text-black">
-                      {f.sessions_completed} completaron ({fmtPct(f.completion_rate)})
-                    </span>
-                    {dropoff !== null && dropoff > 0 && (
-                      <span className="ml-2 text-uber-danger">
-                        −{fmtPct(dropoff)} vs anterior
-                      </span>
-                    )}
-                  </span>
-                </div>
-                <div className="h-2 bg-uber-gray-200 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-black rounded-full transition-all"
-                    style={{ width: `${pctOfMax}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        <div className="grid grid-cols-3 gap-4 mt-6 pt-4 border-t border-uber-gray-200">
-          <Kpi
-            label="Arrancaron flow"
-            value={metrics.form_started_sessions}
-            compact
-          />
-          <Kpi
-            label="Enviaron form"
-            value={metrics.form_submitted_sessions}
-            compact
-          />
-          <Kpi
-            label="Completaron KYC"
-            value={metrics.kyc_submitted_sessions}
-            compact
-          />
-        </div>
-      </Section>
+        <FunnelChart funnel={metrics.funnel} />
+      </Panel>
+    </div>
+  );
+}
 
-      {/* Events by name */}
-      <Section
+function FunnelTab({ metrics }: { metrics: MetricsResponse }) {
+  return (
+    <div className="mt-8 space-y-6">
+      <Panel
+        title="Embudo Préstamo MÁS"
+        subtitle="Sesiones únicas que llegan a cada paso y la tasa de avance."
+      >
+        <FunnelChart funnel={metrics.funnel} detailed />
+      </Panel>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Kpi
+          label="Arrancaron el flow"
+          value={metrics.form_started_sessions}
+        />
+        <Kpi label="Enviaron form" value={metrics.form_submitted_sessions} />
+        <Kpi
+          label="Completaron KYC"
+          value={metrics.kyc_submitted_sessions}
+          accent={R2.positive}
+        />
+      </div>
+
+      <Panel
         title="Eventos totales por nombre"
-        subtitle="Suma de eventos brutos (no de sesiones únicas)."
+        subtitle="Suma bruta de eventos disparados (no sesiones únicas)."
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
           {Object.entries(metrics.events_by_name)
@@ -284,83 +470,420 @@ export default function MetricsDashboardPage() {
             .map(([name, count]) => (
               <div
                 key={name}
-                className="bg-uber-gray-100 rounded-card px-3 py-2 flex items-center justify-between"
+                className="flex items-center justify-between rounded-md px-3 py-2"
+                style={{
+                  background: R2.bgPanelHover,
+                  border: `1px solid ${R2.borderSubtle}`,
+                }}
               >
-                <span className="font-mono text-[12px] text-uber-gray-700 truncate">
+                <span
+                  className="font-mono text-[11px] truncate"
+                  style={{ color: R2.textSecondary }}
+                >
                   {name}
                 </span>
-                <span className="text-[14px] font-bold text-black">
+                <span
+                  className="font-bold text-[13px]"
+                  style={{ color: R2.textPrimary }}
+                >
                   {count}
                 </span>
               </div>
             ))}
         </div>
-      </Section>
-
-      {/* Eventos recientes */}
-      <Section
-        title={`Últimos ${events?.count ?? 0} eventos`}
-        subtitle="Auditoría cronológica."
-      >
-        <div className="overflow-auto border border-uber-gray-200 rounded-card">
-          <table className="w-full text-[12px]">
-            <thead className="bg-uber-gray-100 text-uber-gray-700">
-              <tr>
-                <th className="text-left px-3 py-2 font-bold">Hora</th>
-                <th className="text-left px-3 py-2 font-bold">Evento</th>
-                <th className="text-left px-3 py-2 font-bold">Sesión</th>
-                <th className="text-left px-3 py-2 font-bold">Metadata</th>
-              </tr>
-            </thead>
-            <tbody>
-              {events?.events.slice(0, 80).map((e, i) => {
-                const sid =
-                  (e.metadata as { session_id?: string } | undefined)
-                    ?.session_id ?? "—";
-                const step =
-                  (e.metadata as { step?: string } | undefined)?.step;
-                const offerId =
-                  (e.metadata as { offer_id?: string } | undefined)?.offer_id;
-                const summary = [
-                  step && `step=${step}`,
-                  offerId && `offer=${offerId}`,
-                ]
-                  .filter(Boolean)
-                  .join(" · ");
-                return (
-                  <tr
-                    key={i}
-                    className="border-t border-uber-gray-200 hover:bg-uber-gray-100"
-                  >
-                    <td className="px-3 py-2 font-mono whitespace-nowrap text-uber-gray-700">
-                      {new Date(e.timestamp).toLocaleTimeString("es-MX")}
-                    </td>
-                    <td className="px-3 py-2 font-mono">{e.event_name}</td>
-                    <td className="px-3 py-2 font-mono text-uber-gray-500">
-                      {sid.slice(0, 12)}
-                    </td>
-                    <td className="px-3 py-2 text-uber-gray-700">
-                      {summary || "—"}
-                    </td>
-                  </tr>
-                );
-              })}
-              {(!events || events.events.length === 0) && (
-                <tr>
-                  <td colSpan={4} className="px-3 py-6 text-center text-uber-gray-500">
-                    Todavía no hay eventos registrados.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </Section>
+      </Panel>
     </div>
   );
 }
 
-function Section({
+function ApplicationsTab({
+  data,
+}: {
+  data: ApplicationsListResponse | null;
+}) {
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const apps = data?.applications ?? [];
+
+  const stats = useMemo(() => {
+    const byStatus: Record<string, number> = {};
+    for (const a of apps) byStatus[a.decision_status] = (byStatus[a.decision_status] ?? 0) + 1;
+    return byStatus;
+  }, [apps]);
+
+  return (
+    <div className="mt-8 space-y-6">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <Kpi label="Total aplicaciones" value={apps.length} compact />
+        <Kpi
+          label="Pending"
+          value={stats["UNDERWRITING_PENDING"] ?? 0}
+          compact
+          accent={R2.teal}
+        />
+        <Kpi
+          label="Approved"
+          value={stats["APPROVED"] ?? 0}
+          compact
+          accent={R2.positive}
+        />
+        <Kpi
+          label="Manual review"
+          value={stats["MANUAL_REVIEW"] ?? 0}
+          compact
+          accent={R2.orange}
+        />
+        <Kpi
+          label="Rejected"
+          value={stats["REJECTED"] ?? 0}
+          compact
+          accent={R2.danger}
+        />
+      </div>
+
+      <Panel
+        title={`Aplicaciones registradas (${apps.length})`}
+        subtitle="Data real capturada de cada merchant con resultados del underwriting."
+      >
+        {apps.length === 0 ? (
+          <EmptyState text="Todavía no se registraron aplicaciones. Compartí el link y los merchants aparecerán acá." />
+        ) : (
+          <div className="overflow-auto">
+            <table
+              className="w-full text-[12px] border-collapse"
+              style={{ color: R2.textSecondary }}
+            >
+              <thead>
+                <tr
+                  style={{
+                    background: R2.bgPanelHover,
+                    borderBottom: `1px solid ${R2.border}`,
+                  }}
+                >
+                  <Th />
+                  <Th>Fecha</Th>
+                  <Th>ID</Th>
+                  <Th>Email</Th>
+                  <Th>RFC</Th>
+                  <Th>Negocio</Th>
+                  <Th>Teléfono</Th>
+                  <Th>Estado</Th>
+                  <Th className="text-right">Monto sugerido</Th>
+                  <Th>KYC</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {apps.map((a) => {
+                  const form = (a.form_data ?? {}) as Record<string, unknown>;
+                  const decision = (a.decision_payload ?? {}) as Record<
+                    string,
+                    unknown
+                  >;
+                  const isExpanded = expanded === a.id;
+                  const amount =
+                    decision.credit_offer &&
+                    typeof (decision.credit_offer as Record<string, unknown>)
+                      .approved_amount === "number"
+                      ? (decision.credit_offer as { approved_amount: number })
+                          .approved_amount
+                      : null;
+                  return (
+                    <>
+                      <tr
+                        key={a.id}
+                        className="cursor-pointer transition-colors"
+                        style={{
+                          borderBottom: `1px solid ${R2.borderSubtle}`,
+                          background: isExpanded ? R2.bgPanelHover : undefined,
+                        }}
+                        onClick={() => setExpanded(isExpanded ? null : a.id)}
+                      >
+                        <Td>
+                          <span
+                            className="inline-block w-4 text-center transition-transform"
+                            style={{
+                              transform: isExpanded ? "rotate(90deg)" : "",
+                              color: R2.textMuted,
+                            }}
+                          >
+                            ▶
+                          </span>
+                        </Td>
+                        <Td>
+                          {new Date(a.created_at).toLocaleString("es-MX", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </Td>
+                        <Td>
+                          <span className="font-mono" style={{ color: R2.textMuted }}>
+                            {a.id.slice(0, 8)}
+                          </span>
+                        </Td>
+                        <Td>
+                          <span style={{ color: R2.textPrimary }}>
+                            {(form.email as string) ?? "—"}
+                          </span>
+                        </Td>
+                        <Td>
+                          <span className="font-mono">
+                            {(form.tax_id as string) ?? "—"}
+                          </span>
+                        </Td>
+                        <Td>{(form.legal_name as string) ?? "—"}</Td>
+                        <Td>
+                          <span className="font-mono">
+                            {(form.phone as string) ?? "—"}
+                          </span>
+                        </Td>
+                        <Td>
+                          <StatusBadge status={a.decision_status} />
+                        </Td>
+                        <Td className="text-right font-bold" style={{ color: R2.textPrimary }}>
+                          {amount !== null
+                            ? `$${amount.toLocaleString("es-MX")}`
+                            : "—"}
+                        </Td>
+                        <Td>
+                          {a.kyc_status ? (
+                            <StatusBadge status={a.kyc_status} small />
+                          ) : (
+                            <span style={{ color: R2.textMuted }}>—</span>
+                          )}
+                        </Td>
+                      </tr>
+                      {isExpanded && (
+                        <tr
+                          key={`${a.id}-expanded`}
+                          style={{
+                            background: R2.bgPanel,
+                            borderBottom: `1px solid ${R2.border}`,
+                          }}
+                        >
+                          <td colSpan={10} className="p-0">
+                            <ApplicationDetail app={a} />
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
+    </div>
+  );
+}
+
+function ApplicationDetail({
+  app,
+}: {
+  app: ApplicationsListResponse["applications"][number];
+}) {
+  const form = (app.form_data ?? {}) as Record<string, unknown>;
+  const decision = (app.decision_payload ?? {}) as Record<string, unknown>;
+  const places = (app.places_result ?? {}) as Record<string, unknown>;
+  const facebook = (app.facebook_result ?? {}) as Record<string, unknown>;
+  const instagram = (app.instagram_result ?? {}) as Record<string, unknown>;
+  const twilio = (app.twilio_result ?? {}) as Record<string, unknown>;
+  const bureau = (app.bureau_result ?? {}) as Record<string, unknown>;
+  const platform = (app.platform_result ?? {}) as Record<string, unknown>;
+  const syntage = (app.syntage_result ?? {}) as Record<string, unknown>;
+  const kyc = (app.kyc_data ?? {}) as Record<string, unknown>;
+
+  return (
+    <div className="p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <DetailSection
+        title="Datos del negocio"
+        data={{
+          email: form.email,
+          legal_name: form.legal_name,
+          rfc: form.tax_id,
+          phone: form.phone,
+          address: form.address,
+          google_maps_url: form.google_business_url,
+          consent_given: form.consent_given,
+        }}
+      />
+      <DetailSection
+        title="Decision engine"
+        data={{
+          status: app.decision_status,
+          total_monthly_revenue: decision.total_monthly_revenue,
+          score: decision.score,
+          credit_offer: decision.credit_offer,
+          reasons: decision.reasons,
+        }}
+      />
+      <DetailSection title="Platform (Uber Eats)" data={platform} />
+      <DetailSection title="Bureau" data={bureau} />
+      <DetailSection title="Syntage / SAT" data={syntage} />
+      <DetailSection title="Google Places" data={places} />
+      <DetailSection title="Facebook" data={facebook} />
+      <DetailSection title="Instagram" data={instagram} />
+      <DetailSection title="Twilio" data={twilio} />
+      {Object.keys(kyc).length > 0 && (
+        <DetailSection title="KYC" data={kyc} className="md:col-span-2 lg:col-span-3" />
+      )}
+    </div>
+  );
+}
+
+function DetailSection({
+  title,
+  data,
+  className,
+}: {
+  title: string;
+  data: Record<string, unknown>;
+  className?: string;
+}) {
+  const keys = Object.keys(data).filter((k) => data[k] !== undefined);
+  return (
+    <div
+      className={["rounded-lg p-3", className ?? ""].join(" ")}
+      style={{
+        background: R2.bgPanelHover,
+        border: `1px solid ${R2.borderSubtle}`,
+      }}
+    >
+      <p
+        className="text-[10px] font-bold uppercase tracking-wider mb-2"
+        style={{ color: R2.primary }}
+      >
+        {title}
+      </p>
+      {keys.length === 0 ? (
+        <p className="text-[11px]" style={{ color: R2.textMuted }}>
+          Sin datos
+        </p>
+      ) : (
+        <dl className="space-y-1 text-[11px]">
+          {keys.map((k) => (
+            <div key={k} className="flex gap-2">
+              <dt
+                className="font-mono flex-shrink-0"
+                style={{ color: R2.textMuted }}
+              >
+                {k}
+              </dt>
+              <dd
+                className="font-mono break-all text-right ml-auto"
+                style={{ color: R2.textPrimary }}
+              >
+                {formatValue(data[k])}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
+    </div>
+  );
+}
+
+function formatValue(v: unknown): string {
+  if (v === null || v === undefined) return "—";
+  if (typeof v === "boolean") return v ? "✓" : "✗";
+  if (typeof v === "number") return v.toLocaleString("es-MX");
+  if (typeof v === "string") return v;
+  try {
+    return JSON.stringify(v);
+  } catch {
+    return String(v);
+  }
+}
+
+function EventsTab({ data }: { data: EventsListResponse | null }) {
+  const events = data?.events ?? [];
+  return (
+    <div className="mt-8 space-y-6">
+      <Panel
+        title={`Últimos ${events.length} eventos`}
+        subtitle="Auditoría cronológica por evento — más recientes primero."
+      >
+        {events.length === 0 ? (
+          <EmptyState text="No hay eventos todavía." />
+        ) : (
+          <div className="overflow-auto">
+            <table
+              className="w-full text-[12px]"
+              style={{ color: R2.textSecondary }}
+            >
+              <thead>
+                <tr
+                  style={{
+                    background: R2.bgPanelHover,
+                    borderBottom: `1px solid ${R2.border}`,
+                  }}
+                >
+                  <Th>Hora</Th>
+                  <Th>Evento</Th>
+                  <Th>Sesión</Th>
+                  <Th>Metadata</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {events.map((e, i) => {
+                  const meta = e.metadata as
+                    | Record<string, unknown>
+                    | undefined;
+                  const sid = (meta?.session_id as string | undefined) ?? "—";
+                  const summary: string[] = [];
+                  if (meta?.step) summary.push(`step=${meta.step}`);
+                  if (meta?.offer_id)
+                    summary.push(`offer=${meta.offer_id}`);
+                  if (meta?.receive_amount)
+                    summary.push(`amount=${meta.receive_amount}`);
+                  return (
+                    <tr
+                      key={i}
+                      style={{
+                        borderBottom: `1px solid ${R2.borderSubtle}`,
+                      }}
+                    >
+                      <Td>
+                        <span className="font-mono">
+                          {new Date(e.timestamp).toLocaleTimeString("es-MX")}
+                        </span>
+                      </Td>
+                      <Td>
+                        <span className="font-mono" style={{ color: R2.textPrimary }}>
+                          {e.event_name}
+                        </span>
+                      </Td>
+                      <Td>
+                        <span
+                          className="font-mono text-[11px]"
+                          style={{ color: R2.textMuted }}
+                        >
+                          {sid.slice(0, 12)}
+                        </span>
+                      </Td>
+                      <Td>
+                        <span className="font-mono text-[11px]">
+                          {summary.join(" · ") || "—"}
+                        </span>
+                      </Td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
+    </div>
+  );
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+ * Primitives
+ * ═════════════════════════════════════════════════════════════════════════ */
+
+function Panel({
   title,
   subtitle,
   children,
@@ -370,10 +893,25 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="bg-white border border-uber-gray-200 rounded-card p-6">
-      <div className="mb-5">
-        <h2 className="text-h2 text-black mb-1">{title}</h2>
-        {subtitle && <p className="text-[14px] text-uber-gray-700">{subtitle}</p>}
+    <section
+      className="rounded-xl p-6"
+      style={{
+        background: R2.bgPanel,
+        border: `1px solid ${R2.border}`,
+      }}
+    >
+      <div className="mb-4">
+        <h2
+          className="text-[18px] font-bold mb-1"
+          style={{ color: R2.textPrimary }}
+        >
+          {title}
+        </h2>
+        {subtitle && (
+          <p className="text-[12px]" style={{ color: R2.textSecondary }}>
+            {subtitle}
+          </p>
+        )}
       </div>
       {children}
     </section>
@@ -385,32 +923,48 @@ function Kpi({
   value,
   helper,
   compact,
+  accent,
 }: {
   label: string;
   value: number;
   helper?: string;
   compact?: boolean;
+  accent?: string;
 }) {
   return (
     <div
-      className={[
-        "bg-white border border-uber-gray-200 rounded-card",
-        compact ? "p-3" : "p-4",
-      ].join(" ")}
+      className="rounded-xl relative overflow-hidden"
+      style={{
+        background: R2.bgPanel,
+        border: `1px solid ${R2.border}`,
+        padding: compact ? "12px 14px" : "18px 20px",
+      }}
     >
-      <p className="text-[12px] font-bold text-uber-gray-500 uppercase tracking-wider mb-1">
+      {accent && (
+        <span
+          className="absolute left-0 top-0 bottom-0 w-[3px]"
+          style={{ background: accent }}
+        />
+      )}
+      <p
+        className="text-[11px] font-bold uppercase tracking-wider mb-1"
+        style={{ color: R2.textMuted }}
+      >
         {label}
       </p>
       <p
-        className={[
-          "font-bold text-black leading-none",
-          compact ? "text-[24px]" : "text-[32px]",
-        ].join(" ")}
+        className="font-bold leading-none"
+        style={{
+          color: R2.textPrimary,
+          fontSize: compact ? "24px" : "32px",
+        }}
       >
         {value.toLocaleString("es-MX")}
       </p>
       {helper && (
-        <p className="text-[12px] text-uber-gray-700 mt-1">{helper}</p>
+        <p className="text-[11px] mt-1" style={{ color: R2.textSecondary }}>
+          {helper}
+        </p>
       )}
     </div>
   );
@@ -420,34 +974,218 @@ function ShareCard({
   label,
   value,
   total,
-  accentClass,
+  color,
 }: {
   label: string;
   value: number;
   total: number;
-  accentClass: string;
+  color: string;
 }) {
   const pct = total > 0 ? (value / total) * 100 : 0;
   return (
-    <div className="border border-uber-gray-200 rounded-card p-4">
+    <div
+      className="rounded-lg p-4"
+      style={{
+        background: R2.bgPanelHover,
+        border: `1px solid ${R2.borderSubtle}`,
+      }}
+    >
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[14px] font-bold text-black">{label}</span>
-        <span className="text-[14px] text-uber-gray-700">
-          <span className="font-bold text-black">{value}</span>
+        <span
+          className="text-[13px] font-bold"
+          style={{ color: R2.textPrimary }}
+        >
+          {label}
+        </span>
+        <span className="text-[13px]" style={{ color: R2.textSecondary }}>
+          <span className="font-bold" style={{ color: R2.textPrimary }}>
+            {value}
+          </span>
           {total > 0 && (
             <>
-              {" "}
-              · {pct.toFixed(1)}%
+              {" · "}
+              {pct.toFixed(1)}%
             </>
           )}
         </span>
       </div>
-      <div className="h-2 bg-uber-gray-200 rounded-full overflow-hidden">
+      <div
+        className="h-1.5 rounded-full overflow-hidden"
+        style={{ background: R2.border }}
+      >
         <div
-          className={`h-full rounded-full transition-all ${accentClass}`}
-          style={{ width: `${pct}%` }}
+          className="h-full rounded-full transition-all"
+          style={{ width: `${pct}%`, background: color }}
         />
       </div>
     </div>
   );
+}
+
+function FunnelChart({
+  funnel,
+  detailed,
+}: {
+  funnel: MetricsResponse["funnel"];
+  detailed?: boolean;
+}) {
+  const max = funnel[0]?.sessions_viewed ?? 0;
+  return (
+    <div className="space-y-3">
+      {funnel.map((f, idx) => {
+        const prev = idx > 0 ? funnel[idx - 1].sessions_viewed : null;
+        const dropoff =
+          prev !== null && prev > 0
+            ? (prev - f.sessions_viewed) / prev
+            : null;
+        const pctOfMax = max > 0 ? (f.sessions_viewed / max) * 100 : 0;
+        return (
+          <div key={f.step}>
+            <div className="flex items-center justify-between mb-1.5">
+              <span
+                className="text-[13px] font-bold"
+                style={{ color: R2.textPrimary }}
+              >
+                {STEP_LABELS[f.step] ?? f.step}
+              </span>
+              <span
+                className="text-[12px]"
+                style={{ color: R2.textSecondary }}
+              >
+                <span className="font-mono">{f.sessions_viewed}</span> vistas
+                {detailed && (
+                  <>
+                    {" · "}
+                    <span className="font-mono">{f.sessions_completed}</span>{" "}
+                    completaron
+                  </>
+                )}
+                {" · "}
+                <span
+                  className="font-bold"
+                  style={{ color: R2.primary }}
+                >
+                  {fmtPct(f.completion_rate)}
+                </span>
+                {dropoff !== null && dropoff > 0 && (
+                  <span
+                    className="ml-2 font-bold"
+                    style={{ color: R2.danger }}
+                  >
+                    −{fmtPct(dropoff)}
+                  </span>
+                )}
+              </span>
+            </div>
+            <div
+              className="h-2.5 rounded-full overflow-hidden"
+              style={{ background: R2.border }}
+            >
+              <div
+                className="h-full rounded-full transition-all"
+                style={{
+                  width: `${pctOfMax}%`,
+                  background: `linear-gradient(90deg, ${R2.primary} 0%, ${R2.primaryDim} 100%)`,
+                }}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function StatusBadge({
+  status,
+  small,
+}: {
+  status: string;
+  small?: boolean;
+}) {
+  const colorMap: Record<string, string> = {
+    UNDERWRITING_PENDING: R2.teal,
+    APPROVED: R2.positive,
+    MANUAL_REVIEW: R2.orange,
+    REJECTED: R2.danger,
+    SUBMITTED: R2.primary,
+  };
+  const color = colorMap[status] ?? R2.textMuted;
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-full font-mono tracking-tight"
+      style={{
+        background: `${color}22`,
+        color,
+        border: `1px solid ${color}44`,
+        padding: small ? "2px 8px" : "3px 10px",
+        fontSize: small ? "10px" : "11px",
+      }}
+    >
+      <span
+        className="w-1.5 h-1.5 rounded-full"
+        style={{ background: color }}
+      />
+      {status.replace(/_/g, " ").toLowerCase()}
+    </span>
+  );
+}
+
+function EmptyState({ text }: { text: string }) {
+  return (
+    <div
+      className="text-center py-12 rounded-lg"
+      style={{
+        color: R2.textMuted,
+        background: R2.bgPanelHover,
+        border: `1px dashed ${R2.borderSubtle}`,
+      }}
+    >
+      {text}
+    </div>
+  );
+}
+
+function Th({
+  children,
+  className,
+}: {
+  children?: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <th
+      className={[
+        "text-left px-3 py-2 font-bold text-[11px] uppercase tracking-wider",
+        className ?? "",
+      ].join(" ")}
+      style={{ color: R2.textMuted }}
+    >
+      {children}
+    </th>
+  );
+}
+
+function Td({
+  children,
+  className,
+  style,
+}: {
+  children?: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <td
+      className={["px-3 py-2.5 whitespace-nowrap", className ?? ""].join(" ")}
+      style={style}
+    >
+      {children}
+    </td>
+  );
+}
+
+function fmtPct(ratio: number): string {
+  if (!isFinite(ratio) || isNaN(ratio)) return "—";
+  return (ratio * 100).toFixed(1) + "%";
 }

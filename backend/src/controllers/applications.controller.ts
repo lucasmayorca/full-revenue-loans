@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   createApplication,
   getApplicationById,
+  listAllApplications,
   submitApplication,
   updateConsent as updateConsentService,
   submitKyc as submitKycService,
@@ -171,6 +172,29 @@ export async function prequalify(
     }
     const result = await prequalifyService(id, app.merchant_id);
     res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * GET /applications — lista todas las aplicaciones para el dashboard admin.
+ * Devuelve datos del formulario + resultados del underwriting (reales si hay
+ * credenciales, stubs si DEMO_MODE).
+ */
+export async function listAll(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { limit } = req.query as { limit?: string };
+    const parsedLimit = limit ? Math.min(parseInt(limit, 10) || 0, 1000) : 500;
+    const all = await listAllApplications({ limit: parsedLimit });
+    res.json({
+      count: all.length,
+      applications: all.map(serializeApp),
+    });
   } catch (err) {
     next(err);
   }

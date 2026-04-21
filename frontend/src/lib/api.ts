@@ -136,7 +136,33 @@ export const api = {
       `/events${query ? `?${query}` : ""}`
     );
   },
+
+  listApplications: (limit = 500) =>
+    request<ApplicationsListResponse>(`/applications?limit=${limit}`),
 };
+
+export interface ApplicationsListResponse {
+  count: number;
+  applications: Array<{
+    id: string;
+    merchant_id: string;
+    decision_status: string;
+    kyc_status?: string;
+    form_data?: Record<string, unknown>;
+    decision_payload?: Record<string, unknown>;
+    syntage_result?: Record<string, unknown>;
+    places_result?: Record<string, unknown>;
+    facebook_result?: Record<string, unknown>;
+    instagram_result?: Record<string, unknown>;
+    twilio_result?: Record<string, unknown>;
+    bureau_result?: Record<string, unknown>;
+    platform_result?: Record<string, unknown>;
+    consent_data?: Record<string, unknown>;
+    kyc_data?: Record<string, unknown>;
+    created_at: string;
+    updated_at: string;
+  }>;
+}
 
 export interface MetricsResponse {
   generated_at: string;
