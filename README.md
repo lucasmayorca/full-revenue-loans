@@ -240,11 +240,29 @@ cd frontend && vercel deploy --prod
 
 ---
 
+## Persistencia
+
+**Postgres en Railway** (servicio `Postgres` del project `discerning-emotion`). Se conecta vía `DATABASE_URL=${{Postgres.DATABASE_URL}}` (referencia interna sin SSL).
+
+- Schema en `backend/src/db/schema.sql` (tablas `applications` + `events`, ambas con JSONB para datos anidados)
+- Migraciones idempotentes corren en cada boot (`backend/src/db/migrate.ts`)
+- Cliente con pool singleton en `backend/src/clients/pgClient.ts`
+- **Fallback automático a in-memory** si `DATABASE_URL` no está seteada → permite seguir corriendo local sin DB
+
+Para conectarse a la DB desde local:
+```bash
+railway variables --service Postgres --kv | grep DATABASE_PUBLIC_URL
+psql <esa URL>
+```
+
+---
+
 ## Stack
 
 | Capa | Tecnología |
 |---|---|
 | Frontend | Next.js 14 (App Router), TypeScript, Tailwind |
 | Backend | Express, TypeScript, Zod |
+| DB | Postgres (Railway) |
 | Infra | Railway, Vercel, Docker |
 | APIs externas | Google Places, Facebook Graph v19, Twilio Lookup v2, Syntage (SAT) |

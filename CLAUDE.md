@@ -247,9 +247,16 @@ El cliente `facebookClient.getPageData` hace degradación elegante: si los scope
 | Admin dashboard | https://full-revenue-frontend-zw22.vercel.app/admin/metrics | Vercel |
 
 **Railway project:** `discerning-emotion` / service `full-revenue-backend` (ID `3674e2c3-6dc0-4871-9094-8ae47a091499`).
+**Postgres service:** `Postgres` (ID `057365d0-ee4a-4bac-8254-609e82a51bbe`) — conectado vía `DATABASE_URL=${{Postgres.DATABASE_URL}}`.
 **Vercel team:** `lucasmayorca-7991s-projects`.
 **Auto-deploy:** push a `main` en GitHub dispara build en ambos.
 **Manual redeploy:** `cd backend && railway up --detach`.
+
+### Persistencia
+- Tablas: `applications` y `events` (ambas con JSONB para datos anidados)
+- Schema en `backend/src/db/schema.sql`, aplicado idempotentemente al boot por `backend/src/db/migrate.ts`
+- Cliente con pool singleton en `backend/src/clients/pgClient.ts`
+- Si `DATABASE_URL` está vacía, fallback automático a in-memory (local dev)
 
 ### Frontend (`frontend/.env.local`)
 
