@@ -224,14 +224,32 @@ Ver `backend/.env.example` como referencia. Todas las variables se validan con Z
 | `FIRESTORE_EMULATOR_HOST` | Opcional | Ej. `localhost:8080` para desarrollo con emulador |
 
 **Scopes/permisos de Facebook OAuth:**
-- `pages_show_list` — listar páginas del negocio
-- `pages_read_engagement` — fan_count, ratings
-- `instagram_basic` — followers, media count
-- `business_management` — acceso a cuentas de negocio
+- **Camino B (actual, sin App Review):** `public_profile`, `email` — solo valida identidad del dueño
+- **Camino A (pendiente de App Review):** sumar `pages_show_list`, `pages_read_engagement`, `instagram_basic`, `business_management`
+
+El cliente `facebookClient.getPageData` hace degradación elegante: si los scopes avanzados no están aprobados, devuelve `connected: true` con `user_id`, `user_name`, `user_email` y los campos de página quedan vacíos. El underwriting sigue funcionando.
+
+**App de Facebook activa:** App ID `2174442286689292` (tipo Negocios, bajo el portfolio "Salvador Morlacos").
 
 **Callback URLs a registrar en Facebook Developers:**
 - `${BACKEND_URL}/full-revenue/oauth/facebook/callback`
 - En dev: `http://localhost:3001/full-revenue/oauth/facebook/callback`
+
+---
+
+## Deployments
+
+| Entorno | URL | Plataforma |
+|---|---|---|
+| Frontend canónico | https://full-revenue-frontend-zw22.vercel.app | Vercel |
+| Frontend alt | https://full-revenue-frontend.vercel.app | Vercel |
+| Backend API | https://full-revenue-backend-production.up.railway.app | Railway |
+| Admin dashboard | https://full-revenue-frontend-zw22.vercel.app/admin/metrics | Vercel |
+
+**Railway project:** `discerning-emotion` / service `full-revenue-backend` (ID `3674e2c3-6dc0-4871-9094-8ae47a091499`).
+**Vercel team:** `lucasmayorca-7991s-projects`.
+**Auto-deploy:** push a `main` en GitHub dispara build en ambos.
+**Manual redeploy:** `cd backend && railway up --detach`.
 
 ### Frontend (`frontend/.env.local`)
 
