@@ -117,4 +117,57 @@ export const api = {
         timestamp: new Date().toISOString(),
       }),
     }),
+
+  getMetrics: () => request<MetricsResponse>("/events/metrics"),
+
+  listEvents: (params?: {
+    event_name?: string;
+    session_id?: string;
+    since?: string;
+    limit?: number;
+  }) => {
+    const qs = new URLSearchParams();
+    if (params?.event_name) qs.set("event_name", params.event_name);
+    if (params?.session_id) qs.set("session_id", params.session_id);
+    if (params?.since) qs.set("since", params.since);
+    if (params?.limit) qs.set("limit", String(params.limit));
+    const query = qs.toString();
+    return request<EventsListResponse>(
+      `/events${query ? `?${query}` : ""}`
+    );
+  },
 };
+
+export interface MetricsResponse {
+  generated_at: string;
+  total_events: number;
+  events_by_name: Record<string, number>;
+  unique_sessions: number;
+  offers_page: {
+    total_sessions: number;
+    banner_sessions_viewed: number;
+    banner_sessions_clicked: number;
+    banner_click_through_rate: number;
+    card_sessions_clicked: number;
+    card_clicks_by_offer: Record<string, number>;
+  };
+  funnel: Array<{
+    step: string;
+    sessions_viewed: number;
+    sessions_completed: number;
+    completion_rate: number;
+  }>;
+  form_started_sessions: number;
+  form_submitted_sessions: number;
+  kyc_submitted_sessions: number;
+}
+
+export interface EventsListResponse {
+  count: number;
+  events: Array<{
+    event_name: string;
+    merchant_id: string;
+    metadata?: Record<string, unknown>;
+    timestamp: string;
+  }>;
+}

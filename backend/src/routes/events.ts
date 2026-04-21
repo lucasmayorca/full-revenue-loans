@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { validateBody } from "../middleware/validateRequest";
-import { track } from "../controllers/events.controller";
+import { track, list, metrics } from "../controllers/events.controller";
 
 const router = Router();
 
@@ -12,7 +12,13 @@ const eventSchema = z.object({
   timestamp: z.string().datetime().optional(),
 });
 
-// POST /events
+// POST /events — registrar evento
 router.post("/", validateBody(eventSchema), track);
+
+// GET /events/metrics — agregados para dashboard
+router.get("/metrics", metrics);
+
+// GET /events — listado de eventos recientes (filtros via query)
+router.get("/", list);
 
 export default router;
