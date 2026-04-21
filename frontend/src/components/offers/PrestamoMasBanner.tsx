@@ -5,131 +5,79 @@ import { useRouter } from "next/navigation";
 import { useTracking } from "@/hooks/useTracking";
 import { EVENTS } from "@/lib/tracking";
 
+/**
+ * Banner compacto que se muestra como **alternativa** a las 3 ofertas RBF
+ * regulares. Layout horizontal en una sola fila (~80-100px de alto) para
+ * no competir visualmente con las cards principales y dejar que el usuario
+ * entienda que el default es aplicar a alguna de las 3 ofertas, y que
+ * Préstamo MÁS es una opción extra para acceder a montos más altos.
+ */
 export function PrestamoMasBanner() {
   const router = useRouter();
   const { trackEvent } = useTracking();
 
   useEffect(() => {
-    trackEvent(EVENTS.BANNER_VIEWED);
+    trackEvent(EVENTS.BANNER_VIEWED, { surface: "offers_feed" });
   }, [trackEvent]);
 
   function handleClick() {
-    trackEvent(EVENTS.BANNER_CLICKED);
+    trackEvent(EVENTS.BANNER_CLICKED, { surface: "offers_feed" });
     router.push("/full-revenue/info");
   }
 
   return (
-    <section
-      className="relative bg-black text-white rounded-card overflow-hidden"
-      aria-label="Préstamo MÁS — Producto nuevo"
+    <button
+      type="button"
+      onClick={handleClick}
+      aria-label="Conocer Préstamo MÁS, opción alternativa"
+      className="w-full flex items-center justify-between gap-4 border-2 border-black bg-white hover:bg-uber-gray-100 transition-colors rounded-card px-5 py-4 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
     >
-      {/* Acentos decorativos */}
-      <div
-        aria-hidden
-        className="absolute -right-16 -top-16 w-80 h-80 rounded-full bg-uber-green opacity-10"
-      />
-      <div
-        aria-hidden
-        className="absolute -right-6 -bottom-10 w-48 h-48 rounded-full bg-white opacity-[0.04]"
-      />
-
-      <div className="relative flex flex-col md:flex-row items-start md:items-center justify-between gap-8 p-8 md:p-10">
-        {/* Izquierda: copy */}
-        <div className="flex-1 max-w-[620px]">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="inline-flex items-center gap-1 bg-uber-green text-black font-bold text-[12px] uppercase tracking-wider px-2.5 py-1 rounded-sm">
-              Nuevo
-            </span>
-            <span className="text-[13px] text-white/70 font-medium uppercase tracking-wider">
-              Préstamo MÁS
-            </span>
-          </div>
-
-          <h2 className="text-[28px] md:text-[32px] font-bold leading-[1.15] mb-3">
-            Desbloquea hasta <span className="text-uber-green">4x más crédito</span>{" "}
-            compartiendo el 100% de tus ingresos.
-          </h2>
-
-          <p className="text-[16px] leading-6 text-white/80 mb-5">
-            Comparte tus datos fiscales, bancarios y de presencia digital para
-            acceder a una oferta de préstamo personalizada basada en el total de
-            las ventas de tu negocio, no solo las de Uber Eats.
-          </p>
-
-          <ul className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-6 text-[14px]">
-            <li className="flex items-center gap-2 text-white/90">
-              <CheckIcon />
-              Hasta $200,000 MXN
-            </li>
-            <li className="flex items-center gap-2 text-white/90">
-              <CheckIcon />
-              Evaluación en minutos
-            </li>
-            <li className="flex items-center gap-2 text-white/90">
-              <CheckIcon />
-              Sin visitas ni papeleo
-            </li>
-          </ul>
-
-          <button
-            type="button"
-            onClick={handleClick}
-            className="inline-flex items-center gap-2 bg-white text-black font-bold text-[16px] h-12 px-6 rounded-btn hover:bg-uber-gray-200 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-uber-green focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+      <div className="flex items-center gap-4 min-w-0">
+        {/* Icono verde */}
+        <div className="w-10 h-10 rounded-card bg-uber-green flex items-center justify-center flex-shrink-0">
+          <svg
+            className="w-5 h-5 text-black"
+            viewBox="0 0 24 24"
+            fill="currentColor"
           >
-            Ver mi oferta
-            <svg
-              className="w-4 h-4"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
-              />
-            </svg>
-          </button>
+            <path d="M13 2L4.09 12.97l1.91.03H11l-1 9 9-11h-6l1-9z" />
+          </svg>
         </div>
 
-        {/* Derecha: ilustración */}
-        <div className="relative hidden md:flex items-center justify-center w-[280px] h-[200px] flex-shrink-0">
-          <div className="absolute inset-0 rounded-card border border-white/10 bg-white/[0.03]" />
-          <div className="relative text-center">
-            <div className="text-[12px] font-medium uppercase tracking-wider text-white/60 mb-2">
-              Oferta base Uber Eats
-            </div>
-            <div className="text-[28px] font-bold text-white/50 line-through mb-2">
-              $62,800
-            </div>
-            <div className="w-12 h-px bg-white/20 mx-auto mb-2" />
-            <div className="text-[12px] font-medium uppercase tracking-wider text-uber-green mb-1">
-              Con Préstamo MÁS
-            </div>
-            <div className="text-[40px] font-bold leading-none text-white">
-              $200k
-            </div>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+            <span className="text-[11px] font-bold text-uber-gray-500 uppercase tracking-wider">
+              Opción alternativa · Nuevo
+            </span>
           </div>
+          <p className="text-[16px] font-bold text-black leading-5">
+            ¿Necesitas más crédito? Desbloquea hasta{" "}
+            <span className="text-uber-green">4x más</span> con Préstamo MÁS
+          </p>
+          <p className="text-[13px] text-uber-gray-700 leading-5 mt-0.5 hidden sm:block">
+            Comparte tus datos fiscales y de presencia digital para acceder a
+            una oferta más alta basada en el 100% de tus ingresos.
+          </p>
         </div>
       </div>
-    </section>
-  );
-}
 
-function CheckIcon() {
-  return (
-    <svg
-      className="w-4 h-4 text-uber-green flex-shrink-0"
-      viewBox="0 0 20 20"
-      fill="currentColor"
-      aria-hidden
-    >
-      <path
-        fillRule="evenodd"
-        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-        clipRule="evenodd"
-      />
-    </svg>
+      {/* CTA */}
+      <span className="inline-flex items-center gap-1.5 text-[14px] font-bold text-black whitespace-nowrap flex-shrink-0">
+        Conocer más
+        <svg
+          className="w-4 h-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.5}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
+          />
+        </svg>
+      </span>
+    </button>
   );
 }

@@ -80,10 +80,11 @@ export function GamifiedApplicationForm() {
     fiscal: DEFAULT_FISCAL_OFFER,
   });
 
-  /* ── Persist flow step ── */
+  /* ── Persist flow step + track step view for funnel metrics ── */
   useEffect(() => {
     if (typeof window !== "undefined") sessionStorage.setItem(SS_FLOW_STEP, flowStep);
-  }, [flowStep]);
+    trackEvent(EVENTS.STEP_VIEWED, { step: flowStep });
+  }, [flowStep, trackEvent]);
 
   /* ── Restore state after OAuth redirect ── */
   useEffect(() => {

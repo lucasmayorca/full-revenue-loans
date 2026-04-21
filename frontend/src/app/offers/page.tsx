@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PrestamoMasBanner } from "@/components/offers/PrestamoMasBanner";
+import { useTracking } from "@/hooks/useTracking";
+import { EVENTS } from "@/lib/tracking";
 
 type OfferId = "oferta1" | "oferta2" | "oferta3";
 
@@ -52,11 +54,49 @@ function formatMxn(value: number) {
 type TabId = "ofertas" | "beneficios" | "como" | "faq";
 
 export default function FinanciamientoPage() {
+  const { trackEvent } = useTracking();
   const [activeTab, setActiveTab] = useState<TabId>("ofertas");
   const [expanded, setExpanded] = useState<OfferId | null>("oferta1");
   const [personaType, setPersonaType] = useState<"fisica" | "moral">("fisica");
   const [consentChecked, setConsentChecked] = useState(false);
   const [surveyOpen, setSurveyOpen] = useState(false);
+
+  useEffect(() => {
+    trackEvent(EVENTS.OFFERS_PAGE_VIEWED);
+    // track each offer card view con el orden de display
+    OFFERS.forEach((offer, idx) => {
+      trackEvent(EVENTS.OFFER_CARD_VIEWED, {
+        offer_id: offer.id,
+        position: idx,
+        receive_amount: offer.receive,
+      });
+    });
+  }, [trackEvent]);
+
+  function handleTabChange(tab: TabId) {
+    setActiveTab(tab);
+    trackEvent(EVENTS.OFFERS_TAB_CHANGED, { tab });
+  }
+
+  function handleOfferSelect(offer: RbfOffer) {
+    trackEvent(EVENTS.OFFER_CARD_SELECT_CLICKED, {
+      offer_id: offer.id,
+      receive_amount: offer.receive,
+      retention: offer.retention,
+    });
+    alert(
+      "Esta oferta base no está disponible en el prototipo. Prueba Préstamo MÁS arriba."
+    );
+  }
+
+  function handleOfferToggle(offerId: OfferId) {
+    const wasExpanded = expanded === offerId;
+    setExpanded(wasExpanded ? null : offerId);
+    trackEvent(EVENTS.OFFER_DETAILS_TOGGLED, {
+      offer_id: offerId,
+      expanded: !wasExpanded,
+    });
+  }
 
   return (
     <div className="max-w-[1200px] mx-auto px-8 py-8">
@@ -70,25 +110,25 @@ export default function FinanciamientoPage() {
         <nav className="flex items-center gap-2">
           <TabButton
             active={activeTab === "ofertas"}
-            onClick={() => setActiveTab("ofertas")}
+            onClick={() => handleTabChange("ofertas")}
           >
             Ofertas
           </TabButton>
           <TabButton
             active={activeTab === "beneficios"}
-            onClick={() => setActiveTab("beneficios")}
+            onClick={() => handleTabChange("beneficios")}
           >
             Beneficios
           </TabButton>
           <TabButton
             active={activeTab === "como"}
-            onClick={() => setActiveTab("como")}
+            onClick={() => handleTabChange("como")}
           >
             Cómo funciona
           </TabButton>
           <TabButton
             active={activeTab === "faq"}
-            onClick={() => setActiveTab("faq")}
+            onClick={() => handleTabChange("faq")}
           >
             Preguntas frecuentes
           </TabButton>
@@ -125,9 +165,8 @@ export default function FinanciamientoPage() {
                 key={offer.id}
                 offer={offer}
                 expanded={expanded === offer.id}
-                onToggle={() =>
-                  setExpanded(expanded === offer.id ? null : offer.id)
-                }
+                onToggle={() => handleOfferToggle(offer.id)}
+                onSelect={() => handleOfferSelect(offer)}
               />
             ))}
           </div>
@@ -297,10 +336,12 @@ function OfferCard({
   offer,
   expanded,
   onToggle,
+  onSelect,
 }: {
   offer: RbfOffer;
   expanded: boolean;
   onToggle: () => void;
+  onSelect: () => void;
 }) {
   return (
     <div className="bg-white border border-uber-gray-200 rounded-card pt-6 pb-4 px-4 flex flex-col gap-6">
@@ -356,12 +397,8 @@ function OfferCard({
 
       <button
         type="button"
+        onClick={onSelect}
         className="w-full h-10 bg-black text-white text-[16px] font-bold rounded-btn hover:bg-uber-gray-900 transition-colors"
-        onClick={() => {
-          alert(
-            "Esta oferta base no está disponible en el prototipo. Prueba Préstamo MÁS arriba."
-          );
-        }}
       >
         Seleccionar
       </button>
