@@ -21,6 +21,10 @@ RUN npm ci --omit=dev
 
 COPY --from=builder /app/dist ./dist
 
+# Pre-crear el directorio de uploads con ownership node:node
+# (el runtime lo usa vía multer para guardar documentos KYC)
+RUN mkdir -p /app/uploads/kyc && chown -R node:node /app/uploads
+
 EXPOSE 3001
 
 USER node
