@@ -1,11 +1,10 @@
-import { Timestamp } from "@google-cloud/firestore";
 import { logger } from "../utils/logger";
-import { env } from "../config/env";
+import { isPgEnabled, query } from "../clients/pgClient";
 
 /**
- * Registro en memoria de los eventos para poder consultarlos vía GET /events
- * sin depender de Firestore en el prototipo. Buffer circular de N eventos
- * (persistencia solo mientras el proceso está vivo — aceptable para feedback).
+ * Eventos para tracking. Escritos a Postgres (si DATABASE_URL está set) y
+ * mantenidos en memoria para queries rápidas y agregaciones del dashboard.
+ * Al bootear se hidrata el buffer in-memory desde Postgres.
  */
 export interface StoredEvent {
   event_name: string;
@@ -16,15 +15,53 @@ export interface StoredEvent {
 
 const MAX_IN_MEMORY = 20_000;
 const inMemoryEvents: StoredEvent[] = [];
+let hydrated = false;
+
+/**
+ * Hidrata inMemoryEvents desde Postgres en boot. Idempotente.
+ * Llamado lazy desde listEvents/computeMetrics para no requerir cambios en index.ts.
+ */
+async function hydrateFromPg(): Promise<void> {
+  if (hydrated || !isPgEnabled()) {
+    hydrated = true;
+    return;
+  }
+  try {
+    const res = await query(
+      `SELECT event_name, session_id, payload, created_at
+       FROM events
+       ORDER BY created_at DESC
+       LIMIT $1`,
+      [MAX_IN_MEMORY]
+    );
+    // Insertamos en orden cronológico ascendente (los más viejos primero)
+    const rows = res.rows.reverse();
+    for (const row of rows as Array<{ event_name: string; session_id: string | null; payload: Record<string, unknown> | null; created_at: Date }>) {
+      const meta = (row.payload ?? {}) as Record<string, unknown>;
+      if (row.session_id && !meta.session_id) meta.session_id = row.session_id;
+      inMemoryEvents.push({
+        event_name: row.event_name,
+        merchant_id: (meta.merchant_id as string) ?? "",
+        metadata: meta,
+        timestamp: row.created_at.toISOString(),
+      });
+    }
+    hydrated = true;
+    logger.info("events_hydrated_from_pg", { count: inMemoryEvents.length });
+  } catch (err) {
+    logger.warn("events_hydrate_failed", { error: String(err) });
+    hydrated = true; // no reintentar
+  }
+}
 
 export async function storeEvent(
   eventName: string,
   merchantId: string,
   metadata?: Record<string, unknown>
 ): Promise<void> {
+  await hydrateFromPg();
   const now = new Date().toISOString();
 
-  // Siempre guardamos en memoria para exponerlos vía GET /events
   inMemoryEvents.push({
     event_name: eventName,
     merchant_id: merchantId,
@@ -35,37 +72,35 @@ export async function storeEvent(
     inMemoryEvents.splice(0, inMemoryEvents.length - MAX_IN_MEMORY);
   }
 
-  if (env.DEMO_MODE) {
-    logger.info("event_tracked", {
+  if (!isPgEnabled()) {
+    logger.info("event_tracked_in_memory", {
       event_name: eventName,
       merchant_id: merchantId,
-      metadata,
     });
     return;
   }
 
-  // En producción además persistimos en Firestore si está configurado
+  // Persistir en Postgres
   try {
-    const { getFirestore, COLLECTIONS } = require("../clients/firestoreClient");
-    const db = getFirestore();
-    await db.collection(COLLECTIONS.EVENTS).add({
-      event_name: eventName,
-      merchant_id: merchantId,
-      metadata,
-      timestamp: Timestamp.now(),
-    });
+    const sessionId =
+      (metadata as { session_id?: string } | undefined)?.session_id ?? null;
+    const payload = { ...(metadata ?? {}), merchant_id: merchantId };
+    await query(
+      `INSERT INTO events (session_id, event_name, payload) VALUES ($1, $2, $3::jsonb)`,
+      [sessionId, eventName, JSON.stringify(payload)]
+    );
   } catch (err) {
-    // Firestore opcional — no romper el tracking si no está configurado
-    logger.warn("firestore_event_write_failed", { err: String(err) });
+    logger.warn("pg_event_write_failed", { err: String(err) });
   }
 }
 
-export function listEvents(options?: {
+export async function listEvents(options?: {
   since?: string;
   eventName?: string;
   sessionId?: string;
   limit?: number;
-}): StoredEvent[] {
+}): Promise<StoredEvent[]> {
+  await hydrateFromPg();
   let results = inMemoryEvents.slice();
 
   if (options?.since) {
@@ -104,7 +139,8 @@ export function listEvents(options?: {
  * - funnel: sessions únicas por step del GamifiedFlow (dropoff)
  * - events_by_name: suma total por evento
  */
-export function computeMetrics() {
+export async function computeMetrics() {
+  await hydrateFromPg();
   const uniqueSessions = new Set<string>();
   const eventsByName: Record<string, number> = {};
 

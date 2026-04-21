@@ -34,7 +34,7 @@ export async function list(
       limit?: string;
     };
     const parsedLimit = limit ? Math.min(parseInt(limit, 10) || 0, 5000) : 500;
-    const results = listEvents({
+    const results = await listEvents({
       since,
       eventName: event_name,
       sessionId: session_id,
@@ -53,7 +53,7 @@ export async function metrics(
   next: NextFunction
 ): Promise<void> {
   try {
-    res.json(computeMetrics());
+    res.json(await computeMetrics());
   } catch (err) {
     next(err);
   }

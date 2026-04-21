@@ -12,9 +12,83 @@ import {
 } from "../models/Application";
 import { runUnderwriting, runPrequalification } from "./underwriting.service";
 import { logger } from "../utils/logger";
+import { isPgEnabled, query } from "../clients/pgClient";
 
-// In-memory store — works without Firestore for local dev / DEMO_MODE
+// In-memory fallback — se usa cuando DATABASE_URL no está configurada
+// (local dev / DEMO_MODE sin Postgres).
 const memStore = new Map<string, ApplicationDoc>();
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function timestampFromDate(date: Date): Timestamp {
+  return new Timestamp(Math.floor(date.getTime() / 1000), 0);
+}
+
+function rowToDoc(row: { id: string; merchant_id: string; decision_status: string; created_at: Date; updated_at: Date; data: Record<string, unknown> }): ApplicationDoc {
+  const data = row.data as Partial<ApplicationDoc>;
+  return {
+    ...data,
+    id: row.id,
+    merchant_id: row.merchant_id,
+    decision_status: row.decision_status as ApplicationDoc["decision_status"],
+    created_at: timestampFromDate(row.created_at),
+    updated_at: timestampFromDate(row.updated_at),
+  };
+}
+
+function docToDataJson(doc: ApplicationDoc): Record<string, unknown> {
+  // Extraemos los campos "columnados" para no duplicar
+  const {
+    id: _id,
+    merchant_id: _mid,
+    decision_status: _st,
+    created_at: _c,
+    updated_at: _u,
+    ...rest
+  } = doc;
+  return rest as Record<string, unknown>;
+}
+
+// ── Persistencia ──────────────────────────────────────────────────────────────
+
+async function upsertDoc(doc: ApplicationDoc): Promise<void> {
+  if (!isPgEnabled()) {
+    memStore.set(doc.id, doc);
+    return;
+  }
+
+  const createdAt = new Date(doc.created_at.seconds * 1000);
+  const updatedAt = new Date(doc.updated_at.seconds * 1000);
+  const data = docToDataJson(doc);
+
+  await query(
+    `INSERT INTO applications (id, merchant_id, decision_status, created_at, updated_at, data)
+     VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+     ON CONFLICT (id) DO UPDATE SET
+       merchant_id = EXCLUDED.merchant_id,
+       decision_status = EXCLUDED.decision_status,
+       updated_at = EXCLUDED.updated_at,
+       data = EXCLUDED.data`,
+    [doc.id, doc.merchant_id, doc.decision_status, createdAt, updatedAt, JSON.stringify(data)]
+  );
+}
+
+async function fetchDoc(id: string): Promise<ApplicationDoc | null> {
+  if (!isPgEnabled()) {
+    return memStore.get(id) ?? null;
+  }
+
+  const res = await query(
+    `SELECT id, merchant_id, decision_status, created_at, updated_at, data
+     FROM applications WHERE id = $1`,
+    [id]
+  );
+  if (res.rows.length === 0) return null;
+  const row = res.rows[0] as { id: string; merchant_id: string; decision_status: string; created_at: Date; updated_at: Date; data: Record<string, unknown> };
+  return rowToDoc(row);
+}
+
+// ── API pública ───────────────────────────────────────────────────────────────
 
 export async function createApplication(
   merchantId: string
@@ -30,7 +104,7 @@ export async function createApplication(
     decision_status: "UNDERWRITING_PENDING",
   };
 
-  memStore.set(id, doc);
+  await upsertDoc(doc);
   logger.info("application_created", { id, merchant_id: merchantId });
   return doc;
 }
@@ -38,31 +112,42 @@ export async function createApplication(
 export async function getApplicationById(
   id: string
 ): Promise<ApplicationDoc | null> {
-  return memStore.get(id) ?? null;
+  return fetchDoc(id);
 }
 
 /**
  * Lista TODAS las aplicaciones para el dashboard admin.
- * En prototipo: devuelve memStore completo (luego se reemplaza por query Firestore).
  */
 export async function listAllApplications(options?: {
   limit?: number;
   orderDesc?: boolean;
 }): Promise<ApplicationDoc[]> {
-  const all = Array.from(memStore.values());
-  all.sort((a, b) => {
-    const aTs = a.updated_at?.seconds ?? 0;
-    const bTs = b.updated_at?.seconds ?? 0;
-    return options?.orderDesc === false ? aTs - bTs : bTs - aTs;
-  });
-  return options?.limit ? all.slice(0, options.limit) : all;
+  if (!isPgEnabled()) {
+    const all = Array.from(memStore.values());
+    all.sort((a, b) => {
+      const aTs = a.updated_at?.seconds ?? 0;
+      const bTs = b.updated_at?.seconds ?? 0;
+      return options?.orderDesc === false ? aTs - bTs : bTs - aTs;
+    });
+    return options?.limit ? all.slice(0, options.limit) : all;
+  }
+
+  const direction = options?.orderDesc === false ? "ASC" : "DESC";
+  const limitClause = options?.limit ? `LIMIT ${Math.floor(options.limit)}` : "";
+  const res = await query(
+    `SELECT id, merchant_id, decision_status, created_at, updated_at, data
+     FROM applications
+     ORDER BY updated_at ${direction}
+     ${limitClause}`
+  );
+  return res.rows.map((row) => rowToDoc(row as { id: string; merchant_id: string; decision_status: string; created_at: Date; updated_at: Date; data: Record<string, unknown> }));
 }
 
 export async function submitApplication(
   id: string,
   formData: FormData
 ): Promise<ApplicationDoc> {
-  const application = memStore.get(id);
+  const application = await fetchDoc(id);
 
   if (!application) {
     const err = new Error(`Application ${id} not found`) as Error & {
@@ -94,7 +179,7 @@ export async function submitApplication(
     updated_at: Timestamp.now(),
   };
 
-  memStore.set(id, updated);
+  await upsertDoc(updated);
   logger.info("application_submitted", { id, status: decision.status });
   return updated;
 }
@@ -103,7 +188,7 @@ export async function updateConsent(
   id: string,
   consent: Omit<ConsentData, "consented_at">
 ): Promise<ApplicationDoc> {
-  const application = memStore.get(id);
+  const application = await fetchDoc(id);
   if (!application) {
     const err = new Error(`Application ${id} not found`) as Error & {
       statusCode: number;
@@ -123,7 +208,7 @@ export async function updateConsent(
     updated_at: Timestamp.now(),
   };
 
-  memStore.set(id, updated);
+  await upsertDoc(updated);
   logger.info("consent_updated", { id });
   return updated;
 }
@@ -135,7 +220,7 @@ export async function submitKyc(
   bank: KycBankData,
   documents: KycDocuments
 ): Promise<ApplicationDoc> {
-  const application = memStore.get(id);
+  const application = await fetchDoc(id);
   if (!application) {
     const err = new Error(`Application ${id} not found`) as Error & {
       statusCode: number;
@@ -171,7 +256,7 @@ export async function submitKyc(
     updated_at: Timestamp.now(),
   };
 
-  memStore.set(id, updated);
+  await upsertDoc(updated);
   logger.info("kyc_submitted", { id });
   return updated;
 }

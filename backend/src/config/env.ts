@@ -35,6 +35,9 @@ const envSchema = z
     GCP_PROJECT_ID: z.string().default("demo-local"),
     FIRESTORE_EMULATOR_HOST: z.string().optional(),
 
+    // Postgres (Railway). Si no está configurada, el backend cae a in-memory storage.
+    DATABASE_URL: z.string().url().optional(),
+
     FRONTEND_URL: z.string().url().default("http://localhost:3000"),
     BACKEND_URL: z.string().url().default("http://localhost:3001"),
   })
