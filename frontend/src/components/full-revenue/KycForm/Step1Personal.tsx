@@ -44,17 +44,16 @@ export function Step1Personal({ defaultValues, onComplete }: Props) {
 
   return (
     <form onSubmit={handleSubmit(onComplete)} noValidate className="space-y-4">
-      {/* Nombre y apellido — pre-completado por Rappi vía API */}
       <div className="grid grid-cols-2 gap-3">
         <Input
           label="Nombre(s)"
-          placeholder="Guillermo"
+          placeholder="Ej: María"
           error={errors.first_name?.message}
           {...register("first_name")}
         />
         <Input
           label="Apellido(s)"
-          placeholder="Bravo"
+          placeholder="Ej: Hernández"
           error={errors.last_name?.message}
           {...register("last_name")}
         />
@@ -67,10 +66,9 @@ export function Step1Personal({ defaultValues, onComplete }: Props) {
         {...register("birth_date")}
       />
 
-      {/* RFC — el usuario lo completa, Rappi no lo comparte */}
       <Input
         label="RFC"
-        placeholder="GALO800101AB2"
+        placeholder="Ej: HERM800101AB2"
         hint="12 caracteres para personas físicas, 13 para morales"
         error={errors.cedula?.message}
         {...register("cedula")}
@@ -78,7 +76,7 @@ export function Step1Personal({ defaultValues, onComplete }: Props) {
 
       <Input
         label="Nacionalidad"
-        placeholder="Mexicana"
+        placeholder="Ej: Mexicana"
         error={errors.nationality?.message}
         {...register("nationality")}
       />

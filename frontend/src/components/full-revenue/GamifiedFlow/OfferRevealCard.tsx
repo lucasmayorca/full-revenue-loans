@@ -108,49 +108,42 @@ export function OfferRevealCard({ amount, previousAmount = 0, stage, isAnimating
         </div>
       )}
 
-      {/* Card principal — unified orange gradient for all stages */}
-      <div className="relative bg-gradient-to-br from-rappi-orange to-rappi-orange-mid rounded-3xl p-7 text-white overflow-hidden shadow-2xl">
-        {/* Círculos decorativos */}
-        <div className="absolute -right-10 -top-10 w-48 h-48 bg-white opacity-5 rounded-full" />
-        <div className="absolute -right-2 -bottom-8 w-32 h-32 bg-white opacity-5 rounded-full" />
-        <div className="absolute left-1/2 bottom-0 w-64 h-20 bg-white opacity-[0.03] rounded-full blur-xl" />
+      {/* Card principal — Uber black with green accent */}
+      <div className="relative bg-black rounded-card p-7 text-white overflow-hidden">
+        <div aria-hidden className="absolute -right-16 -top-16 w-60 h-60 bg-uber-green opacity-10 rounded-full" />
+        <div aria-hidden className="absolute -right-4 -bottom-10 w-40 h-40 bg-white opacity-[0.03] rounded-full" />
 
         <div className="relative">
-          {/* Stage badge */}
           <div className="flex items-center gap-2 mb-5">
-            <span className="text-2xl">{config.icon}</span>
-            <div className="inline-flex items-center gap-1.5 bg-white bg-opacity-20 text-white text-xs font-bold px-3 py-1.5 rounded-full">
+            <div className="inline-flex items-center gap-1.5 bg-uber-green text-black text-[12px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-sm">
               {config.badge}
             </div>
           </div>
 
-          {/* Label */}
-          <p className="text-xl font-bold mb-0.5">{config.label}</p>
-          <p className="text-sm opacity-75 mb-5">{config.sublabel}</p>
+          <p className="text-[22px] font-bold leading-7 mb-1">{config.label}</p>
+          <p className="text-[14px] text-white/70 mb-6">{config.sublabel}</p>
 
-          {/* Monto principal animado */}
           <div className="mb-4">
-            <p className="text-xs uppercase tracking-widest opacity-70 mb-1">Tu oferta de crédito</p>
+            <p className="text-[12px] uppercase tracking-wider text-white/60 mb-2">Tu oferta de crédito</p>
             <div className="flex items-end gap-2">
-              <p className="text-5xl font-black leading-none tracking-tight">
+              <p className="text-[56px] font-bold leading-none tracking-tight">
                 ${fmt(animatedAmount)}
               </p>
-              <p className="text-xl font-medium opacity-80 mb-1">{currency}</p>
+              <p className="text-[18px] font-medium text-white/80 mb-1.5">{currency}</p>
             </div>
           </div>
 
-          {/* Nota por stage */}
           {stage === "social" && (
-            <div className="bg-white bg-opacity-15 rounded-2xl px-4 py-3 text-center">
-              <p className="text-sm font-bold">✅ Oferta ampliada con datos digitales</p>
-              <p className="text-xs opacity-75 mt-0.5">Calculada con tu buró + presencia digital</p>
+            <div className="bg-white/10 border border-white/10 rounded-card px-4 py-3">
+              <p className="text-[14px] font-bold">Oferta ampliada con datos digitales</p>
+              <p className="text-[12px] text-white/70 mt-0.5">Calculada con tu buró + presencia digital.</p>
             </div>
           )}
 
           {stage === "final" && (
-            <div className="bg-white bg-opacity-15 rounded-2xl px-4 py-3 text-center">
-              <p className="text-sm font-bold">✅ Oferta máxima alcanzada</p>
-              <p className="text-xs opacity-75 mt-0.5">Calculada con todos tus datos: buró + digital + fiscal</p>
+            <div className="bg-white/10 border border-white/10 rounded-card px-4 py-3">
+              <p className="text-[14px] font-bold">Oferta máxima alcanzada</p>
+              <p className="text-[12px] text-white/70 mt-0.5">Calculada con todos tus datos: buró + digital + fiscal.</p>
             </div>
           )}
         </div>
@@ -193,11 +186,11 @@ export function OfferRevealCard({ amount, previousAmount = 0, stage, isAnimating
               <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Método de repago</p>
               <div className="bg-gray-50 rounded-xl px-4 py-3 space-y-2">
                 <div className="flex items-start gap-2.5">
-                  <span className="text-base flex-shrink-0">🛒</span>
+                  <span className="text-base flex-shrink-0">🍔</span>
                   <div>
-                    <p className="text-xs font-bold text-gray-700">Retención Rappi — 20% de tus ventas</p>
+                    <p className="text-xs font-bold text-gray-700">Retención Uber Eats — 20% de tus ventas</p>
                     <p className="text-[10px] text-gray-500 leading-relaxed mt-0.5">
-                      Se retiene automáticamente el 20% de tus ventas en Rappi hasta cubrir la cuota del mes.
+                      Se retiene automáticamente el 20% de tus ventas en Uber Eats hasta cubrir la cuota del mes.
                     </p>
                   </div>
                 </div>

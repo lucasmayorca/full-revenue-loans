@@ -3,12 +3,25 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --primary: #000000;
+    --background: #ffffff;
+    --background-text: #e8e8e8;
+    --border-line: #d9d9d9;
+    --text: #4b4b4b;
+    --text-hero: #323942;
+    --disable-icons: #8a8a8a;
+    --uber-green: #06c167;
+  }
+
   html {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    font-family: var(--font-inter), system-ui, -apple-system, "Segoe UI", Roboto,
       "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
-    @apply bg-gray-50 text-gray-900;
+    @apply bg-white text-black;
   }
 }

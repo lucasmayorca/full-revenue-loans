@@ -9,10 +9,12 @@ import { EVENTS } from "@/lib/tracking";
 const INITIAL_AMOUNT = 50_000;
 
 function fmt(n: number) {
-  return n.toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return n.toLocaleString("es-MX", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
 }
 
-// Animated counter hook
 function useCountUp(target: number, duration = 800) {
   const [value, setValue] = useState(0);
   useEffect(() => {
@@ -36,39 +38,30 @@ function useCountUp(target: number, duration = 800) {
 const STEPS = [
   {
     number: 1,
-    icon: "📋",
     title: "Buró de crédito",
-    description: "Autorizás la consulta al buró e identidad vía Twilio. Tu oferta inicial se revela.",
+    description:
+      "Autorizas la consulta al buró e identidad vía Twilio. Tu oferta inicial se revela.",
     unlocks: "hasta $75k",
-    color: "bg-orange-50",
-    textColor: "text-orange-700",
   },
   {
     number: 2,
-    icon: "📍",
     title: "Presencia digital",
-    description: "Conectás Google Maps y redes sociales para ampliar tu monto.",
+    description:
+      "Conectas Google Maps y redes sociales para ampliar tu monto.",
     unlocks: "hasta $100k",
-    color: "bg-orange-50",
-    textColor: "text-orange-700",
   },
   {
     number: 3,
-    icon: "🏛️",
     title: "Datos fiscales",
-    description: "Compartís tus datos del SAT para que calculemos tu capacidad real de pago.",
+    description:
+      "Compartes tus datos del SAT para que calculemos tu capacidad real de pago.",
     unlocks: "hasta $200k",
-    color: "bg-orange-50",
-    textColor: "text-orange-700",
   },
   {
     number: 4,
-    icon: "🎉",
     title: "Oferta final",
-    description: "Recibís tu monto máximo y decidís si querés aplicar.",
+    description: "Recibes tu monto máximo y decides si quieres aplicar.",
     unlocks: "Oferta final",
-    color: "bg-orange-50",
-    textColor: "text-orange-700",
   },
 ];
 
@@ -87,73 +80,90 @@ export default function FullRevenueInfoPage() {
   }
 
   return (
-    <div className="px-4 py-6 space-y-6 max-w-lg mx-auto">
+    <div className="max-w-[720px] mx-auto px-8 py-10 space-y-10">
+      {/* Title */}
+      <div>
+        <p className="text-[13px] font-bold text-uber-green uppercase tracking-wider mb-3">
+          Nuevo · Préstamo MÁS
+        </p>
+        <h1 className="text-[40px] leading-[1.1] font-bold text-black mb-3 tracking-tight">
+          Desbloquea hasta 4x más crédito basado en el 100% de tus ingresos.
+        </h1>
+        <p className="text-[16px] leading-6 text-uber-gray-700">
+          Evaluamos tus datos fiscales, tus ventas en Uber Eats y tu presencia
+          digital para calcular una oferta personalizada. Proceso guiado,
+          menos de 3 minutos.
+        </p>
+      </div>
 
-      {/* ── Hero: monto que crece ── */}
-      <div className="relative bg-gradient-to-br from-rappi-orange to-rappi-orange-mid rounded-3xl p-7 text-white overflow-hidden shadow-xl">
-        {/* Círculos decorativos */}
-        <div className="absolute -right-12 -top-12 w-52 h-52 bg-white opacity-5 rounded-full" />
-        <div className="absolute -right-4 -bottom-10 w-36 h-36 bg-white opacity-5 rounded-full" />
-
+      {/* Hero card */}
+      <div className="relative bg-black text-white rounded-card p-8 overflow-hidden">
+        <div
+          aria-hidden
+          className="absolute -right-20 -top-20 w-72 h-72 bg-uber-green opacity-10 rounded-full"
+        />
         <div className="relative">
-          <div className="inline-flex items-center gap-1.5 bg-white bg-opacity-20 text-white text-xs font-semibold px-3 py-1.5 rounded-full mb-4">
-            ✨ Préstamo MÁS — Pre-aprobado para vos
+          <p className="text-[12px] uppercase tracking-wider text-white/60 mb-2">
+            Tu crédito inicial garantizado
+          </p>
+          <div className="flex items-end gap-2 mb-6">
+            <p className="text-[56px] font-bold leading-none tracking-tight">
+              ${fmt(animatedAmount)}
+            </p>
+            <p className="text-[18px] font-medium text-white/80 mb-1.5">
+              MXN
+            </p>
           </div>
 
-          <p className="text-sm opacity-80 mb-1">Tu crédito inicial garantizado</p>
-          <p className="text-5xl font-black leading-none mb-1">
-            ${fmt(animatedAmount)}
-          </p>
-          <p className="text-base font-medium opacity-80 mb-5">MXN</p>
-
-          {/* Barra de progreso del potencial */}
           <div className="space-y-2">
-            <div className="flex justify-between text-xs opacity-80">
+            <div className="flex justify-between text-[12px] text-white/80">
               <span>Potencial máximo</span>
-              <span className="font-semibold">hasta $200,000 MXN</span>
+              <span className="font-bold">hasta $200,000 MXN</span>
             </div>
-            <div className="h-2 bg-white bg-opacity-20 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-white/15 rounded-full overflow-hidden">
               <div
-                className="h-full bg-white rounded-full transition-all duration-1000"
+                className="h-full bg-uber-green rounded-full transition-all duration-1000"
                 style={{ width: "25%" }}
               />
             </div>
-            <p className="text-xs opacity-70 text-center">
-              Completá los pasos para llegar a tu máximo
+            <p className="text-[12px] text-white/60">
+              Completa los pasos para llegar a tu máximo.
             </p>
           </div>
         </div>
       </div>
 
-      {/* ── Pasos con unlock de monto ── */}
+      {/* Steps */}
       <div>
-        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
-          Cómo crece tu crédito
-        </p>
+        <h2 className="text-h2 text-black mb-5">Cómo crece tu crédito</h2>
 
         <div className="space-y-3">
           {STEPS.map((step, idx) => (
             <div key={step.number} className="relative">
-              {/* Línea conectora */}
               {idx < STEPS.length - 1 && (
-                <div className="absolute left-[19px] top-11 bottom-0 w-0.5 bg-gray-100 z-0" />
+                <div
+                  aria-hidden
+                  className="absolute left-[23px] top-12 bottom-0 w-px bg-uber-gray-300 z-0"
+                />
               )}
 
-              <div className="relative z-10 flex gap-3.5">
-                {/* Número / icono */}
-                <div className={`w-10 h-10 ${step.color} rounded-2xl flex items-center justify-center flex-shrink-0 text-lg`}>
-                  {step.icon}
+              <div className="relative z-10 flex items-start gap-4">
+                <div className="w-12 h-12 bg-black text-white rounded-card flex items-center justify-center flex-shrink-0 font-bold text-[18px]">
+                  {step.number}
                 </div>
 
-                {/* Contenido */}
-                <div className="flex-1 bg-white border border-gray-100 rounded-2xl px-4 py-3 shadow-sm">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm font-semibold text-gray-900">{step.title}</p>
-                    <span className={`text-xs font-bold ${step.textColor} ${step.color} px-2 py-0.5 rounded-full whitespace-nowrap`}>
+                <div className="flex-1 bg-white border border-uber-gray-200 rounded-card px-4 py-3">
+                  <div className="flex items-start justify-between gap-3 mb-1">
+                    <p className="text-[16px] font-bold text-black">
+                      {step.title}
+                    </p>
+                    <span className="text-[12px] font-bold text-uber-success bg-uber-success-bg px-2 py-0.5 rounded-sm whitespace-nowrap">
                       {step.unlocks}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{step.description}</p>
+                  <p className="text-[14px] text-uber-gray-700 leading-5">
+                    {step.description}
+                  </p>
                 </div>
               </div>
             </div>
@@ -161,14 +171,14 @@ export default function FullRevenueInfoPage() {
         </div>
       </div>
 
-      {/* ── CTA ── */}
-      <div className="pb-6 space-y-3">
-        <Button onClick={handleContinue} fullWidth size="lg">
-          Ver mi oferta →
+      {/* CTA */}
+      <div className="space-y-3 pt-4">
+        <Button onClick={handleContinue} size="lg">
+          Continuar
         </Button>
-        <p className="text-xs text-gray-400 text-center leading-relaxed">
-          Sin compromiso. Podés aplicar o no al final del proceso.
-          El proceso toma menos de 3 minutos.
+        <p className="text-[12px] text-uber-gray-500 leading-5">
+          Sin compromiso. Puedes aplicar o no al final del proceso. El proceso
+          toma menos de 3 minutos.
         </p>
       </div>
     </div>

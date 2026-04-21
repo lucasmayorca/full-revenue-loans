@@ -22,7 +22,7 @@ const CONTRACT_PARAGRAPHS = [
   },
   {
     title: "4. Forma de pago — retención sobre ventas",
-    body: "El Acreditado autoriza expresamente a Full Revenue Financial a realizar una retención automática del porcentaje acordado sobre cada liquidación de ventas procesadas en la plataforma Rappi. Dicha retención se aplicará de forma prioritaria al pago de intereses y posteriormente al capital del crédito.",
+    body: "El Acreditado autoriza expresamente a Full Revenue Financial a realizar una retención automática del porcentaje acordado sobre cada liquidación de ventas procesadas en la plataforma Uber Eats. Dicha retención se aplicará de forma prioritaria al pago de intereses y posteriormente al capital del crédito.",
   },
   {
     title: "5. Débito directo complementario",

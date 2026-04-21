@@ -18,7 +18,7 @@ const CONTRACT_PARAGRAPHS = [
   },
   {
     title: "4. Retención sobre ventas",
-    body: "El Acreditado autoriza la retención automática del porcentaje acordado sobre cada liquidación de ventas en la plataforma Rappi, aplicada prioritariamente a intereses y luego a capital.",
+    body: "El Acreditado autoriza la retención automática del porcentaje acordado sobre cada liquidación de ventas en la plataforma Uber Eats, aplicada prioritariamente a intereses y luego a capital.",
   },
   {
     title: "5. Débito directo complementario",

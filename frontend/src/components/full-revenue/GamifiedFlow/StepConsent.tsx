@@ -50,25 +50,22 @@ export function StepConsent({ onComplete, isLoading }: Props) {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-gray-900 mb-1">
-          Autorizaciones necesarias
-        </h2>
-        <p className="text-sm text-gray-500 leading-relaxed">
-          Para calcular tu primera oferta necesitamos tu autorización para consultar estas fuentes.
-          Es seguro y no afecta tu crédito.
+        <h2 className="text-h2 text-black mb-2">Autorizaciones necesarias</h2>
+        <p className="text-[14px] text-uber-gray-700 leading-5">
+          Autorizo a Uber Eats a compartir con <strong className="text-black">R2 Capital Technologies MX</strong> los datos necesarios para consultar mi historial crediticio y verificar mi identidad. Ninguna de estas consultas afecta tu score.
         </p>
       </div>
 
       {/* Banner: qué obtenés a cambio */}
-      <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-100 rounded-2xl px-4 py-3 flex items-center gap-3">
-        <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0 text-xl">
-          🎯
+      <div className="bg-uber-gray-100 border border-uber-gray-200 rounded-card px-4 py-3 flex items-center gap-3">
+        <div className="w-10 h-10 bg-black text-white rounded-card flex items-center justify-center flex-shrink-0 font-bold text-[18px]">
+          →
         </div>
         <div>
-          <p className="text-sm font-semibold text-orange-800">Tu primera oferta se revela al autorizar</p>
-          <p className="text-xs text-orange-600 mt-0.5">Verás tu crédito inicial de <strong>$50,000 MXN</strong> ampliado según tu historial</p>
+          <p className="text-[14px] font-bold text-black">Tu primera oferta se revela al autorizar</p>
+          <p className="text-[12px] text-uber-gray-700 mt-0.5">Arrancamos con un crédito base y lo ampliamos según tu historial.</p>
         </div>
       </div>
 
@@ -82,22 +79,22 @@ export function StepConsent({ onComplete, isLoading }: Props) {
               key={consent.id}
               type="button"
               onClick={() => toggle(consent.id)}
-              className={`w-full text-left border-2 rounded-2xl p-4 transition-all focus:outline-none ${
+              className={`w-full text-left border rounded-card p-4 transition-colors focus:outline-none ${
                 isChecked
-                  ? "border-rappi-orange bg-orange-50"
+                  ? "border-black bg-uber-gray-100"
                   : hasError
-                  ? "border-red-300 bg-red-50"
-                  : "border-gray-200 bg-white hover:border-gray-300"
+                  ? "border-uber-danger bg-uber-danger-bg"
+                  : "border-uber-gray-300 bg-white hover:border-black"
               }`}
             >
               <div className="flex items-start gap-3">
                 {/* Custom checkbox */}
-                <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
+                <div className={`w-5 h-5 rounded-[4px] border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors ${
                   isChecked
-                    ? "border-rappi-orange bg-rappi-orange"
+                    ? "border-black bg-black"
                     : hasError
-                    ? "border-red-400"
-                    : "border-gray-300"
+                    ? "border-uber-danger"
+                    : "border-uber-gray-500"
                 }`}>
                   {isChecked && (
                     <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="currentColor">
@@ -107,14 +104,13 @@ export function StepConsent({ onComplete, isLoading }: Props) {
                 </div>
                 {/* Content */}
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-0.5">
-                    <span className="text-base">{consent.icon}</span>
-                    <p className="text-sm font-semibold text-gray-900">{consent.title}</p>
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-[14px] font-bold text-black">{consent.title}</p>
                     {consent.required && (
-                      <span className="text-[10px] font-bold text-red-500 uppercase tracking-wide">Requerido</span>
+                      <span className="text-[10px] font-bold text-uber-danger uppercase tracking-wider">Requerido</span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 leading-relaxed">{consent.description}</p>
+                  <p className="text-[12px] text-uber-gray-700 leading-5">{consent.description}</p>
                 </div>
               </div>
             </button>
@@ -123,22 +119,24 @@ export function StepConsent({ onComplete, isLoading }: Props) {
       </div>
 
       {attempted && !allChecked && (
-        <p className="text-xs text-red-500 font-medium text-center">
-          Necesitás autorizar todas las consultas para continuar
+        <p className="text-[12px] text-uber-danger font-medium text-center">
+          Necesitas autorizar todas las consultas para continuar
         </p>
       )}
 
       {/* Nota de seguridad */}
-      <div className="flex items-start gap-2.5 bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3">
-        <span className="text-base flex-shrink-0">🔒</span>
-        <div className="text-xs text-blue-700 leading-relaxed space-y-0.5">
-          <p className="font-semibold">Tus datos están protegidos</p>
-          <p>Las consultas al buró son "soft inquiries" y no reducen tu score. Tus datos se procesan de forma encriptada y no los compartimos con terceros.</p>
+      <div className="flex items-start gap-3 bg-uber-gray-100 border border-uber-gray-200 rounded-card px-4 py-3">
+        <svg className="w-5 h-5 text-black flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+        </svg>
+        <div className="text-[12px] text-uber-gray-700 leading-5">
+          <p className="font-bold text-black">Tus datos están protegidos</p>
+          <p>Las consultas al buró son "soft inquiries" y no reducen tu score. R2 Capital Technologies MX procesa todo de forma encriptada y no comparte datos con terceros.</p>
         </div>
       </div>
 
       <Button onClick={handleSubmit} fullWidth size="lg" isLoading={isLoading}>
-        Autorizar y ver mi oferta →
+        Autorizar y ver mi oferta
       </Button>
     </div>
   );

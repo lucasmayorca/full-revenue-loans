@@ -37,8 +37,8 @@ export default function KycPage({ params }: Props) {
   if (loading) {
     return (
       <div className="px-4 py-10 flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-3 border-rappi-orange border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm text-gray-500">Verificando solicitud...</p>
+        <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" />
+        <p className="text-[14px] text-uber-gray-500">Verificando solicitud...</p>
       </div>
     );
   }
@@ -47,10 +47,10 @@ export default function KycPage({ params }: Props) {
     return (
       <div className="px-4 py-10 flex flex-col items-center text-center gap-4 max-w-sm mx-auto">
         <div className="text-4xl">⚠️</div>
-        <p className="text-sm text-gray-600">{error}</p>
+        <p className="text-[14px] text-uber-gray-700">{error}</p>
         <button
           onClick={() => router.push("/full-revenue/info")}
-          className="text-rappi-orange font-semibold text-sm"
+          className="text-black font-bold text-[14px] underline"
         >
           Volver al inicio
         </button>
@@ -60,10 +60,5 @@ export default function KycPage({ params }: Props) {
 
   if (!application) return null;
 
-  return (
-    <KycForm
-      applicationId={params.applicationId}
-      prefillData={application.form_data as Record<string, string> | undefined}
-    />
-  );
+  return <KycForm applicationId={params.applicationId} />;
 }

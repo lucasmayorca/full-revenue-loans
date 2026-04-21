@@ -22,15 +22,23 @@ export function Step1Identity({ defaultValues, onComplete }: Props) {
   });
 
   return (
-    <form onSubmit={handleSubmit(onComplete)} noValidate className="space-y-5">
+    <form onSubmit={handleSubmit(onComplete)} noValidate className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-gray-900 mb-1">
-          Datos del negocio
-        </h2>
-        <p className="text-sm text-gray-500">
-          Información básica de tu empresa para iniciar la evaluación
+        <h2 className="text-h2 text-black mb-2">Datos del negocio</h2>
+        <p className="text-[14px] text-uber-gray-700 leading-5">
+          Necesitamos esta información para iniciar la evaluación de tu
+          solicitud de préstamo con R2 Capital Technologies MX.
         </p>
       </div>
+
+      <Input
+        label="Email de contacto"
+        type="email"
+        placeholder="nombre@empresa.com"
+        hint="Te enviaremos actualizaciones del estado de tu solicitud a este correo."
+        error={errors.email?.message}
+        {...register("email")}
+      />
 
       <Input
         label="Razón social"
@@ -49,18 +57,10 @@ export function Step1Identity({ defaultValues, onComplete }: Props) {
       <Input
         label="Teléfono de contacto"
         type="tel"
-        placeholder="Ej: 55 1234-5678 o +52 55 1234 5678"
-        hint="Podés incluir espacios, guiones o el código de país. Usado para verificar tu identidad."
+        placeholder="Ej: 55 1234 5678 o +52 55 1234 5678"
+        hint="Usado para verificar tu identidad vía Twilio."
         error={errors.phone?.message}
         {...register("phone")}
-      />
-
-      <Input
-        label="Email de contacto"
-        type="email"
-        placeholder="nombre@empresa.com"
-        error={errors.email?.message}
-        {...register("email")}
       />
 
       <Button type="submit" fullWidth size="lg">

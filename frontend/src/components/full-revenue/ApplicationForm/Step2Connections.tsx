@@ -52,7 +52,7 @@ function WhatWeEvaluateTooltip() {
   const items = [
     { icon: "🏛️", text: "Historial fiscal en el SAT (CIEC)" },
     { icon: "📋", text: "Score de Buró de Crédito" },
-    { icon: "🛍️", text: "Ventas históricas en Rappi" },
+    { icon: "🛍️", text: "Ventas históricas en Uber Eats" },
     { icon: "📍", text: "Reputación en Google Maps" },
     { icon: "💬", text: "Presencia en redes sociales" },
     { icon: "🔐", text: "Verificación de identidad vía Twilio" },

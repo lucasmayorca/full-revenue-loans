@@ -88,7 +88,7 @@ export function Step5Confirm({ personal, address, bank, onConfirm, onBack, isSub
             className="mt-0.5 h-4 w-4 rounded border-gray-300 text-rappi-orange focus:ring-rappi-orange flex-shrink-0"
           />
           <span className="text-xs text-gray-600 leading-relaxed">
-            Confirmo que la información proporcionada es correcta y autorizo a Rappi a verificar mi identidad,
+            Confirmo que la información proporcionada es correcta y autorizo a R2 Capital Technologies MX a verificar mi identidad,
             consultar mi historial crediticio en el Buró de Crédito y realizar el débito automático según las
             condiciones del crédito pre-aprobado.
           </span>

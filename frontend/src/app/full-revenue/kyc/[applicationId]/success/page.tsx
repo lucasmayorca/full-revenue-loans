@@ -153,8 +153,8 @@ export default function KycSuccessPage({ params }: Props) {
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">¿Qué sigue?</p>
         {[
           { icon: "📧", title: "Confirmación por email y WhatsApp", desc: "Recibirás el comprobante de tu contrato firmado." },
-          { icon: "📅", title: "Primera cuota en 30 días", desc: "La retención sobre ventas Rappi arranca de forma automática." },
-          { icon: "📊", title: "Seguí tu saldo en tiempo real", desc: "Consultá tu estado de cuenta desde la app de Rappi." },
+          { icon: "📅", title: "Primera cuota en 30 días", desc: "La retención sobre ventas de Uber Eats arranca de forma automática." },
+          { icon: "📊", title: "Seguí tu saldo en tiempo real", desc: "Consulta tu estado de cuenta desde Uber Eats Manager." },
         ].map(({ icon, title, desc }) => (
           <div key={title} className="flex items-start gap-3">
             <span className="text-xl flex-shrink-0">{icon}</span>
@@ -168,8 +168,8 @@ export default function KycSuccessPage({ params }: Props) {
 
       <p className="text-xs text-gray-400 text-center pb-4">
         ¿Dudas? Escribinos a{" "}
-        <a href="mailto:prestamos@rappi.com" className="text-rappi-orange font-medium">
-          prestamos@rappi.com
+        <a href="mailto:prestamos@r2capital.mx" className="text-black font-bold underline">
+          prestamos@r2capital.mx
         </a>
       </p>
     </div>

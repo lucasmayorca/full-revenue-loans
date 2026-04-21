@@ -1,162 +1,394 @@
-import { FullRevenueBanner } from "@/components/offers/FullRevenueBanner";
+"use client";
 
-export default function OffersPage() {
+import { useState } from "react";
+import { PrestamoMasBanner } from "@/components/offers/PrestamoMasBanner";
+
+type OfferId = "oferta1" | "oferta2" | "oferta3";
+
+interface RbfOffer {
+  id: OfferId;
+  receive: number;
+  retention: number; // %
+  totalToPay: number;
+  fixedFee: number;
+  monthlyMin: number;
+  maxTerm: string;
+}
+
+const OFFERS: RbfOffer[] = [
+  {
+    id: "oferta1",
+    receive: 62800,
+    retention: 32.92,
+    totalToPay: 81740,
+    fixedFee: 18940,
+    monthlyMin: 12975,
+    maxTerm: "6.3 meses",
+  },
+  {
+    id: "oferta2",
+    receive: 43000,
+    retention: 24.9,
+    totalToPay: 54726,
+    fixedFee: 11726,
+    monthlyMin: 8700,
+    maxTerm: "6.3 meses",
+  },
+  {
+    id: "oferta3",
+    receive: 23600,
+    retention: 15.19,
+    totalToPay: 29075,
+    fixedFee: 5475,
+    monthlyMin: 4650,
+    maxTerm: "6.3 meses",
+  },
+];
+
+function formatMxn(value: number) {
+  return "$" + value.toLocaleString("en-US");
+}
+
+type TabId = "ofertas" | "beneficios" | "como" | "faq";
+
+export default function FinanciamientoPage() {
+  const [activeTab, setActiveTab] = useState<TabId>("ofertas");
+  const [expanded, setExpanded] = useState<OfferId | null>("oferta1");
+  const [personaType, setPersonaType] = useState<"fisica" | "moral">("fisica");
+  const [consentChecked, setConsentChecked] = useState(false);
+  const [surveyOpen, setSurveyOpen] = useState(false);
+
   return (
-    <div className="p-8">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-sm text-rappi-muted mb-6">
-        <span>Inicio</span>
-        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-        </svg>
-        <span className="text-rappi-dark font-medium">Créditos</span>
-      </nav>
+    <div className="max-w-[1200px] mx-auto px-8 py-8">
+      {/* Title */}
+      <h1 className="text-[40px] font-bold text-black leading-[1.1] tracking-tight mb-8">
+        Financiamiento
+      </h1>
 
-      {/* Título */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-rappi-dark mb-1">
-          Crédito para tu negocio
-        </h1>
-        <p className="text-rappi-muted">
-          Elige la opción que mejor se adapte a tus necesidades
+      {/* Tabs row */}
+      <div className="border-b border-uber-gray-300 flex items-center justify-between pt-[5px] mb-8">
+        <nav className="flex items-center gap-2">
+          <TabButton
+            active={activeTab === "ofertas"}
+            onClick={() => setActiveTab("ofertas")}
+          >
+            Ofertas
+          </TabButton>
+          <TabButton
+            active={activeTab === "beneficios"}
+            onClick={() => setActiveTab("beneficios")}
+          >
+            Beneficios
+          </TabButton>
+          <TabButton
+            active={activeTab === "como"}
+            onClick={() => setActiveTab("como")}
+          >
+            Cómo funciona
+          </TabButton>
+          <TabButton
+            active={activeTab === "faq"}
+            onClick={() => setActiveTab("faq")}
+          >
+            Preguntas frecuentes
+          </TabButton>
+        </nav>
+        <button
+          type="button"
+          className="border-2 border-black rounded-pill px-4 py-2 text-[14px] font-bold text-black hover:bg-uber-gray-100 transition-colors"
+        >
+          Dar Sugerencias
+        </button>
+      </div>
+
+      {activeTab === "ofertas" && (
+        <div className="flex flex-col gap-10">
+          {/* Banner Préstamo MÁS — ARRIBA de las 3 ofertas */}
+          <PrestamoMasBanner />
+
+          {/* Section title */}
+          <div>
+            <h2 className="text-h2 text-uber-hero mb-4">
+              Seleccione la oferta que mejor se adapte a tus necesidades
+            </h2>
+            <p className="text-[16px] leading-5 text-uber-gray-700">
+              Estas ofertas son calculadas en base a tu historial de ventas con
+              Uber Eats para que puedas pagarlas con un porcentaje de tus
+              ingresos.
+            </p>
+          </div>
+
+          {/* 3 cards RBF */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {OFFERS.map((offer) => (
+              <OfferCard
+                key={offer.id}
+                offer={offer}
+                expanded={expanded === offer.id}
+                onToggle={() =>
+                  setExpanded(expanded === offer.id ? null : offer.id)
+                }
+              />
+            ))}
+          </div>
+
+          {/* CAT disclosure */}
+          <p className="text-[12px] leading-[18px] text-black">
+            El promedio del Costo Anual Total (CAT) de las 3 ofertas es [105%]
+            sin IVA. Este porcentaje es una referencia informativa y su cálculo
+            se basa en el valor de tus pagos mínimos mensuales.
+          </p>
+
+          {/* Persona física / moral */}
+          <div className="flex flex-col gap-4">
+            <p className="text-[16px] font-bold text-black">
+              Confirma el tipo de persona de tu negocio:
+            </p>
+            <div className="flex gap-6">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="persona"
+                  checked={personaType === "fisica"}
+                  onChange={() => setPersonaType("fisica")}
+                  className="w-5 h-5 accent-black"
+                />
+                <span className="text-[16px] text-uber-gray-700">
+                  Persona física
+                </span>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="persona"
+                  checked={personaType === "moral"}
+                  onChange={() => setPersonaType("moral")}
+                  className="w-5 h-5 accent-black"
+                />
+                <span className="text-[16px] text-uber-gray-700">
+                  Persona moral
+                </span>
+              </label>
+            </div>
+          </div>
+
+          {/* Consent checkbox */}
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={consentChecked}
+              onChange={(e) => setConsentChecked(e.target.checked)}
+              className="mt-1 w-[18px] h-[18px] accent-black flex-shrink-0"
+            />
+            <span className="text-[12px] leading-5 text-uber-gray-700">
+              Autorizo a Uber Eats a compartir con{" "}
+              <strong className="text-black">
+                R2 CAPITAL TECHNOLOGIES MX S.A. DE C.V.
+              </strong>{" "}
+              la información de mi negocio (incluyendo datos financieros, de
+              contacto y personales) con fines de elegibilidad para el
+              otorgamiento de un crédito. Lo anterior, de acuerdo con la{" "}
+              <a className="underline font-bold text-black" href="#">
+                Autorización para compartir datos personales
+              </a>{" "}
+              y los{" "}
+              <a className="underline font-bold text-black" href="#">
+                Términos y Condiciones
+              </a>
+              .
+            </span>
+          </label>
+
+          {/* Survey accordion */}
+          <div className="border border-black rounded-card overflow-hidden">
+            <button
+              type="button"
+              className="w-full flex items-center justify-between p-4 hover:bg-uber-gray-100 transition-colors"
+              onClick={() => setSurveyOpen(!surveyOpen)}
+              aria-expanded={surveyOpen}
+            >
+              <span className="flex items-center gap-2 text-[16px] font-bold text-uber-gray-700">
+                <svg
+                  className="w-6 h-6"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.8}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                  />
+                </svg>
+                Queremos saber tu opinión
+              </span>
+              <svg
+                className={[
+                  "w-5 h-5 transition-transform",
+                  surveyOpen ? "rotate-180" : "",
+                ].join(" ")}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+            {surveyOpen && (
+              <div className="px-4 pb-5 pt-0 text-[14px] text-uber-gray-700 leading-5">
+                <p className="mb-3">
+                  ¿Las ofertas se ajustan a lo que tu negocio necesita?
+                  Cuéntanos qué te gustaría ver distinto.
+                </p>
+                <textarea
+                  placeholder="Tu opinión nos ayuda a mejorar"
+                  className="w-full h-24 p-3 border border-uber-gray-300 rounded-btn text-[14px] resize-none focus:outline-none focus:border-black"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab !== "ofertas" && (
+        <div className="py-20 text-center">
+          <p className="text-[16px] text-uber-gray-500">
+            Esta pestaña es parte de la experiencia completa de Uber Eats
+            Manager y no está disponible en este prototipo.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TabButton({
+  active,
+  children,
+  onClick,
+}: {
+  active: boolean;
+  children: React.ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        "relative px-3 py-4 text-[14px] leading-4 tracking-[0.03em] transition-colors",
+        active
+          ? "font-bold text-black after:absolute after:left-0 after:right-0 after:-bottom-[1px] after:h-[2px] after:bg-black"
+          : "font-normal text-uber-gray-500 hover:text-black",
+      ].join(" ")}
+    >
+      {children}
+    </button>
+  );
+}
+
+function OfferCard({
+  offer,
+  expanded,
+  onToggle,
+}: {
+  offer: RbfOffer;
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="bg-white border border-uber-gray-200 rounded-card pt-6 pb-4 px-4 flex flex-col gap-6">
+      <div>
+        <p className="text-[16px] leading-5 text-uber-gray-500">Recibe</p>
+        <p className="text-[24px] leading-8 font-bold text-black">
+          {formatMxn(offer.receive)}
         </p>
       </div>
 
-      {/* Grid de productos crediticios */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 items-start">
-        {/* Card 1 — Préstamo Básico */}
-        <div className="bg-white rounded-2xl border border-rappi-card-border shadow-sm p-6 flex flex-col h-full">
-          {/* Ícono */}
-          <div className="w-11 h-11 bg-blue-50 rounded-xl flex items-center justify-center mb-4">
-            <svg className="w-6 h-6 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
-            </svg>
-          </div>
+      <p className="text-[16px] leading-6 text-black">
+        Retenemos el{" "}
+        <strong className="font-bold">{offer.retention}% de tus ventas</strong>{" "}
+        realizadas en la aplicación de Uber Eats hasta que pagues{" "}
+        <strong className="font-bold">{formatMxn(offer.totalToPay)}</strong>
+      </p>
 
-          {/* Tag */}
-          <span className="text-xs font-semibold text-blue-500 uppercase tracking-wide mb-2">
-            Préstamo Básico
-          </span>
-
-          {/* Monto preaprobado */}
-          <div className="mb-4">
-            <div className="flex items-baseline gap-1 mb-0.5">
-              <p className="text-3xl font-bold text-rappi-dark">
-                $50,000
-                <span className="text-lg font-normal text-rappi-muted ml-1">MXN</span>
-              </p>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
-                <svg className="w-3 h-3" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                Preaprobado para vos
-              </span>
-            </div>
-          </div>
-
-          {/* Características */}
-          <ul className="space-y-2 mb-6 flex-1">
-            <li className="flex items-center gap-2 text-sm text-gray-600">
-              <svg className="w-4 h-4 text-green-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              Basado en tus ventas en Rappi
-            </li>
-            <li className="flex items-center gap-2 text-sm text-gray-600">
-              <svg className="w-4 h-4 text-green-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              Aprobación en 24 hs
-            </li>
-            <li className="flex items-center gap-2 text-sm text-gray-600">
-              <svg className="w-4 h-4 text-green-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              Sin trámites adicionales
-            </li>
-          </ul>
-
-          {/* CTA */}
-          <button className="w-full py-3 rounded-xl border-2 border-rappi-card-border text-rappi-dark font-semibold text-sm hover:border-gray-400 transition-colors">
-            Ver detalles
-          </button>
-        </div>
-
-        {/* Card 2 — Préstamo MÁS (banner destacado) */}
-        <FullRevenueBanner />
-
-        {/* Card 3 — Capital de trabajo (próximamente) */}
-        <div className="bg-white rounded-2xl border border-rappi-card-border shadow-sm p-6 flex flex-col h-full opacity-60">
-          {/* Ícono */}
-          <div className="w-11 h-11 bg-gray-100 rounded-xl flex items-center justify-center mb-4">
-            <svg className="w-6 h-6 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
-            </svg>
-          </div>
-
-          {/* Tag */}
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-              Capital de Trabajo
-            </span>
-            <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-medium">
-              Próximamente
-            </span>
-          </div>
-
-          {/* Monto */}
-          <p className="text-3xl font-bold text-gray-400 mb-1">
-            $200,000
-            <span className="text-lg font-normal text-gray-400 ml-1">MXN</span>
-          </p>
-          <p className="text-sm text-gray-400 mb-4">Monto máximo estimado</p>
-
-          {/* Características */}
-          <ul className="space-y-2 mb-6 flex-1">
-            <li className="flex items-center gap-2 text-sm text-gray-400">
-              <svg className="w-4 h-4 text-gray-300 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              Para inventario y expansión
-            </li>
-            <li className="flex items-center gap-2 text-sm text-gray-400">
-              <svg className="w-4 h-4 text-gray-300 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              Plazos flexibles hasta 24 meses
-            </li>
-            <li className="flex items-center gap-2 text-sm text-gray-400">
-              <svg className="w-4 h-4 text-gray-300 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              Tasas preferenciales
-            </li>
-          </ul>
-
-          {/* CTA deshabilitado */}
-          <button
-            disabled
-            className="w-full py-3 rounded-xl bg-gray-100 text-gray-400 font-semibold text-sm cursor-not-allowed"
+      <div className="bg-uber-gray-200 rounded-card p-2">
+        <button
+          type="button"
+          onClick={onToggle}
+          className="w-full flex items-center justify-between px-0"
+          aria-expanded={expanded}
+        >
+          <span className="text-[16px] font-bold text-black">Detalles</span>
+          <svg
+            className={[
+              "w-5 h-5 text-black transition-transform",
+              expanded ? "rotate-180" : "",
+            ].join(" ")}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
           >
-            Disponible pronto
-          </button>
-        </div>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </button>
+
+        {expanded && (
+          <div className="mt-3 flex flex-col">
+            <DetailRow label="Cargo fijo + IVA:" value={formatMxn(offer.fixedFee)} />
+            <DetailRow label="Total a pagar:" value={formatMxn(offer.totalToPay)} />
+            <DetailRow label="Pago mínimo mensual:" value={formatMxn(offer.monthlyMin)} />
+            <DetailRow label="Plazo máximo:" value={offer.maxTerm} isLast />
+          </div>
+        )}
       </div>
 
-      {/* Nota informativa */}
-      <div className="mt-8 bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-start gap-3">
-        <svg className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
-        </svg>
-        <div>
-          <p className="text-sm font-medium text-blue-800">¿Necesitás más crédito?</p>
-          <p className="text-sm text-blue-600 mt-0.5">
-            Con <strong>Préstamo MÁS</strong> podés acceder a hasta 5 veces más financiamiento conectando tus datos fiscales y plataformas digitales.
-          </p>
-        </div>
-      </div>
+      <button
+        type="button"
+        className="w-full h-10 bg-black text-white text-[16px] font-bold rounded-btn hover:bg-uber-gray-900 transition-colors"
+        onClick={() => {
+          alert(
+            "Esta oferta base no está disponible en el prototipo. Prueba Préstamo MÁS arriba."
+          );
+        }}
+      >
+        Seleccionar
+      </button>
+    </div>
+  );
+}
+
+function DetailRow({
+  label,
+  value,
+  isLast,
+}: {
+  label: string;
+  value: string;
+  isLast?: boolean;
+}) {
+  return (
+    <div
+      className={[
+        "flex items-center justify-between py-2",
+        isLast ? "" : "border-b border-uber-gray-300",
+      ].join(" ")}
+    >
+      <span className="text-[16px] leading-5 text-uber-gray-700">{label}</span>
+      <span className="text-[16px] leading-5 font-medium text-uber-gray-700 text-right">
+        {value}
+      </span>
     </div>
   );
 }

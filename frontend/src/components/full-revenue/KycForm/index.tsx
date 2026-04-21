@@ -15,39 +15,24 @@ const TOTAL_STEPS = 6;
 
 interface Props {
   applicationId: string;
-  prefillData?: Record<string, string>;
 }
 
 /**
- * Pre-fill personal data from Rappi API (form_data).
- * Rappi comparte: nombre, apellido, fecha de nacimiento, nacionalidad.
- * Rappi NO comparte: cédula (el usuario la completa).
+ * Este prototipo NO pre-llena PII — los merchants la capturan manualmente
+ * porque no estamos jalando datos desde Uber Eats. Titular bancario puede
+ * sugerirse a partir del nombre ingresado en Step 1 para reducir fricción,
+ * pero arranca vacío si el usuario aún no llenó Step 1.
  */
-function derivePersonalPrefill(data?: Record<string, string>): Partial<Step1PersonalValues> {
-  return {
-    first_name:  data?.owner_first_name ?? "Guillermo",
-    last_name:   data?.owner_last_name  ?? "Bravo",
-    birth_date:  data?.birth_date       ?? "1986-05-01",
-    nationality: "Mexicana",
-    cedula:      "",   // RFC — el usuario lo llena, Rappi no lo comparte
-  };
-}
-
-function deriveAddressPrefill(data?: Record<string, string>): Partial<Step2AddressValues> {
-  if (!data?.address) return {};
-  return { street: data.address };
-}
-
-/** Titular de cuenta = nombre + apellido del representante, no el nombre comercial */
-function deriveBankPrefill(personal: Step1PersonalValues | null, data?: Record<string, string>): Partial<Step3BankValues> {
-  if (personal) {
-    return { account_holder: `${personal.first_name} ${personal.last_name}`.trim() };
+function deriveBankPrefill(personal: Step1PersonalValues | null): Partial<Step3BankValues> {
+  if (personal?.first_name || personal?.last_name) {
+    return {
+      account_holder: `${personal.first_name ?? ""} ${personal.last_name ?? ""}`.trim(),
+    };
   }
-  const owner = [data?.owner_first_name ?? "Guillermo", data?.owner_last_name ?? "Bravo"].join(" ").trim();
-  return { account_holder: owner };
+  return {};
 }
 
-export function KycForm({ applicationId, prefillData }: Props) {
+export function KycForm({ applicationId }: Props) {
   const router = useRouter();
 
   const [step,         setStep]        = useState(1);
@@ -101,19 +86,8 @@ export function KycForm({ applicationId, prefillData }: Props) {
     <div className="px-4 py-6">
       <StepIndicatorKyc current={step} total={TOTAL_STEPS} />
 
-      {prefillData?.legal_name && step <= 3 && (
-        <div className="mb-4 flex items-center gap-2 bg-green-50 border border-green-100 rounded-xl px-4 py-2.5">
-          <svg className="w-4 h-4 text-green-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
-          </svg>
-          <p className="text-xs text-green-700">
-            <span className="font-semibold">Datos pre-cargados</span> de tu solicitud — revisá y editá si es necesario
-          </p>
-        </div>
-      )}
-
       {error && (
-        <div className="mb-5 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+        <div className="mb-5 p-3 bg-uber-danger-bg border border-uber-danger rounded-btn text-uber-danger text-[14px]">
           {error}
         </div>
       )}
@@ -121,7 +95,7 @@ export function KycForm({ applicationId, prefillData }: Props) {
       {/* Paso 1 — Datos personales */}
       {step === 1 && (
         <Step1Personal
-          defaultValues={personal ?? derivePersonalPrefill(prefillData)}
+          defaultValues={personal ?? {}}
           onComplete={handleStep1}
         />
       )}
@@ -129,7 +103,7 @@ export function KycForm({ applicationId, prefillData }: Props) {
       {/* Paso 2 — Dirección del negocio */}
       {step === 2 && (
         <Step2Address
-          defaultValues={address ?? deriveAddressPrefill(prefillData)}
+          defaultValues={address ?? {}}
           onComplete={handleStep2}
           onBack={() => setStep(1)}
         />
@@ -138,7 +112,7 @@ export function KycForm({ applicationId, prefillData }: Props) {
       {/* Paso 3 — Cuenta bancaria */}
       {step === 3 && (
         <Step3BankAccount
-          defaultValues={bank ?? deriveBankPrefill(personal, prefillData)}
+          defaultValues={bank ?? deriveBankPrefill(personal)}
           onComplete={handleStep3}
           onBack={() => setStep(2)}
         />

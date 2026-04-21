@@ -155,7 +155,7 @@ export function StatusCard({ application }: Props) {
             {decision_payload.platform_gmv_6m !== undefined && (
               <div className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
                 <span className="text-xs text-gray-500 flex items-center gap-1.5">
-                  <span>🛍️</span> GMV en Rappi (últ. 6m)
+                  <span>🛍️</span> GMV en Uber Eats (últ. 6m)
                 </span>
                 <span className="text-sm font-semibold text-gray-800">
                   ${decision_payload.platform_gmv_6m.toLocaleString("es-MX")} MXN/mes

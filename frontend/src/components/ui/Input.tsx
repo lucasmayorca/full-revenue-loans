@@ -13,10 +13,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     const inputId = id ?? label.toLowerCase().replace(/\s+/g, "_");
 
     return (
-      <div className="space-y-1">
+      <div className="space-y-1.5">
         <label
           htmlFor={inputId}
-          className="block text-sm font-medium text-gray-700"
+          className="block text-[14px] font-medium text-black"
         >
           {label}
         </label>
@@ -25,21 +25,21 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           id={inputId}
           {...props}
           className={[
-            "w-full px-4 py-3 rounded-xl border text-base transition-colors",
-            "focus:outline-none focus:ring-2 focus:ring-rappi-orange focus:border-transparent",
+            "w-full px-4 h-12 rounded-btn border text-[16px] leading-6 transition-colors bg-white text-black",
+            "focus:outline-none focus:border-black focus:ring-1 focus:ring-black",
             error
-              ? "border-red-400 bg-red-50"
-              : "border-gray-300 bg-white hover:border-gray-400",
+              ? "border-uber-danger"
+              : "border-uber-gray-300 hover:border-uber-gray-500",
             className,
           ]
             .filter(Boolean)
             .join(" ")}
         />
         {hint && !error && (
-          <p className="text-xs text-gray-500">{hint}</p>
+          <p className="text-[12px] text-uber-gray-500">{hint}</p>
         )}
         {error && (
-          <p className="text-xs text-red-600" role="alert">
+          <p className="text-[12px] text-uber-danger" role="alert">
             {error}
           </p>
         )}
