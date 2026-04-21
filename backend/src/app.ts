@@ -20,7 +20,10 @@ export function createApp(): express.Application {
 
   app.use("/full-revenue/applications", applicationsRouter);
   app.use("/full-revenue", applicationsRouter);
+  // Events router: mount en ambos paths para compat con frontends que usan
+  // BASE_URL con o sin prefijo `/full-revenue`.
   app.use("/events", eventsRouter);
+  app.use("/full-revenue/events", eventsRouter);
 
   app.use((_req, res) => {
     res.status(404).json({ error: "Not found" });
