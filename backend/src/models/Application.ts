@@ -57,6 +57,11 @@ export interface PlacesResult {
 // ── Facebook Pages ───────────────────────────────────────────────────────────
 export interface FacebookResult {
   connected: boolean;
+  // Identidad básica (public_profile + email) — siempre devuelve esto si OAuth completó
+  user_id?: string;
+  user_name?: string;
+  user_email?: string;
+  // Datos de Page (requiere pages_show_list + pages_read_engagement)
   page_name?: string;
   fan_count?: number;           // seguidores de la página
   rating?: number;              // rating 1–5 (si tiene reseñas habilitadas)

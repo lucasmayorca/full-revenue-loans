@@ -34,6 +34,29 @@ class FacebookClient {
    * Trae datos de la Facebook Page vinculada al access_token del usuario.
    * El token se obtiene tras el OAuth flow de Facebook Login.
    */
+  /**
+   * Trae datos básicos del usuario autenticado (public_profile + email).
+   * No requiere permisos avanzados.
+   */
+  private async getUserProfile(
+    userAccessToken: string
+  ): Promise<{ id?: string; name?: string; email?: string }> {
+    try {
+      const meResp = await axios.get(`${GRAPH_BASE}/me`, {
+        params: { access_token: userAccessToken, fields: "id,name,email" },
+        timeout: 8000,
+      });
+      return {
+        id: meResp.data.id,
+        name: meResp.data.name,
+        email: meResp.data.email,
+      };
+    } catch (err) {
+      logger.warn("facebook_me_fetch_failed", { error: String(err) });
+      return {};
+    }
+  }
+
   async getPageData(userAccessToken: string): Promise<FacebookResult> {
     if (env.DEMO_MODE || !env.FACEBOOK_APP_ID) {
       logger.info("facebook_demo_mode");
@@ -41,8 +64,24 @@ class FacebookClient {
       return { ...DEMO_FACEBOOK_STUB, fetched_at: new Date().toISOString() };
     }
 
+    // 1) Identidad básica — siempre se intenta primero (alcanza con public_profile + email)
+    const profile = await this.getUserProfile(userAccessToken);
+    const baseResult: FacebookResult = {
+      connected: !!profile.id,
+      user_id: profile.id,
+      user_name: profile.name,
+      user_email: profile.email,
+      fetched_at: new Date().toISOString(),
+    };
+
+    if (!profile.id) {
+      logger.warn("facebook_no_profile_data");
+      return { connected: false, fetched_at: new Date().toISOString() };
+    }
+
+    // 2) Datos de Page — opcional, requiere pages_show_list + pages_read_engagement.
+    // Si la app aún no tiene esos permisos aprobados, /me/accounts devuelve [] sin error.
     try {
-      // Primero traemos las páginas administradas por el usuario
       const pagesResp = await axios.get(`${GRAPH_BASE}/me/accounts`, {
         params: {
           access_token: userAccessToken,
@@ -53,19 +92,21 @@ class FacebookClient {
 
       const page = pagesResp.data.data?.[0];
       if (!page) {
-        logger.warn("facebook_no_pages_found");
-        return { connected: false, fetched_at: new Date().toISOString() };
+        logger.info("facebook_identity_only", {
+          user_id: profile.id,
+          has_email: !!profile.email,
+        });
+        return baseResult;
       }
 
       const result: FacebookResult = {
-        connected: true,
+        ...baseResult,
         page_name: page.name,
         fan_count: page.fan_count,
         rating: page.overall_star_rating,
         review_count: page.rating_count,
         is_verified: page.verification_status === "blue_verified" || page.verification_status === "gray_verified",
         website: page.website ?? "",
-        fetched_at: new Date().toISOString(),
       };
 
       logger.info("facebook_data_fetched", {
@@ -76,8 +117,10 @@ class FacebookClient {
 
       return result;
     } catch (err) {
-      logger.error("facebook_fetch_failed", { error: String(err) });
-      return { connected: false, fetched_at: new Date().toISOString() };
+      // Page fetch falló (probable: sin permiso aprobado). No romper el flow,
+      // devolvemos la identidad que ya validamos.
+      logger.warn("facebook_pages_unavailable", { error: String(err) });
+      return baseResult;
     }
   }
 
@@ -89,7 +132,9 @@ class FacebookClient {
     const params = new URLSearchParams({
       client_id: env.FACEBOOK_APP_ID,
       redirect_uri: `${env.BACKEND_URL}/full-revenue/oauth/facebook/callback`,
-      scope: "public_profile",
+      // Camino B: scopes básicos. Cuando se aprueben pages_show_list/instagram_basic
+      // sumarlos acá: "public_profile,email,pages_show_list,pages_read_engagement,instagram_basic"
+      scope: "public_profile,email",
       state: applicationId,
       response_type: "code",
     });
