@@ -208,8 +208,9 @@ export function GamifiedApplicationForm() {
     sessionStorage.setItem(SS_FORM_DATA, JSON.stringify(step1Data));
     sessionStorage.setItem(SS_GOOGLE_URL, currentUrl);
     sessionStorage.setItem(SS_FLOW_STEP, "connections");
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    window.location.href = `${apiUrl}/full-revenue/oauth/facebook/redirect?applicationId=${applicationId}`;
+    // BASE_URL already includes `/full-revenue` prefix — do NOT double it.
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/full-revenue";
+    window.location.href = `${apiUrl}/oauth/facebook/redirect?applicationId=${applicationId}`;
   }, [applicationId, step1Data]);
 
   const handleInstagramConnect = useCallback(
@@ -270,7 +271,10 @@ export function GamifiedApplicationForm() {
 
     const s1 = step1Data as Step1Values;
     if (!s1.legal_name || !s1.address || !s1.email) {
-      setError("Faltan datos del negocio. Volvé al inicio y completá el formulario.");
+      // Los datos se perdieron (ej: sesión expirada). Mandamos al usuario de
+      // vuelta al Step 1 donde los puede recapturar, y mostramos un aviso ahí.
+      setError("Volvé a ingresar los datos de tu negocio para continuar con tu solicitud.");
+      setFlowStep("identity");
       return false;
     }
 
@@ -366,7 +370,7 @@ export function GamifiedApplicationForm() {
       </div>
 
       {error && (
-        <div className="mb-5 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+        <div className="mb-5 p-3 bg-uber-danger-bg border border-uber-danger/30 rounded-btn text-uber-danger text-[14px]">
           {error}
         </div>
       )}
@@ -387,7 +391,7 @@ export function GamifiedApplicationForm() {
         />
       )}
 
-      {/* ── Step: Offer 1 (1.5X) with 2 CTAs ── */}
+      {/* ── Step: Offer 1 (1.5X) with 2 CTAs — Ampliar es PRIMARY */}
       {flowStep === "offer1" && (
         <div className="space-y-4">
           <OfferRevealCard
@@ -397,14 +401,17 @@ export function GamifiedApplicationForm() {
             isAnimating={true}
           />
 
-          <button type="button" onClick={handleApplyFromOffer1} disabled={isSubmitting}
-            className="w-full bg-black text-white font-bold h-12 rounded-btn text-[16px] transition-colors hover:bg-uber-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:opacity-40">
-            {isSubmitting ? "Enviando..." : "Aplicar ahora este crédito"}
+          <button type="button" onClick={handleContinueToConnections} disabled={isSubmitting}
+            className="w-full bg-black text-white font-bold h-12 rounded-btn text-[16px] transition-colors hover:bg-uber-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:opacity-40 inline-flex items-center justify-center gap-2">
+            Ampliar el monto con más información
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+            </svg>
           </button>
 
-          <button type="button" onClick={handleContinueToConnections} disabled={isSubmitting}
+          <button type="button" onClick={handleApplyFromOffer1} disabled={isSubmitting}
             className="w-full bg-white border-2 border-black text-black font-bold h-12 rounded-btn text-[16px] transition-colors hover:bg-uber-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:opacity-40">
-            Ampliar el monto con más información
+            {isSubmitting ? "Enviando..." : "Aplicar con este monto"}
           </button>
 
           <p className="text-[12px] text-uber-gray-500 text-center">Sin compromiso hasta que confirmes en el paso de KYC.</p>
@@ -426,7 +433,7 @@ export function GamifiedApplicationForm() {
         />
       )}
 
-      {/* ── Step: Offer 2 (2X) with 2 CTAs ── */}
+      {/* ── Step: Offer 2 (2X) with 2 CTAs — Ampliar es PRIMARY */}
       {flowStep === "offer2" && (
         <div className="space-y-4">
           <OfferRevealCard
@@ -436,14 +443,17 @@ export function GamifiedApplicationForm() {
             isAnimating={true}
           />
 
-          <button type="button" onClick={handleApplyFromOffer2} disabled={isSubmitting}
-            className="w-full bg-black text-white font-bold h-12 rounded-btn text-[16px] transition-colors hover:bg-uber-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:opacity-40">
-            {isSubmitting ? "Enviando..." : "Aplicar ahora este crédito"}
+          <button type="button" onClick={handleContinueToFiscal} disabled={isSubmitting}
+            className="w-full bg-black text-white font-bold h-12 rounded-btn text-[16px] transition-colors hover:bg-uber-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:opacity-40 inline-flex items-center justify-center gap-2">
+            Ampliar el monto con más información
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+            </svg>
           </button>
 
-          <button type="button" onClick={handleContinueToFiscal} disabled={isSubmitting}
+          <button type="button" onClick={handleApplyFromOffer2} disabled={isSubmitting}
             className="w-full bg-white border-2 border-black text-black font-bold h-12 rounded-btn text-[16px] transition-colors hover:bg-uber-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:opacity-40">
-            Ampliar el monto con más información
+            {isSubmitting ? "Enviando..." : "Aplicar con este monto"}
           </button>
 
           <p className="text-[12px] text-uber-gray-500 text-center">Sin compromiso hasta que confirmes en el paso de KYC.</p>
@@ -465,6 +475,7 @@ export function GamifiedApplicationForm() {
           <OfferRevealCard
             amount={offerAmounts.fiscal}
             previousAmount={offerAmounts.social}
+            baseAmount={offerAmounts.base}
             stage="final"
             isAnimating={true}
           />
