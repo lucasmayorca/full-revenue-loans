@@ -23,10 +23,18 @@ const SS_FB_TOKEN    = "fr_fb_token";
 const SS_FISCAL      = "fr_fiscal_data";
 
 /* ── Default offer amounts ── */
-const DEFAULT_INITIAL      = 50_000;
-const DEFAULT_BUREAU_OFFER = 75_000;   // 1.5X
-const DEFAULT_SOCIAL_OFFER = 100_000;  // 2X
-const DEFAULT_FISCAL_OFFER = 200_000;  // 4X
+const SS_BASE_AMOUNT = "fr_base_amount";
+const FALLBACK_BASE  = 50_000;
+
+function readBaseAmount(): number {
+  if (typeof window === "undefined") return FALLBACK_BASE;
+  const stored = sessionStorage.getItem(SS_BASE_AMOUNT);
+  if (stored) {
+    const parsed = parseInt(stored, 10);
+    if (!isNaN(parsed) && parsed > 0) return parsed;
+  }
+  return FALLBACK_BASE;
+}
 
 export function GamifiedApplicationForm() {
   const router       = useRouter();
@@ -73,11 +81,14 @@ export function GamifiedApplicationForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError]               = useState<string | null>(null);
 
-  const [offerAmounts, setOfferAmounts] = useState({
-    base: DEFAULT_INITIAL,
-    bureau: DEFAULT_BUREAU_OFFER,
-    social: DEFAULT_SOCIAL_OFFER,
-    fiscal: DEFAULT_FISCAL_OFFER,
+  const [offerAmounts, setOfferAmounts] = useState(() => {
+    const base = readBaseAmount();
+    return {
+      base,
+      bureau: Math.round(base * 1.5),
+      social: Math.round(base * 2),
+      fiscal: Math.round(base * 4),
+    };
   });
 
   /* ── Persist flow step + track step view for funnel metrics ── */

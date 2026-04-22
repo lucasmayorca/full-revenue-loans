@@ -338,22 +338,103 @@ class InstagramClient {
         return { connected: false, fetched_at: new Date().toISOString() };
       }
 
-      // Datos del perfil de Instagram
+      // Datos del perfil de Instagram (campos enriquecidos)
       const igResp = await axios.get(`${GRAPH_BASE}/${igAccountId}`, {
         params: {
           access_token: userAccessToken,
-          fields: "username,followers_count,media_count,account_type",
+          fields: [
+            "username",
+            "name",
+            "biography",
+            "website",
+            "profile_picture_url",
+            "followers_count",
+            "media_count",
+            "account_type",
+            "shopping_product_tag_eligibility",
+          ].join(","),
         },
         timeout: 8000,
       });
 
       const ig = igResp.data;
+
+      // Engagement: traer hasta 25 posts recientes con like/comment count
+      let recentMedia: Array<{ id?: string; like_count?: number; comments_count?: number; timestamp?: string }> = [];
+      let avgLikes: number | undefined;
+      let avgComments: number | undefined;
+      let engagementRate: number | undefined;
+      let postsLast30d: number | undefined;
+      try {
+        const mediaResp = await axios.get(`${GRAPH_BASE}/${igAccountId}/media`, {
+          params: {
+            access_token: userAccessToken,
+            fields: "id,like_count,comments_count,timestamp",
+            limit: 25,
+          },
+          timeout: 6000,
+        });
+        recentMedia = Array.isArray(mediaResp.data?.data) ? mediaResp.data.data : [];
+
+        const likes = recentMedia.map((m) => m.like_count ?? 0);
+        const comments = recentMedia.map((m) => m.comments_count ?? 0);
+        if (recentMedia.length > 0) {
+          avgLikes = Math.round(likes.reduce((a, b) => a + b, 0) / recentMedia.length);
+          avgComments = Math.round(comments.reduce((a, b) => a + b, 0) / recentMedia.length);
+          if (ig.followers_count) {
+            engagementRate = Number(((avgLikes + avgComments) / ig.followers_count).toFixed(4));
+          }
+        }
+        const cutoff = Date.now() - 30 * 86400_000;
+        postsLast30d = recentMedia.filter(
+          (m) => m.timestamp && Date.parse(m.timestamp) >= cutoff
+        ).length;
+      } catch {
+        // sin permiso → métricas quedan undefined
+      }
+
+      // Insights (requiere instagram_manage_insights — best-effort)
+      let insights: { reach_28d?: number; impressions_28d?: number; profile_views_28d?: number } | undefined;
+      try {
+        const insResp = await axios.get(`${GRAPH_BASE}/${igAccountId}/insights`, {
+          params: {
+            access_token: userAccessToken,
+            metric: "reach,impressions,profile_views",
+            period: "days_28",
+          },
+          timeout: 6000,
+        });
+        const arr = insResp.data?.data ?? [];
+        const pick = (name: string): number | undefined => {
+          const item = arr.find((x: { name: string }) => x.name === name);
+          return item?.values?.[0]?.value;
+        };
+        insights = {
+          reach_28d: pick("reach"),
+          impressions_28d: pick("impressions"),
+          profile_views_28d: pick("profile_views"),
+        };
+      } catch {
+        // sin permiso
+      }
+
       const result: InstagramResult = {
         connected: true,
         username: ig.username,
+        name: ig.name,
+        biography: ig.biography,
+        website: ig.website,
+        profile_picture_url: ig.profile_picture_url,
         followers_count: ig.followers_count,
         media_count: ig.media_count,
         is_business: ig.account_type === "BUSINESS" || ig.account_type === "CREATOR",
+        recent_media: recentMedia.length > 0 ? recentMedia : undefined,
+        avg_likes_per_post: avgLikes,
+        avg_comments_per_post: avgComments,
+        engagement_rate: engagementRate,
+        posts_last_30d: postsLast30d,
+        insights,
+        shopping_product_tag_eligibility: ig.shopping_product_tag_eligibility,
         fetched_at: new Date().toISOString(),
       };
 

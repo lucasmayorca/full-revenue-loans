@@ -144,7 +144,7 @@ export default function FinanciamientoPage() {
       {activeTab === "ofertas" && (
         <div className="flex flex-col gap-10">
           {/* Banner Préstamo MÁS — ARRIBA de las 3 ofertas */}
-          <PrestamoMasBanner />
+          <PrestamoMasBanner baseAmount={OFFERS[0].receive} />
 
           {/* Section title */}
           <div>

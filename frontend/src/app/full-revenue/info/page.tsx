@@ -6,18 +6,17 @@ import { Button } from "@/components/ui/Button";
 import { useTracking } from "@/hooks/useTracking";
 import { EVENTS } from "@/lib/tracking";
 
-const INITIAL_AMOUNT = 50_000;
+const SS_BASE_AMOUNT = "fr_base_amount";
+const FALLBACK_BASE  = 50_000;
 
 function fmt(n: number) {
-  return n.toLocaleString("es-MX", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  });
+  return n.toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
-function useCountUp(target: number, duration = 800) {
+function useCountUp(target: number, duration = 900) {
   const [value, setValue] = useState(0);
   useEffect(() => {
+    setValue(0);
     const steps = 40;
     const step = target / steps;
     let current = 0;
@@ -35,49 +34,55 @@ function useCountUp(target: number, duration = 800) {
   return value;
 }
 
-const STEPS = [
-  {
-    number: 1,
-    title: "Buró de crédito",
-    description:
-      "Autorizas la consulta al buró e identidad vía Twilio. Tu oferta inicial se revela.",
-    unlocks: "hasta $75k",
-  },
-  {
-    number: 2,
-    title: "Presencia digital",
-    description:
-      "Conectas Google Maps y redes sociales para ampliar tu monto.",
-    unlocks: "hasta $100k",
-  },
-  {
-    number: 3,
-    title: "Datos fiscales",
-    description:
-      "Compartes tus datos del SAT para que calculemos tu capacidad real de pago.",
-    unlocks: "hasta $200k",
-  },
-  {
-    number: 4,
-    title: "Oferta final",
-    description: "Recibes tu monto máximo y decides si quieres aplicar.",
-    unlocks: "Oferta final",
-  },
-];
-
 export default function FullRevenueInfoPage() {
   const router = useRouter();
   const { trackEvent } = useTracking();
-  const animatedAmount = useCountUp(INITIAL_AMOUNT, 900);
+
+  const [baseAmount, setBaseAmount] = useState(FALLBACK_BASE);
 
   useEffect(() => {
+    const stored = sessionStorage.getItem(SS_BASE_AMOUNT);
+    if (stored) {
+      const parsed = parseInt(stored, 10);
+      if (!isNaN(parsed) && parsed > 0) setBaseAmount(parsed);
+    }
     trackEvent(EVENTS.PRODUCT_PAGE_VIEWED);
   }, [trackEvent]);
+
+  const bureauOffer = Math.round(baseAmount * 1.5);
+  const socialOffer = Math.round(baseAmount * 2);
+  const fiscalOffer = Math.round(baseAmount * 4);
+
+  const animatedBase = useCountUp(baseAmount, 900);
 
   function handleContinue() {
     trackEvent(EVENTS.CONTINUE_CLICKED);
     router.push("/full-revenue/apply");
   }
+
+  const STEPS = [
+    {
+      number: 1,
+      title: "Buró de crédito",
+      description: "Autorizas la consulta al buró e identidad vía Twilio. Tu oferta inicial se revela.",
+      unlocks: `hasta $${fmt(bureauOffer)}`,
+      mult: "1.5x",
+    },
+    {
+      number: 2,
+      title: "Presencia digital",
+      description: "Conectas Google Maps y redes sociales para ampliar tu monto.",
+      unlocks: `hasta $${fmt(socialOffer)}`,
+      mult: "2x",
+    },
+    {
+      number: 3,
+      title: "Datos fiscales",
+      description: "Compartes tus datos del SAT para que calculemos tu capacidad real de pago.",
+      unlocks: `hasta $${fmt(fiscalOffer)}`,
+      mult: "4x",
+    },
+  ];
 
   return (
     <div className="max-w-[720px] mx-auto px-8 py-10 space-y-10">
@@ -103,32 +108,37 @@ export default function FullRevenueInfoPage() {
           className="absolute -right-20 -top-20 w-72 h-72 bg-uber-green opacity-10 rounded-full"
         />
         <div className="relative">
-          <p className="text-[12px] uppercase tracking-wider text-white/60 mb-2">
-            Tu crédito inicial garantizado
+          <p className="text-[12px] uppercase tracking-wider text-white/60 mb-1">
+            Tu oferta actual
           </p>
-          <div className="flex items-end gap-2 mb-6">
+          <div className="flex items-end gap-2 mb-1">
             <p className="text-[56px] font-bold leading-none tracking-tight">
-              ${fmt(animatedAmount)}
+              ${fmt(animatedBase)}
             </p>
-            <p className="text-[18px] font-medium text-white/80 mb-1.5">
-              MXN
-            </p>
+            <p className="text-[18px] font-medium text-white/80 mb-1.5">MXN</p>
           </div>
+          <p className="text-[13px] text-white/50 mb-6">
+            Punto de partida — puede crecer hasta ${fmt(fiscalOffer)} MXN
+          </p>
 
+          {/* Mini milestone bar */}
           <div className="space-y-2">
-            <div className="flex justify-between text-[12px] text-white/80">
-              <span>Potencial máximo</span>
-              <span className="font-bold">hasta $200,000 MXN</span>
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-white/60">Oferta base</span>
+              <span className="text-white/60">→</span>
+              <span className="text-uber-green font-bold">Máximo ${fmt(fiscalOffer)}</span>
             </div>
-            <div className="h-1.5 bg-white/15 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-uber-green rounded-full transition-all duration-1000"
-                style={{ width: "25%" }}
-              />
+            <div className="h-2 bg-white/10 rounded-full overflow-hidden flex">
+              <div className="h-full bg-white/40 rounded-full" style={{ width: "25%" }} />
+              <div className="h-full border-l border-white/20" title={`$${fmt(bureauOffer)}`} style={{ marginLeft: "12.5%" }} />
+              <div className="h-full border-l border-white/20" title={`$${fmt(socialOffer)}`} style={{ marginLeft: "12.5%" }} />
             </div>
-            <p className="text-[12px] text-white/60">
-              Completa los pasos para llegar a tu máximo.
-            </p>
+            <div className="flex justify-between text-[10px] text-white/40">
+              <span>${fmt(baseAmount)}</span>
+              <span>${fmt(bureauOffer)}</span>
+              <span>${fmt(socialOffer)}</span>
+              <span>${fmt(fiscalOffer)}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -154,12 +164,15 @@ export default function FullRevenueInfoPage() {
 
                 <div className="flex-1 bg-white border border-uber-gray-200 rounded-card px-4 py-3">
                   <div className="flex items-start justify-between gap-3 mb-1">
-                    <p className="text-[16px] font-bold text-black">
-                      {step.title}
-                    </p>
-                    <span className="text-[12px] font-bold text-uber-success bg-uber-success-bg px-2 py-0.5 rounded-sm whitespace-nowrap">
-                      {step.unlocks}
-                    </span>
+                    <p className="text-[16px] font-bold text-black">{step.title}</p>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <span className="text-[10px] font-bold text-uber-gray-500 bg-uber-gray-100 px-1.5 py-0.5 rounded-sm">
+                        {step.mult}
+                      </span>
+                      <span className="text-[12px] font-bold text-uber-success bg-uber-success-bg px-2 py-0.5 rounded-sm whitespace-nowrap">
+                        {step.unlocks}
+                      </span>
+                    </div>
                   </div>
                   <p className="text-[14px] text-uber-gray-700 leading-5">
                     {step.description}

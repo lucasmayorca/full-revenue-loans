@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   api,
   type MetricsResponse,
@@ -712,10 +712,28 @@ function ApplicationDetail({
         title="Decision engine"
         data={{
           status: app.decision_status,
-          total_monthly_revenue: decision.total_monthly_revenue,
-          score: decision.score,
+          total_revenue: decision.total_revenue,
+          threshold_used: decision.threshold_used,
+          data_sources: decision.data_sources,
           credit_offer: decision.credit_offer,
-          reasons: decision.reasons,
+          // Highlights por fuente — facilita lectura del analista
+          bureau_score: decision.bureau_score,
+          syntage_monthly_revenue: decision.syntage_monthly_revenue,
+          syntage_tax_compliance: decision.syntage_tax_compliance,
+          places_signals_score: decision.places_signals_score,
+          places_rating: decision.places_rating,
+          platform_gmv_6m: decision.platform_gmv_6m,
+          platform_tenure_months: decision.platform_tenure_months,
+          twilio_identity_match: decision.twilio_identity_match,
+          twilio_whatsapp_business: decision.twilio_whatsapp_business,
+          twilio_sim_swap_detected: decision.twilio_sim_swap_detected,
+          twilio_call_forwarding: decision.twilio_call_forwarding,
+          twilio_carrier_detail: decision.twilio_carrier_detail,
+          twilio_number_tenure: decision.twilio_number_tenure,
+          twilio_risk_score: decision.twilio_risk_score,
+          twilio_risk_flags: decision.twilio_risk_flags,
+          reason: decision.reason,
+          decided_at: decision.decided_at,
         }}
       />
       <DetailSection title="Platform (Uber Eats)" data={platform} />
@@ -762,38 +780,115 @@ function DetailSection({
         </p>
       ) : (
         <dl className="space-y-1 text-[11px]">
-          {keys.map((k) => (
-            <div key={k} className="flex gap-2">
-              <dt
-                className="font-mono flex-shrink-0"
-                style={{ color: R2.textMuted }}
+          {keys.map((k) => {
+            const v = data[k];
+            const isComposite = isCompositeValue(v);
+            return (
+              <div
+                key={k}
+                className={isComposite ? "block" : "flex gap-2"}
               >
-                {k}
-              </dt>
-              <dd
-                className="font-mono break-all text-right ml-auto"
-                style={{ color: R2.textPrimary }}
-              >
-                {formatValue(data[k])}
-              </dd>
-            </div>
-          ))}
+                <dt
+                  className="font-mono flex-shrink-0"
+                  style={{ color: R2.textMuted }}
+                >
+                  {k}
+                </dt>
+                <dd
+                  className={[
+                    "font-mono",
+                    isComposite ? "mt-0.5 ml-3" : "break-all text-right ml-auto",
+                  ].join(" ")}
+                  style={{ color: R2.textPrimary }}
+                >
+                  {renderValue(v)}
+                </dd>
+              </div>
+            );
+          })}
         </dl>
       )}
     </div>
   );
 }
 
-function formatValue(v: unknown): string {
+function isCompositeValue(v: unknown): boolean {
+  if (Array.isArray(v)) {
+    // Arrays de primitivos quedan inline; arrays de objetos se expanden
+    return v.some((x) => typeof x === "object" && x !== null);
+  }
+  return v !== null && typeof v === "object";
+}
+
+function renderValue(v: unknown): ReactNode {
   if (v === null || v === undefined) return "—";
   if (typeof v === "boolean") return v ? "✓" : "✗";
   if (typeof v === "number") return v.toLocaleString("es-MX");
   if (typeof v === "string") return v;
-  try {
-    return JSON.stringify(v);
-  } catch {
-    return String(v);
+  // Arrays
+  if (Array.isArray(v)) {
+    if (v.length === 0) return "—";
+    // Array de primitivos → inline comma-separated
+    if (v.every((x) => typeof x !== "object" || x === null)) {
+      return v
+        .map((x) =>
+          x === null || x === undefined
+            ? "—"
+            : typeof x === "boolean"
+              ? x ? "✓" : "✗"
+              : typeof x === "number"
+                ? x.toLocaleString("es-MX")
+                : String(x)
+        )
+        .join(", ");
+    }
+    // Array de objetos → lista vertical compacta
+    return (
+      <ul className="space-y-1.5 list-none">
+        {v.map((item, i) => (
+          <li
+            key={i}
+            className="rounded p-1.5"
+            style={{
+              background: R2.bgPanel,
+              border: `1px solid ${R2.borderSubtle}`,
+            }}
+          >
+            {renderValue(item)}
+          </li>
+        ))}
+      </ul>
+    );
   }
+  // Objeto → sub-dl key/value
+  if (typeof v === "object") {
+    const entries = Object.entries(v as Record<string, unknown>).filter(
+      ([, val]) => val !== undefined
+    );
+    if (entries.length === 0) return "—";
+    return (
+      <dl className="space-y-0.5">
+        {entries.map(([k, val]) => {
+          const composite = isCompositeValue(val);
+          return (
+            <div
+              key={k}
+              className={composite ? "block" : "flex gap-2 justify-end"}
+            >
+              <dt style={{ color: R2.textMuted }}>{k}</dt>
+              <dd
+                className={composite ? "mt-0.5 ml-3" : "break-all text-right"}
+                style={{ color: R2.textPrimary }}
+              >
+                {renderValue(val)}
+              </dd>
+            </div>
+          );
+        })}
+      </dl>
+    );
+  }
+  return String(v);
 }
 
 function EventsTab({ data }: { data: EventsListResponse | null }) {

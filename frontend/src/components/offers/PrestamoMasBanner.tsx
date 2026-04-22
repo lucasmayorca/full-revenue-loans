@@ -5,14 +5,20 @@ import { useRouter } from "next/navigation";
 import { useTracking } from "@/hooks/useTracking";
 import { EVENTS } from "@/lib/tracking";
 
+const SS_BASE_AMOUNT = "fr_base_amount";
+
+interface Props {
+  /** Monto máximo de la oferta RBF actual — es el punto de partida del flujo Préstamo MÁS. */
+  baseAmount: number;
+}
+
 /**
  * Banner compacto que se muestra como **alternativa** a las 3 ofertas RBF
- * regulares. Layout horizontal en una sola fila (~80-100px de alto) para
- * no competir visualmente con las cards principales y dejar que el usuario
- * entienda que el default es aplicar a alguna de las 3 ofertas, y que
- * Préstamo MÁS es una opción extra para acceder a montos más altos.
+ * regulares. Al hacer clic guarda el baseAmount en sessionStorage para que
+ * el flujo Full Revenue pueda mostrarlo como punto de partida y calcular
+ * los multiplicadores 1.5x / 2x / 4x.
  */
-export function PrestamoMasBanner() {
+export function PrestamoMasBanner({ baseAmount }: Props) {
   const router = useRouter();
   const { trackEvent } = useTracking();
 
@@ -21,7 +27,8 @@ export function PrestamoMasBanner() {
   }, [trackEvent]);
 
   function handleClick() {
-    trackEvent(EVENTS.BANNER_CLICKED, { surface: "offers_feed" });
+    trackEvent(EVENTS.BANNER_CLICKED, { surface: "offers_feed", base_amount: baseAmount });
+    sessionStorage.setItem(SS_BASE_AMOUNT, String(baseAmount));
     router.push("/full-revenue/info");
   }
 
@@ -51,8 +58,8 @@ export function PrestamoMasBanner() {
             </span>
           </div>
           <p className="text-[16px] font-bold text-black leading-5">
-            ¿Necesitas más crédito? Desbloquea hasta{" "}
-            <span className="text-uber-green">4x más</span> con Préstamo MÁS
+            ¿Necesitas más crédito? Parte de{" "}
+            <span className="text-uber-green">${baseAmount.toLocaleString("en-US")}</span> y desbloquea hasta <span className="text-uber-green">4x</span> más
           </p>
           <p className="text-[13px] text-uber-gray-700 leading-5 mt-0.5 hidden sm:block">
             Comparte tus datos fiscales y de presencia digital para acceder a
