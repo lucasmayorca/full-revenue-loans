@@ -81,15 +81,26 @@ export function GamifiedApplicationForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError]               = useState<string | null>(null);
 
-  const [offerAmounts, setOfferAmounts] = useState(() => {
-    const base = readBaseAmount();
-    return {
-      base,
-      bureau: Math.round(base * 1.5),
-      social: Math.round(base * 2),
-      fiscal: Math.round(base * 4),
-    };
+  // SSR-safe: initialize with fallback, update from sessionStorage after hydration
+  const [offerAmounts, setOfferAmounts] = useState({
+    base: FALLBACK_BASE,
+    bureau: Math.round(FALLBACK_BASE * 1.5),
+    social: Math.round(FALLBACK_BASE * 2),
+    fiscal: Math.round(FALLBACK_BASE * 4),
   });
+
+  /* ── Hydrate offer amounts from sessionStorage after mount (SSR-safe) ── */
+  useEffect(() => {
+    const base = readBaseAmount();
+    if (base !== FALLBACK_BASE) {
+      setOfferAmounts({
+        base,
+        bureau: Math.round(base * 1.5),
+        social: Math.round(base * 2),
+        fiscal: Math.round(base * 4),
+      });
+    }
+  }, []);
 
   /* ── Persist flow step + track step view for funnel metrics ── */
   useEffect(() => {
