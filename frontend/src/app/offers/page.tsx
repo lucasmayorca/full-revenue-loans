@@ -147,7 +147,7 @@ function FinanciamientoInner() {
     <div className="max-w-[1200px] mx-auto px-8 py-8">
       {/* Title */}
       <h1 className="text-[40px] font-bold text-black leading-[1.1] tracking-tight mb-8">
-        {merchantName ? `Hola ${merchantName}` : "Financiamiento"}
+        {merchantName ? `Hola ${merchantName}` : "Financiamiento MÁS"}
       </h1>
 
       {prefillLoading && (
@@ -452,34 +452,55 @@ function OfferCard({
   offer: RbfOffer;
   onSelect: () => void;
 }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
   return (
-    <div className="bg-white border border-uber-gray-200 rounded-card pt-5 pb-5 px-5 flex flex-col gap-5">
-      {/* Header */}
-      <div>
-        <span className="text-[10px] font-bold uppercase tracking-widest text-uber-gray-400">
-          Financiamiento por ventas
-        </span>
-        <p className="text-[13px] text-uber-gray-500 mt-3 leading-4">Recibe</p>
-        <p className="text-[28px] leading-8 font-bold text-black">
+    <div className="bg-white border border-[#E8E8E8] rounded-[8px] pt-[24px] pb-[16px] px-[16px] flex flex-col gap-[24px]">
+      {/* Recibe + monto + descripción */}
+      <div className="flex flex-col gap-2">
+        <p className="text-[16px] text-[#8A8A8A] leading-[20px]">Recibe</p>
+        <p className="text-[24px] leading-[32px] font-bold text-black">
           {formatMxn(offer.receive)}
+        </p>
+        <p className="text-[16px] text-black leading-[24px] mt-1">
+          Retenemos el{" "}
+          <strong className="font-bold">{offer.retention}% de tus ventas</strong>{" "}
+          realizadas en la aplicación de Uber Eats hasta que pagues{" "}
+          <strong className="font-bold">{formatMxn(offer.totalToPay)}</strong>
         </p>
       </div>
 
-      {/* Características del producto */}
-      <div className="flex flex-col gap-2.5">
-        <RbfFeature text={`Retención del ${offer.retention}% sobre tus ventas en Uber Eats`} />
-        <RbfFeature text={`Total a pagar: ${formatMxn(offer.totalToPay)} (cargo fijo ${formatMxn(offer.fixedFee)})`} />
-        <RbfFeature text={`Pago mínimo mensual: ${formatMxn(offer.monthlyMin)}`} />
-        <RbfFeature text={`Plazo máximo: ${offer.maxTerm}`} />
-        <RbfFeature text="Sin cuota fija — pagas solo cuando vendes" />
-        <RbfFeature text="Solo basado en tus ventas en plataforma" />
+      {/* Accordion Detalles */}
+      <div>
+        <button
+          type="button"
+          onClick={() => setDetailsOpen((o) => !o)}
+          className="w-full bg-[#E8E8E8] rounded-[8px] px-[8px] py-[8px] flex items-center justify-between text-[14px] font-medium text-black"
+        >
+          <span>Detalles</span>
+          <svg
+            className={`w-4 h-4 transition-transform ${detailsOpen ? "rotate-180" : ""}`}
+            viewBox="0 0 24 24"
+            fill="currentColor"
+          >
+            <path d="M7 10l5 5 5-5z" />
+          </svg>
+        </button>
+        {detailsOpen && (
+          <div className="flex flex-col divide-y divide-[#D9D9D9]">
+            <DetailRow label="Cargo fijo + IVA:" value={formatMxn(offer.fixedFee)} />
+            <DetailRow label="Total a pagar:" value={formatMxn(offer.totalToPay)} />
+            <DetailRow label="Pago mínimo mensual:" value={formatMxn(offer.monthlyMin)} />
+            <DetailRow label="Plazo máximo:" value={offer.maxTerm} />
+          </div>
+        )}
       </div>
 
       {/* CTA */}
       <button
         type="button"
         onClick={onSelect}
-        className="w-full h-10 bg-black text-white text-[14px] font-bold rounded-btn hover:bg-uber-gray-900 transition-colors mt-auto"
+        className="w-full h-[40px] bg-black text-white text-[16px] font-bold rounded-[2px] hover:bg-[#333] transition-colors mt-auto"
       >
         Seleccionar
       </button>
@@ -487,13 +508,11 @@ function OfferCard({
   );
 }
 
-function RbfFeature({ text }: { text: string }) {
+function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-start gap-2">
-      <svg className="w-4 h-4 text-uber-gray-400 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-      </svg>
-      <span className="text-[12px] text-uber-gray-700 leading-[18px]">{text}</span>
+    <div className="flex justify-between py-[8px] text-[14px]">
+      <span className="text-[#4B4B4B]">{label}</span>
+      <span className="font-bold text-black">{value}</span>
     </div>
   );
 }

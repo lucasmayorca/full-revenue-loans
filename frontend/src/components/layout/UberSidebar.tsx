@@ -84,7 +84,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Payments", href: "#", icon: IconCreditCard, disabled: true },
   { label: "Users", href: "#", icon: IconGroup, disabled: true },
   { label: "Settings", href: "#", icon: IconSettings, disabled: true },
-  { label: "Financiamiento", href: "/offers", icon: IconWallet },
+  { label: "Financiamiento MÁS", href: "/offers", icon: IconWallet },
 ];
 
 export function UberSidebar() {
