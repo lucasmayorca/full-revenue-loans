@@ -23,6 +23,13 @@ export interface FormData {
 }
 
 // ── Syntage / SAT ────────────────────────────────────────────────────────────
+export interface SyntageCounterparty {
+  rfc: string;
+  name?: string;
+  invoiced_amount_12m: number;       // MXN facturado a/desde esta contraparte
+  share_of_revenue: number;          // 0–1 (porcentaje de ingresos totales)
+}
+
 export interface SyntageResult {
   merchant_id: string;
   annual_revenue: number;
@@ -31,6 +38,10 @@ export interface SyntageResult {
   tax_regime?: string;
   cfdi_count_last_12m?: number;
   tax_compliance?: boolean;          // true si no tiene deuda activa con SAT
+  // Cashflow real (Step 3 — Full Fiscal Validation)
+  avg_monthly_invoiced_inflows_6m?: number;   // MXN/mes facturado a clientes (entradas)
+  invoiced_revenue_std_dev_6m?: number;        // Volatilidad de ingresos fiscales (sizing de cuota)
+  cfdi_top_counterparties?: SyntageCounterparty[]; // Top clientes — concentración de ingresos
   raw_response: Record<string, unknown>;
   fetched_at: string;
 }
@@ -81,7 +92,7 @@ export interface InstagramResult {
   fetched_at: string;
 }
 
-// ── Twilio Lookup (Identity Match + WhatsApp Business) ───────────────────────
+// ── Twilio Lookup (Identity Match + WhatsApp Business + Antifraude) ──────────
 export interface TwilioResult {
   connected: boolean;
   phone_number?: string;
@@ -92,10 +103,21 @@ export interface TwilioResult {
   whatsapp_business?: boolean;      // true si tiene cuenta de WhatsApp Business activa
   // Line Intelligence
   line_type?: string;               // "mobile" | "landline" | "voip" | "toll_free"
-  // Antifraude
-  sim_swap_detected?: boolean;      // true si hubo cambio de SIM en últimas 24-72h
   carrier_name?: string;
   country_code?: string;
+  // Antifraude
+  sim_swap_detected?: boolean;      // true si hubo cambio de SIM en últimas 24-72h
+  call_forwarding_enabled?: boolean;    // true si llamadas están siendo desviadas
+  // Line Intelligence detallado
+  prepaid_flag?: boolean;               // true = prepago, false = postpago
+  mobile_country_code?: string;         // MCC (334 = México)
+  mobile_network_code?: string;         // MNC (ej 020 = Telcel)
+  // Tenure del número
+  number_tenure_days?: number;          // días activo con el carrier
+  number_tenure_bucket?: "new" | "recent" | "established"; // <30d / 30-180d / >180d
+  // Score agregado antifraude
+  risk_score?: number;                  // 0-100 (100 = más seguro)
+  risk_flags?: string[];                // lista de señales negativas
   fetched_at: string;
 }
 
@@ -153,6 +175,12 @@ export interface DecisionPayload {
   twilio_whatsapp_business?: boolean;
   twilio_sim_swap_detected?: boolean;
   twilio_line_type?: string;
+  twilio_call_forwarding?: boolean;
+  twilio_prepaid?: boolean;
+  twilio_carrier_detail?: string;    // "Telcel post-pago"
+  twilio_number_tenure?: string;     // "established" | "recent" | "new"
+  twilio_risk_score?: number;        // 0-100
+  twilio_risk_flags?: string[];
 
   // Bureau de Crédito
   bureau_score?: number;

@@ -193,11 +193,15 @@ export async function runUnderwriting(
     instagramResult = { connected: false, fetched_at: new Date().toISOString() };
   }
 
-  // ── 5. Twilio Lookup (Identity Match + WhatsApp Business) ───────────────────
+  // ── 5. Twilio Lookup (Identity + WhatsApp + Antifraude full) ─────────────────
   let twilioResult: TwilioResult | undefined;
   let twilioIdentityMatch: boolean | undefined;
   let twilioWhatsapp: boolean | undefined;
   let twilioSimSwap: boolean | undefined;
+  let twilioCallForwarding: boolean | undefined;
+  let twilioPrepaid: boolean | undefined;
+  let twilioTenure: "new" | "recent" | "established" | undefined;
+  let twilioRiskScore: number | undefined;
   let twilioAvailable = false;
 
   try {
@@ -213,6 +217,10 @@ export async function runUnderwriting(
       twilioIdentityMatch = twilio.identity_match;
       twilioWhatsapp = twilio.whatsapp_business;
       twilioSimSwap = twilio.sim_swap_detected;
+      twilioCallForwarding = twilio.call_forwarding_enabled;
+      twilioPrepaid = twilio.prepaid_flag;
+      twilioTenure = twilio.number_tenure_bucket;
+      twilioRiskScore = twilio.risk_score;
       twilioAvailable = true;
 
       logger.info("twilio_lookup_done", {
@@ -220,6 +228,10 @@ export async function runUnderwriting(
         identity_match: twilioIdentityMatch,
         whatsapp_business: twilioWhatsapp,
         sim_swap: twilioSimSwap,
+        call_forwarding: twilioCallForwarding,
+        prepaid: twilioPrepaid,
+        tenure: twilioTenure,
+        risk_score: twilioRiskScore,
       });
     }
   } catch (err) {
@@ -306,7 +318,11 @@ export async function runUnderwriting(
     instagramFollowers,
     twilioIdentityMatch,
     twilioWhatsapp,
-    twilioSimSwap
+    twilioSimSwap,
+    twilioCallForwarding,
+    twilioPrepaid,
+    twilioTenure,
+    twilioRiskScore
   );
 
   // ── 10. Calcular oferta de crédito ─────────────────────────────────────────
@@ -349,6 +365,10 @@ export async function runUnderwriting(
       twilioIdentityMatch,
       twilioWhatsapp,
       twilioSimSwap,
+      twilioCallForwarding,
+      twilioPrepaid,
+      twilioTenure,
+      twilioRiskScore,
     }),
     syntage_monthly_revenue: syntageMonthlyRevenue,
     syntage_tax_compliance: syntageCompliance,
@@ -365,6 +385,16 @@ export async function runUnderwriting(
     twilio_whatsapp_business: twilioWhatsapp,
     twilio_sim_swap_detected: twilioSimSwap,
     twilio_line_type: twilioResult?.line_type,
+    twilio_call_forwarding: twilioCallForwarding,
+    twilio_prepaid: twilioPrepaid,
+    twilio_carrier_detail: twilioResult?.carrier_name
+      ? `${twilioResult.carrier_name}${
+          twilioPrepaid === false ? " post-pago" : twilioPrepaid === true ? " prepago" : ""
+        }`
+      : undefined,
+    twilio_number_tenure: twilioTenure,
+    twilio_risk_score: twilioRiskScore,
+    twilio_risk_flags: twilioResult?.risk_flags,
     bureau_score: bureauScore,
     platform_gmv_6m: platformGmv,
     platform_tenure_months: tenureMonths,
@@ -396,7 +426,9 @@ export async function runUnderwriting(
 
 /**
  * Ingreso total ponderado para el analista.
- * Boost máximo acumulable por fuentes digitales: ~35%
+ * Multiplicadores Twilio sumados: identity +5%, WhatsApp +3%, post-pago +3%,
+ * tenure established +3%, SIM swap -10%, call forwarding -15%, new number -10%,
+ * risk_score < 50 -8% (reaseguro compuesto).
  */
 function computeTotalRevenue(
   syntageMonthly: number,
@@ -408,7 +440,11 @@ function computeTotalRevenue(
   instagramFollowers: number | undefined,
   twilioIdentityMatch: boolean | undefined,
   twilioWhatsapp: boolean | undefined,
-  twilioSimSwap: boolean | undefined
+  twilioSimSwap: boolean | undefined,
+  twilioCallForwarding: boolean | undefined,
+  twilioPrepaid: boolean | undefined,
+  twilioTenure: "new" | "recent" | "established" | undefined,
+  twilioRiskScore: number | undefined
 ): number {
   if (syntageMonthly === 0) return 0;
 
@@ -431,14 +467,33 @@ function computeTotalRevenue(
 
   const socialBoost = 1 + facebookBoost + instagramBoost;
 
-  // Twilio Identity Match: +5% si nombre coincide con operador (confianza de identidad)
+  // Twilio Identity Match: +5%
   const identityBoost = twilioIdentityMatch === true ? 1.05 : 1.0;
 
-  // WhatsApp Business: +3% si tiene cuenta de WhatsApp Business activa
+  // WhatsApp Business: +3%
   const whatsappBoost = twilioWhatsapp === true ? 1.03 : 1.0;
 
-  // SIM Swap reciente: penalización -10% (señal de fraude)
+  // SIM Swap reciente: -10%
   const simSwapPenalty = twilioSimSwap === true ? 0.90 : 1.0;
+
+  // Call forwarding activo: -15% (fuerte antifraude)
+  const callForwardingPenalty = twilioCallForwarding === true ? 0.85 : 1.0;
+
+  // Postpago = +3% / prepago = -2% (estabilidad del cliente)
+  const prepaidMultiplier =
+    twilioPrepaid === false ? 1.03
+    : twilioPrepaid === true ? 0.98
+    : 1.0;
+
+  // Tenure del número: established +3% / new -10%
+  const numberTenureMultiplier =
+    twilioTenure === "established" ? 1.03
+    : twilioTenure === "new"         ? 0.90
+    : 1.0;
+
+  // Reaseguro compuesto si risk_score es muy bajo
+  const riskScorePenalty =
+    twilioRiskScore !== undefined && twilioRiskScore < 50 ? 0.92 : 1.0;
 
   const bureauMultiplier =
     bureauScore === undefined ? 1.0
@@ -461,6 +516,10 @@ function computeTotalRevenue(
     identityBoost *
     whatsappBoost *
     simSwapPenalty *
+    callForwardingPenalty *
+    prepaidMultiplier *
+    numberTenureMultiplier *
+    riskScorePenalty *
     bureauMultiplier *
     tenureMultiplier *
     complianceMultiplier
@@ -485,6 +544,10 @@ function buildReason(params: {
   twilioIdentityMatch: boolean | undefined;
   twilioWhatsapp: boolean | undefined;
   twilioSimSwap: boolean | undefined;
+  twilioCallForwarding: boolean | undefined;
+  twilioPrepaid: boolean | undefined;
+  twilioTenure: "new" | "recent" | "established" | undefined;
+  twilioRiskScore: number | undefined;
 }): string {
   const parts: string[] = [
     "Solicitud en revisión manual para determinar nuevo monto Préstamo MÁS.",
@@ -512,7 +575,12 @@ function buildReason(params: {
     const twilioNotes: string[] = [];
     if (params.twilioIdentityMatch === true) twilioNotes.push("identidad verificada ✓");
     if (params.twilioWhatsapp === true) twilioNotes.push("WhatsApp Business activo ✓");
-    if (params.twilioSimSwap === true) twilioNotes.push("⚠️ SIM swap reciente detectado");
+    if (params.twilioPrepaid === false) twilioNotes.push("post-pago ✓");
+    if (params.twilioTenure === "established") twilioNotes.push("número establecido ✓");
+    if (params.twilioTenure === "new") twilioNotes.push("⚠️ número reciente");
+    if (params.twilioSimSwap === true) twilioNotes.push("⚠️ SIM swap reciente");
+    if (params.twilioCallForwarding === true) twilioNotes.push("⚠️ desvío de llamadas activo");
+    if (params.twilioRiskScore !== undefined) twilioNotes.push(`risk ${params.twilioRiskScore}/100`);
     if (twilioNotes.length > 0) parts.push(`Twilio Lookup: ${twilioNotes.join(", ")}.`);
   }
   if (params.bureauAvailable && params.bureauScore !== undefined) {
