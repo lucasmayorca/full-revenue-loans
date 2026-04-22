@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { api } from "@/lib/api";
 import { useTracking } from "@/hooks/useTracking";
 import { EVENTS } from "@/lib/tracking";
 
-type OfferId = "oferta1" | "oferta2";
+type OfferId = string;
 
 interface RbfOffer {
   id: OfferId;
@@ -17,7 +19,7 @@ interface RbfOffer {
   maxTerm: string;
 }
 
-const OFFERS: RbfOffer[] = [
+const DEFAULT_OFFERS: RbfOffer[] = [
   {
     id: "oferta1",
     receive: 62800,
@@ -38,7 +40,9 @@ const OFFERS: RbfOffer[] = [
   },
 ];
 
-const FULL_REVENUE_MAX = 251200; // 4x oferta1
+const SS_BASE_AMOUNT = "fr_base_amount";
+const SS_PREFILL     = "fr_prefill";
+const SS_PREFILL_TOKEN = "fr_prefill_token";
 
 function formatMxn(value: number) {
   return "$" + value.toLocaleString("en-US");
@@ -48,22 +52,82 @@ type TabId = "ofertas" | "beneficios" | "como" | "faq";
 
 export default function FinanciamientoPage() {
   const { trackEvent } = useTracking();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabId>("ofertas");
-  const [expanded, setExpanded] = useState<OfferId | null>("oferta1");
+  const [offers, setOffers] = useState<RbfOffer[]>(DEFAULT_OFFERS);
+  const [fullRevenueMax, setFullRevenueMax] = useState<number>(DEFAULT_OFFERS[0].receive * 4);
   const [personaType, setPersonaType] = useState<"fisica" | "moral">("fisica");
   const [consentChecked, setConsentChecked] = useState(false);
   const [surveyOpen, setSurveyOpen] = useState(false);
+  const [prefillLoading, setPrefillLoading] = useState(false);
+  const [prefillError, setPrefillError] = useState<string | null>(null);
+  const [merchantName, setMerchantName] = useState<string | null>(null);
+
+  // Hidratar ofertas + prefill desde ?t=token
+  useEffect(() => {
+    const token = searchParams.get("t");
+    if (!token) return;
+
+    setPrefillLoading(true);
+    api
+      .getPrefillLink(token)
+      .then((data) => {
+        // Ofertas RBF custom (si vienen en el link)
+        if (data.offers && data.offers.length > 0) {
+          const mapped: RbfOffer[] = data.offers.map((o, idx) => ({
+            id: o.id ?? `oferta${idx + 1}`,
+            receive: o.receive,
+            retention: o.retention ?? 0,
+            totalToPay: o.totalToPay ?? o.receive,
+            fixedFee: o.fixedFee ?? 0,
+            monthlyMin: o.monthlyMin ?? 0,
+            maxTerm: o.maxTerm ?? "",
+          }));
+          setOffers(mapped);
+        }
+
+        // Base amount para Préstamo MÁS
+        const baseAmount =
+          data.base_amount ??
+          (data.offers && data.offers[0] ? data.offers[0].receive : null);
+        if (baseAmount) {
+          setFullRevenueMax(baseAmount * 4);
+          sessionStorage.setItem(SS_BASE_AMOUNT, String(baseAmount));
+        }
+
+        // Guardar prefill + token para que los siguientes pasos lo lean
+        if (data.prefill) {
+          sessionStorage.setItem(SS_PREFILL, JSON.stringify(data.prefill));
+          if (data.prefill.first_name) setMerchantName(data.prefill.first_name);
+        }
+        sessionStorage.setItem(SS_PREFILL_TOKEN, token);
+
+        trackEvent(EVENTS.PREFILL_LINK_OPENED, {
+          token,
+          merchant_id: data.merchant_id ?? undefined,
+        });
+      })
+      .catch((err) => {
+        const status = err && typeof err === "object" && "status" in err
+          ? (err as { status: number }).status
+          : 0;
+        if (status === 404) setPrefillError("Link inválido.");
+        else if (status === 410) setPrefillError("Link expirado.");
+        else setPrefillError("No se pudo cargar la oferta personalizada.");
+      })
+      .finally(() => setPrefillLoading(false));
+  }, [searchParams, trackEvent]);
 
   useEffect(() => {
     trackEvent(EVENTS.OFFERS_PAGE_VIEWED);
-    OFFERS.forEach((offer, idx) => {
+    offers.forEach((offer, idx) => {
       trackEvent(EVENTS.OFFER_CARD_VIEWED, {
         offer_id: offer.id,
         position: idx,
         receive_amount: offer.receive,
       });
     });
-  }, [trackEvent]);
+  }, [trackEvent, offers]);
 
   function handleTabChange(tab: TabId) {
     setActiveTab(tab);
@@ -76,26 +140,26 @@ export default function FinanciamientoPage() {
       receive_amount: offer.receive,
       retention: offer.retention,
     });
-    alert(
-      "Esta oferta base no está disponible en el prototipo. Prueba Préstamo MÁS arriba."
-    );
-  }
-
-  function handleOfferToggle(offerId: OfferId) {
-    const wasExpanded = expanded === offerId;
-    setExpanded(wasExpanded ? null : offerId);
-    trackEvent(EVENTS.OFFER_DETAILS_TOGGLED, {
-      offer_id: offerId,
-      expanded: !wasExpanded,
-    });
+    alert("Esta oferta base no está disponible en el prototipo. Prueba Préstamo MÁS.");
   }
 
   return (
     <div className="max-w-[1200px] mx-auto px-8 py-8">
       {/* Title */}
       <h1 className="text-[40px] font-bold text-black leading-[1.1] tracking-tight mb-8">
-        Financiamiento
+        {merchantName ? `Hola ${merchantName}` : "Financiamiento"}
       </h1>
+
+      {prefillLoading && (
+        <div className="mb-4 p-3 bg-uber-gray-100 border border-uber-gray-200 rounded-card text-[13px] text-uber-gray-700">
+          Cargando tu oferta personalizada...
+        </div>
+      )}
+      {prefillError && (
+        <div className="mb-4 p-3 bg-uber-danger-bg border border-uber-danger/30 rounded-card text-[13px] text-uber-danger">
+          {prefillError} Te mostramos las ofertas base.
+        </div>
+      )}
 
       {/* Tabs row */}
       <div className="border-b border-uber-gray-300 flex items-center justify-between pt-[5px] mb-8">
@@ -146,34 +210,22 @@ export default function FinanciamientoPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* ── Préstamo MÁS — Full Revenue Loans ── */}
-              <FullRevenueCard maxAmount={FULL_REVENUE_MAX} baseAmount={OFFERS[0].receive} />
+              <FullRevenueCard maxAmount={fullRevenueMax} baseAmount={offers[0]?.receive ?? 0} />
 
-              {/* ── Separador vertical sutil (solo desktop) ── */}
-              <div className="hidden md:flex flex-col items-center justify-center gap-2 relative">
-                <div className="absolute inset-y-0 left-1/2 w-px bg-uber-gray-200" />
-              </div>
-
-              {/* ── 2 Ofertas RBF apiladas ── */}
-              <div className="flex flex-col gap-4 md:-ml-6">
-                <p className="text-[10px] font-semibold text-uber-gray-400 uppercase tracking-widest -mb-1">
-                  Financiamiento por ventas en plataforma
-                </p>
-                {OFFERS.map((offer) => (
-                  <OfferCard
-                    key={offer.id}
-                    offer={offer}
-                    expanded={expanded === offer.id}
-                    onToggle={() => handleOfferToggle(offer.id)}
-                    onSelect={() => handleOfferSelect(offer)}
-                  />
-                ))}
-              </div>
+              {/* ── Ofertas RBF — una por columna ── */}
+              {offers.map((offer) => (
+                <OfferCard
+                  key={offer.id}
+                  offer={offer}
+                  onSelect={() => handleOfferSelect(offer)}
+                />
+              ))}
             </div>
           </div>
 
           {/* CAT disclosure */}
           <p className="text-[12px] leading-[18px] text-black">
-            El promedio del Costo Anual Total (CAT) de las 2 ofertas es [105%]
+            El promedio del Costo Anual Total (CAT) de las ofertas es [105%]
             sin IVA. Este porcentaje es una referencia informativa y su cálculo
             se basa en el valor de tus pagos mínimos mensuales.
           </p>
@@ -395,71 +447,39 @@ function TabButton({
 
 function OfferCard({
   offer,
-  expanded,
-  onToggle,
   onSelect,
 }: {
   offer: RbfOffer;
-  expanded: boolean;
-  onToggle: () => void;
   onSelect: () => void;
 }) {
   return (
-    <div className="bg-white border border-uber-gray-200 rounded-card pt-5 pb-4 px-4 flex flex-col gap-5">
+    <div className="bg-white border border-uber-gray-200 rounded-card pt-5 pb-5 px-5 flex flex-col gap-5">
+      {/* Header */}
       <div>
-        <p className="text-[14px] leading-5 text-uber-gray-500">Recibe</p>
-        <p className="text-[22px] leading-7 font-bold text-black">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-uber-gray-400">
+          Financiamiento por ventas
+        </span>
+        <p className="text-[13px] text-uber-gray-500 mt-3 leading-4">Recibe</p>
+        <p className="text-[28px] leading-8 font-bold text-black">
           {formatMxn(offer.receive)}
         </p>
       </div>
 
-      <p className="text-[14px] leading-5 text-black">
-        Retenemos el{" "}
-        <strong className="font-bold">{offer.retention}% de tus ventas</strong>{" "}
-        en Uber Eats hasta pagar{" "}
-        <strong className="font-bold">{formatMxn(offer.totalToPay)}</strong>
-      </p>
-
-      <div className="bg-uber-gray-200 rounded-card p-2">
-        <button
-          type="button"
-          onClick={onToggle}
-          className="w-full flex items-center justify-between px-0"
-          aria-expanded={expanded}
-        >
-          <span className="text-[14px] font-bold text-black">Detalles</span>
-          <svg
-            className={[
-              "w-4 h-4 text-black transition-transform",
-              expanded ? "rotate-180" : "",
-            ].join(" ")}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-        </button>
-
-        {expanded && (
-          <div className="mt-3 flex flex-col">
-            <DetailRow label="Cargo fijo + IVA:" value={formatMxn(offer.fixedFee)} />
-            <DetailRow label="Total a pagar:" value={formatMxn(offer.totalToPay)} />
-            <DetailRow label="Pago mínimo mensual:" value={formatMxn(offer.monthlyMin)} />
-            <DetailRow label="Plazo máximo:" value={offer.maxTerm} isLast />
-          </div>
-        )}
+      {/* Características del producto */}
+      <div className="flex flex-col gap-2.5">
+        <RbfFeature text={`Retención del ${offer.retention}% sobre tus ventas en Uber Eats`} />
+        <RbfFeature text={`Total a pagar: ${formatMxn(offer.totalToPay)} (cargo fijo ${formatMxn(offer.fixedFee)})`} />
+        <RbfFeature text={`Pago mínimo mensual: ${formatMxn(offer.monthlyMin)}`} />
+        <RbfFeature text={`Plazo máximo: ${offer.maxTerm}`} />
+        <RbfFeature text="Sin cuota fija — pagas solo cuando vendes" />
+        <RbfFeature text="Solo basado en tus ventas en plataforma" />
       </div>
 
+      {/* CTA */}
       <button
         type="button"
         onClick={onSelect}
-        className="w-full h-9 bg-black text-white text-[14px] font-bold rounded-btn hover:bg-uber-gray-900 transition-colors"
+        className="w-full h-10 bg-black text-white text-[14px] font-bold rounded-btn hover:bg-uber-gray-900 transition-colors mt-auto"
       >
         Seleccionar
       </button>
@@ -467,26 +487,13 @@ function OfferCard({
   );
 }
 
-function DetailRow({
-  label,
-  value,
-  isLast,
-}: {
-  label: string;
-  value: string;
-  isLast?: boolean;
-}) {
+function RbfFeature({ text }: { text: string }) {
   return (
-    <div
-      className={[
-        "flex items-center justify-between py-2",
-        isLast ? "" : "border-b border-uber-gray-300",
-      ].join(" ")}
-    >
-      <span className="text-[13px] leading-5 text-uber-gray-700">{label}</span>
-      <span className="text-[13px] leading-5 font-medium text-uber-gray-700 text-right">
-        {value}
-      </span>
+    <div className="flex items-start gap-2">
+      <svg className="w-4 h-4 text-uber-gray-400 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+      </svg>
+      <span className="text-[12px] text-uber-gray-700 leading-[18px]">{text}</span>
     </div>
   );
 }
