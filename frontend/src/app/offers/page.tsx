@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PrestamoMasBanner } from "@/components/offers/PrestamoMasBanner";
+import Link from "next/link";
 import { useTracking } from "@/hooks/useTracking";
 import { EVENTS } from "@/lib/tracking";
 
-type OfferId = "oferta1" | "oferta2" | "oferta3";
+type OfferId = "oferta1" | "oferta2";
 
 interface RbfOffer {
   id: OfferId;
@@ -36,16 +36,9 @@ const OFFERS: RbfOffer[] = [
     monthlyMin: 8700,
     maxTerm: "6.3 meses",
   },
-  {
-    id: "oferta3",
-    receive: 23600,
-    retention: 15.19,
-    totalToPay: 29075,
-    fixedFee: 5475,
-    monthlyMin: 4650,
-    maxTerm: "6.3 meses",
-  },
 ];
+
+const FULL_REVENUE_MAX = 251200; // 4x oferta1
 
 function formatMxn(value: number) {
   return "$" + value.toLocaleString("en-US");
@@ -63,7 +56,6 @@ export default function FinanciamientoPage() {
 
   useEffect(() => {
     trackEvent(EVENTS.OFFERS_PAGE_VIEWED);
-    // track each offer card view con el orden de display
     OFFERS.forEach((offer, idx) => {
       trackEvent(EVENTS.OFFER_CARD_VIEWED, {
         offer_id: offer.id,
@@ -143,37 +135,45 @@ export default function FinanciamientoPage() {
 
       {activeTab === "ofertas" && (
         <div className="flex flex-col gap-10">
-          {/* Banner Préstamo MÁS — ARRIBA de las 3 ofertas */}
-          <PrestamoMasBanner baseAmount={OFFERS[0].receive} />
-
-          {/* Section title */}
+          {/* ── Productos disponibles (Full Revenue + 2 RBF) ── */}
           <div>
-            <h2 className="text-h2 text-uber-hero mb-4">
-              Seleccione la oferta que mejor se adapte a tus necesidades
-            </h2>
-            <p className="text-[16px] leading-5 text-uber-gray-700">
-              Estas ofertas son calculadas en base a tu historial de ventas con
-              Uber Eats para que puedas pagarlas con un porcentaje de tus
-              ingresos.
-            </p>
-          </div>
+            <div className="flex items-center gap-3 mb-5">
+              <p className="text-[11px] font-semibold text-uber-gray-500 uppercase tracking-widest">
+                Productos disponibles
+              </p>
+              <div className="flex-1 h-px bg-uber-gray-200" />
+            </div>
 
-          {/* 3 cards RBF */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {OFFERS.map((offer) => (
-              <OfferCard
-                key={offer.id}
-                offer={offer}
-                expanded={expanded === offer.id}
-                onToggle={() => handleOfferToggle(offer.id)}
-                onSelect={() => handleOfferSelect(offer)}
-              />
-            ))}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* ── Préstamo MÁS — Full Revenue Loans ── */}
+              <FullRevenueCard maxAmount={FULL_REVENUE_MAX} baseAmount={OFFERS[0].receive} />
+
+              {/* ── Separador vertical sutil (solo desktop) ── */}
+              <div className="hidden md:flex flex-col items-center justify-center gap-2 relative">
+                <div className="absolute inset-y-0 left-1/2 w-px bg-uber-gray-200" />
+              </div>
+
+              {/* ── 2 Ofertas RBF apiladas ── */}
+              <div className="flex flex-col gap-4 md:-ml-6">
+                <p className="text-[10px] font-semibold text-uber-gray-400 uppercase tracking-widest -mb-1">
+                  Financiamiento por ventas en plataforma
+                </p>
+                {OFFERS.map((offer) => (
+                  <OfferCard
+                    key={offer.id}
+                    offer={offer}
+                    expanded={expanded === offer.id}
+                    onToggle={() => handleOfferToggle(offer.id)}
+                    onSelect={() => handleOfferSelect(offer)}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* CAT disclosure */}
           <p className="text-[12px] leading-[18px] text-black">
-            El promedio del Costo Anual Total (CAT) de las 3 ofertas es [105%]
+            El promedio del Costo Anual Total (CAT) de las 2 ofertas es [105%]
             sin IVA. Este porcentaje es una referencia informativa y su cálculo
             se basa en el valor de tus pagos mínimos mensuales.
           </p>
@@ -307,6 +307,67 @@ export default function FinanciamientoPage() {
   );
 }
 
+/* ── Préstamo MÁS / Full Revenue Loans card ── */
+function FullRevenueCard({ maxAmount, baseAmount }: { maxAmount: number; baseAmount: number }) {
+  return (
+    <div className="bg-black text-white rounded-card pt-6 pb-5 px-5 flex flex-col gap-5 relative overflow-hidden">
+      {/* Background subtle pattern */}
+      <div className="absolute inset-0 opacity-[0.04]" style={{
+        backgroundImage: "radial-gradient(circle at 80% 20%, white 1px, transparent 1px), radial-gradient(circle at 20% 80%, white 1px, transparent 1px)",
+        backgroundSize: "32px 32px"
+      }} />
+
+      {/* Badge */}
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] font-bold uppercase tracking-widest bg-white text-black px-2 py-0.5 rounded-full">
+          Nuevo
+        </span>
+        <span className="text-[12px] text-white/60">Préstamo MÁS</span>
+      </div>
+
+      {/* Amount */}
+      <div>
+        <p className="text-[13px] text-white/60 leading-4 mb-1">Hasta</p>
+        <p className="text-[32px] leading-8 font-bold text-white">
+          {formatMxn(maxAmount)}
+        </p>
+        <p className="text-[12px] text-white/50 mt-1">
+          vs {formatMxn(baseAmount)} con tu oferta actual
+        </p>
+      </div>
+
+      {/* Value props */}
+      <div className="flex flex-col gap-2.5">
+        <FeaturePill icon="📊" text="Evaluamos el 100% de tus ingresos reales" />
+        <FeaturePill icon="🏦" text="Hasta 4x más que tu oferta en plataforma" />
+        <FeaturePill icon="📅" text="Cuota mensual fija — sin retención sorpresa" />
+        <FeaturePill icon="⚡" text="Respuesta rápida por email o WhatsApp" />
+      </div>
+
+      {/* CTA */}
+      <Link
+        href="/full-revenue/apply"
+        className="w-full h-11 bg-white text-black text-[15px] font-bold rounded-btn hover:bg-uber-gray-200 transition-colors flex items-center justify-center gap-2 mt-1"
+      >
+        Ver mi oferta ampliada
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+        </svg>
+      </Link>
+    </div>
+  );
+}
+
+function FeaturePill({ icon, text }: { icon: string; text: string }) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <span className="text-[14px] w-5 text-center flex-shrink-0">{icon}</span>
+      <span className="text-[12px] text-white/80 leading-4">{text}</span>
+    </div>
+  );
+}
+
+/* ── RBF Offer Card ── */
 function TabButton({
   active,
   children,
@@ -344,18 +405,18 @@ function OfferCard({
   onSelect: () => void;
 }) {
   return (
-    <div className="bg-white border border-uber-gray-200 rounded-card pt-6 pb-4 px-4 flex flex-col gap-6">
+    <div className="bg-white border border-uber-gray-200 rounded-card pt-5 pb-4 px-4 flex flex-col gap-5">
       <div>
-        <p className="text-[16px] leading-5 text-uber-gray-500">Recibe</p>
-        <p className="text-[24px] leading-8 font-bold text-black">
+        <p className="text-[14px] leading-5 text-uber-gray-500">Recibe</p>
+        <p className="text-[22px] leading-7 font-bold text-black">
           {formatMxn(offer.receive)}
         </p>
       </div>
 
-      <p className="text-[16px] leading-6 text-black">
+      <p className="text-[14px] leading-5 text-black">
         Retenemos el{" "}
         <strong className="font-bold">{offer.retention}% de tus ventas</strong>{" "}
-        realizadas en la aplicación de Uber Eats hasta que pagues{" "}
+        en Uber Eats hasta pagar{" "}
         <strong className="font-bold">{formatMxn(offer.totalToPay)}</strong>
       </p>
 
@@ -366,10 +427,10 @@ function OfferCard({
           className="w-full flex items-center justify-between px-0"
           aria-expanded={expanded}
         >
-          <span className="text-[16px] font-bold text-black">Detalles</span>
+          <span className="text-[14px] font-bold text-black">Detalles</span>
           <svg
             className={[
-              "w-5 h-5 text-black transition-transform",
+              "w-4 h-4 text-black transition-transform",
               expanded ? "rotate-180" : "",
             ].join(" ")}
             viewBox="0 0 24 24"
@@ -398,7 +459,7 @@ function OfferCard({
       <button
         type="button"
         onClick={onSelect}
-        className="w-full h-10 bg-black text-white text-[16px] font-bold rounded-btn hover:bg-uber-gray-900 transition-colors"
+        className="w-full h-9 bg-black text-white text-[14px] font-bold rounded-btn hover:bg-uber-gray-900 transition-colors"
       >
         Seleccionar
       </button>
@@ -422,8 +483,8 @@ function DetailRow({
         isLast ? "" : "border-b border-uber-gray-300",
       ].join(" ")}
     >
-      <span className="text-[16px] leading-5 text-uber-gray-700">{label}</span>
-      <span className="text-[16px] leading-5 font-medium text-uber-gray-700 text-right">
+      <span className="text-[13px] leading-5 text-uber-gray-700">{label}</span>
+      <span className="text-[13px] leading-5 font-medium text-uber-gray-700 text-right">
         {value}
       </span>
     </div>

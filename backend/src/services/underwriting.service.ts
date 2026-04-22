@@ -47,7 +47,15 @@ export async function runUnderwriting(
   const facebookToken = application.form_data?.facebook_access_token ?? "";
   const instagramToken = application.form_data?.instagram_access_token ?? "";
   // Datos de identidad para Twilio Lookup
-  const phone = application.form_data?.phone ?? "";
+  const rawPhone = application.form_data?.phone ?? "";
+  // Normalizar a E.164 para México: si llega sin +, agregar +52
+  const phone = rawPhone.startsWith("+")
+    ? rawPhone
+    : rawPhone.length === 10
+    ? `+52${rawPhone}`
+    : rawPhone.length === 12 && rawPhone.startsWith("52")
+    ? `+${rawPhone}`
+    : rawPhone || "+525500000000";
   const legalName = application.form_data?.legal_name ?? "";
   const [firstName, ...lastParts] = legalName.trim().split(" ");
   const lastName = lastParts.join(" ");

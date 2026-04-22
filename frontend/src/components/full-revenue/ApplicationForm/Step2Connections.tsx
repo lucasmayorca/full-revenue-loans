@@ -7,13 +7,12 @@ import { z } from "zod";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
-// Schema local: URL de Maps + consentimiento
+// Schema local: URL de Maps (requerida) + consentimiento
 const schema = z.object({
   google_business_url: z
     .string()
-    .url("Ingresá una URL válida")
-    .optional()
-    .or(z.literal("")),
+    .min(1, "La URL de Google Maps es requerida")
+    .url("Ingresá una URL válida de Google Maps (ej: https://maps.app.goo.gl/...)"),
   consent_given: z.literal(true, {
     errorMap: () => ({ message: "Debés aceptar los términos para continuar" }),
   }),

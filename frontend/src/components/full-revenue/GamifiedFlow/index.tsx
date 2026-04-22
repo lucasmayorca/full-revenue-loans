@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { EVENTS, DEMO_MERCHANT_ID } from "@/lib/tracking";
 import { useTracking } from "@/hooks/useTracking";
@@ -38,7 +38,6 @@ function readBaseAmount(): number {
 }
 
 export function GamifiedApplicationForm() {
-  const router       = useRouter();
   const searchParams = useSearchParams();
   const { trackEvent } = useTracking();
 
@@ -73,13 +72,14 @@ export function GamifiedApplicationForm() {
   const [instagramConnected, setInstagramConnected] = useState(false);
   const [facebookToken,      setFacebookToken]      = useState<string>("");
 
-  const [isSubmitting, setIsSubmitting]   = useState(false);
-  const [error, setError]                 = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting]     = useState(false);
+  const [error, setError]                   = useState<string | null>(null);
   const [calculatingFor, setCalculatingFor] = useState<"bureau" | "social" | "fiscal" | null>(null);
+  const [isEvaluating, setIsEvaluating]     = useState(false);
 
   // SSR-safe: initialize with fallback, update from sessionStorage after hydration
   const [offerAmounts, setOfferAmounts] = useState({
-    base: FALLBACK_BASE,
+    base:   FALLBACK_BASE,
     bureau: Math.round(FALLBACK_BASE * 1.5),
     social: Math.round(FALLBACK_BASE * 2),
     fiscal: Math.round(FALLBACK_BASE * 4),
@@ -112,7 +112,6 @@ export function GamifiedApplicationForm() {
     const fbToken  = searchParams.get("fb_token");
     const appId    = searchParams.get("appId");
 
-    // Handle Facebook OAuth error
     const fbError = searchParams.get("fb_error");
     if (fbError) {
       setError("Error al conectar Facebook: " + fbError);
@@ -140,7 +139,6 @@ export function GamifiedApplicationForm() {
 
       setFlowStep("connections");
 
-      // Clean up URL params to prevent re-processing on re-renders
       const cleanUrl = window.location.pathname;
       window.history.replaceState({}, "", cleanUrl);
     }
@@ -152,7 +150,6 @@ export function GamifiedApplicationForm() {
       const result = await api.createApplication(DEMO_MERCHANT_ID);
       setApplicationId(result.id);
       sessionStorage.setItem(SS_APP_ID, result.id);
-      // Record flow start time for success page stats
       if (!sessionStorage.getItem("fr_started_at")) {
         sessionStorage.setItem("fr_started_at", Date.now().toString());
       }
@@ -163,6 +160,73 @@ export function GamifiedApplicationForm() {
       return null;
     }
   }, [trackEvent]);
+
+  /* ── Core submit function ── */
+  async function doSubmit({ withSocial, withFiscal }: { withSocial: boolean; withFiscal: boolean }): Promise<boolean> {
+    let appId = applicationId;
+    if (!appId) {
+      appId = await createNewApplication();
+      if (!appId) return false;
+    }
+
+    const s1 = step1Data as Step1Values;
+    if (!s1.legal_name || !s1.address || !s1.email) {
+      setError("Volvé a ingresar los datos de tu negocio para continuar con tu solicitud.");
+      setFlowStep("identity");
+      return false;
+    }
+
+    const fbTok = facebookToken || (typeof window !== "undefined" ? sessionStorage.getItem(SS_FB_TOKEN) ?? "" : "");
+
+    const allData: AllFormData = {
+      ...s1,
+      ...(withFiscal && fiscalData ? { tax_id: fiscalData.tax_id, ciec: fiscalData.ciec } : {}),
+      ...(withSocial && googleUrl ? { google_business_url: googleUrl } : {}),
+      ...(withSocial && fbTok ? {
+        facebook_access_token: fbTok,
+        instagram_access_token: fbTok,
+      } : {}),
+      consent_given: true,
+    };
+
+    try {
+      await api.submitApplication(appId, allData);
+      sessionStorage.setItem("fr_offer_amounts", JSON.stringify(offerAmounts));
+      sessionStorage.setItem("fr_approved_at", Date.now().toString());
+      sessionStorage.removeItem(SS_APP_ID);
+      sessionStorage.removeItem(SS_FORM_DATA);
+      sessionStorage.removeItem(SS_GOOGLE_URL);
+      sessionStorage.removeItem(SS_FLOW_STEP);
+      sessionStorage.removeItem(SS_FB_TOKEN);
+      sessionStorage.removeItem(SS_FISCAL);
+      trackEvent(EVENTS.FORM_SUBMITTED, { application_id: appId });
+      setIsEvaluating(true);
+      return true;
+    } catch (err) {
+      const isNotFound = err && typeof err === "object" && "status" in err && (err as { status: number }).status === 404;
+      if (isNotFound) {
+        try {
+          const newId = await createNewApplication();
+          if (!newId) return false;
+          await api.submitApplication(newId, allData);
+          sessionStorage.removeItem(SS_APP_ID);
+          sessionStorage.removeItem(SS_FORM_DATA);
+          sessionStorage.removeItem(SS_GOOGLE_URL);
+          sessionStorage.removeItem(SS_FLOW_STEP);
+          sessionStorage.removeItem(SS_FB_TOKEN);
+          sessionStorage.removeItem(SS_FISCAL);
+          trackEvent(EVENTS.FORM_SUBMITTED, { application_id: newId });
+          setIsEvaluating(true);
+          return true;
+        } catch { /* fall through */ }
+      }
+      const apiErr = err as { message?: string; details?: Array<{ field: string; message: string }> };
+      const details = apiErr?.details?.map((d) => `${d.field}: ${d.message}`).join(", ");
+      const msg = details ? `${apiErr.message} (${details})` : (apiErr?.message ?? "Error desconocido");
+      setError(`Error: ${msg}`);
+      return false;
+    }
+  }
 
   /* ── Step handlers ── */
 
@@ -197,7 +261,7 @@ export function GamifiedApplicationForm() {
 
     if (prequal.status === "fulfilled") {
       setOfferAmounts({
-        base: prequal.value.base_amount,
+        base:   prequal.value.base_amount,
         bureau: prequal.value.bureau_offer,
         social: prequal.value.social_offer,
         fiscal: prequal.value.fiscal_offer,
@@ -209,7 +273,7 @@ export function GamifiedApplicationForm() {
     setCalculatingFor("bureau");
   }, [applicationId, createNewApplication, trackEvent]);
 
-  // 3a. Offer1 → Apply now
+  // 3a. Offer1 → Apply now → fake door
   const handleApplyFromOffer1 = useCallback(async () => {
     setIsSubmitting(true);
     setError(null);
@@ -229,7 +293,6 @@ export function GamifiedApplicationForm() {
     sessionStorage.setItem(SS_FORM_DATA, JSON.stringify(step1Data));
     sessionStorage.setItem(SS_GOOGLE_URL, currentUrl);
     sessionStorage.setItem(SS_FLOW_STEP, "connections");
-    // BASE_URL already includes `/full-revenue` prefix — do NOT double it.
     const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/full-revenue";
     window.location.href = `${apiUrl}/oauth/facebook/redirect?applicationId=${applicationId}`;
   }, [applicationId, step1Data]);
@@ -246,7 +309,7 @@ export function GamifiedApplicationForm() {
     setCalculatingFor("social");
   }, [trackEvent]);
 
-  // 6a. Offer2 → Apply now
+  // 6a. Offer2 → Apply now → fake door
   const handleApplyFromOffer2 = useCallback(async () => {
     setIsSubmitting(true);
     setError(null);
@@ -268,90 +331,13 @@ export function GamifiedApplicationForm() {
     setCalculatingFor("fiscal");
   }, [trackEvent]);
 
-  // 8. Offer3 → Apply (final) → goes directly to KYC
+  // 8. Offer3 → Apply (final) → fake door
   const handleApplyFinal = useCallback(async () => {
     setIsSubmitting(true);
     setError(null);
-    const submitted = await doSubmit({ withSocial: true, withFiscal: true, goToKyc: true });
+    const submitted = await doSubmit({ withSocial: true, withFiscal: true });
     if (!submitted) setIsSubmitting(false);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  /* ── Core submit function ── */
-  async function doSubmit({ withSocial, withFiscal, goToKyc = false }: { withSocial: boolean; withFiscal: boolean; goToKyc?: boolean }): Promise<boolean> {
-    let appId = applicationId;
-    if (!appId) {
-      appId = await createNewApplication();
-      if (!appId) return false;
-    }
-
-    const s1 = step1Data as Step1Values;
-    if (!s1.legal_name || !s1.address || !s1.email) {
-      // Los datos se perdieron (ej: sesión expirada). Mandamos al usuario de
-      // vuelta al Step 1 donde los puede recapturar, y mostramos un aviso ahí.
-      setError("Volvé a ingresar los datos de tu negocio para continuar con tu solicitud.");
-      setFlowStep("identity");
-      return false;
-    }
-
-    const fbTok = facebookToken || (typeof window !== "undefined" ? sessionStorage.getItem(SS_FB_TOKEN) ?? "" : "");
-
-    const allData: AllFormData = {
-      ...s1,
-      ...(withFiscal && fiscalData ? { tax_id: fiscalData.tax_id, ciec: fiscalData.ciec } : {}),
-      ...(withSocial && googleUrl ? { google_business_url: googleUrl } : {}),
-      ...(withSocial && fbTok ? {
-        facebook_access_token: fbTok,
-        instagram_access_token: fbTok,
-      } : {}),
-      consent_given: true,
-    };
-
-    try {
-      await api.submitApplication(appId, allData);
-      // Save offer amounts and approval time for success page stats
-      sessionStorage.setItem("fr_offer_amounts", JSON.stringify(offerAmounts));
-      sessionStorage.setItem("fr_approved_at", Date.now().toString());
-      sessionStorage.removeItem(SS_APP_ID);
-      sessionStorage.removeItem(SS_FORM_DATA);
-      sessionStorage.removeItem(SS_GOOGLE_URL);
-      sessionStorage.removeItem(SS_FLOW_STEP);
-      sessionStorage.removeItem(SS_FB_TOKEN);
-      sessionStorage.removeItem(SS_FISCAL);
-      trackEvent(EVENTS.FORM_SUBMITTED, { application_id: appId });
-      // Go to KYC if final offer, otherwise to status
-      const destination = goToKyc
-        ? `/full-revenue/kyc/${appId}`
-        : `/full-revenue/status/${appId}`;
-      router.push(destination);
-      return true;
-    } catch (err) {
-      const isNotFound = err && typeof err === "object" && "status" in err && (err as {status: number}).status === 404;
-      if (isNotFound) {
-        try {
-          const newId = await createNewApplication();
-          if (!newId) return false;
-          await api.submitApplication(newId, allData);
-          sessionStorage.removeItem(SS_APP_ID);
-          sessionStorage.removeItem(SS_FORM_DATA);
-          sessionStorage.removeItem(SS_GOOGLE_URL);
-          sessionStorage.removeItem(SS_FLOW_STEP);
-          sessionStorage.removeItem(SS_FB_TOKEN);
-          sessionStorage.removeItem(SS_FISCAL);
-          trackEvent(EVENTS.FORM_SUBMITTED, { application_id: newId });
-          const dest = goToKyc
-            ? `/full-revenue/kyc/${newId}`
-            : `/full-revenue/status/${newId}`;
-          router.push(dest);
-          return true;
-        } catch { /* fall through */ }
-      }
-      const apiErr = err as { message?: string; details?: Array<{field: string; message: string}> };
-      const details = apiErr?.details?.map((d) => `${d.field}: ${d.message}`).join(", ");
-      const msg = details ? `${apiErr.message} (${details})` : (apiErr?.message ?? "Error desconocido");
-      setError(`Error: ${msg}`);
-      return false;
-    }
-  }
 
   /* ── Back navigation ── */
   function handleBack() {
@@ -367,9 +353,6 @@ export function GamifiedApplicationForm() {
     if (prev) setFlowStep(prev);
   }
 
-  /* ── Render ── */
-  const showBack = flowStep !== "identity" && calculatingFor === null;
-
   function handleCalculatingDone() {
     const nextStep: FlowStep =
       calculatingFor === "bureau" ? "offer1"
@@ -377,6 +360,61 @@ export function GamifiedApplicationForm() {
       : "offer3";
     setFlowStep(nextStep);
     setCalculatingFor(null);
+  }
+
+  /* ── Render ── */
+  const showBack = flowStep !== "identity" && calculatingFor === null;
+
+  // ── Fake door: evaluating screen ──
+  if (isEvaluating) {
+    return (
+      <div className="px-4 py-8 flex flex-col items-center text-center gap-6">
+        <div className="w-20 h-20 rounded-full bg-black flex items-center justify-center shadow-lg">
+          <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+
+        <div className="space-y-2 max-w-sm">
+          <h2 className="text-[22px] font-bold text-black leading-tight">¡Solicitud recibida!</h2>
+          <p className="text-[15px] text-uber-gray-700 leading-relaxed">
+            Estamos evaluando tu solicitud. Te contactaremos en las próximas{" "}
+            <span className="font-semibold text-black">48 horas</span> con los próximos pasos.
+          </p>
+          {step1Data.email && (
+            <p className="text-[13px] text-uber-gray-500 mt-1">
+              Te escribiremos a{" "}
+              <span className="font-semibold text-black">{step1Data.email}</span>
+            </p>
+          )}
+        </div>
+
+        <div className="w-full bg-uber-gray-100 rounded-xl p-4 text-left space-y-3 max-w-sm">
+          <p className="text-[13px] font-semibold text-black">¿Qué sigue?</p>
+          <div className="space-y-2.5">
+            {[
+              "Un analista de R2 Capital revisará tu solicitud",
+              "Te confirmaremos el monto aprobado por email",
+              "Si es aprobado, te guiaremos con los documentos finales",
+            ].map((item, i) => (
+              <div key={i} className="flex items-start gap-2.5">
+                <span className="w-5 h-5 rounded-full bg-black text-white text-[11px] font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                  {i + 1}
+                </span>
+                <p className="text-[13px] text-uber-gray-700 leading-snug">{item}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <a
+          href="/offers"
+          className="text-[14px] text-uber-gray-500 underline underline-offset-2 hover:text-black transition-colors"
+        >
+          Volver a Financiamiento
+        </a>
+      </div>
+    );
   }
 
   return (
@@ -417,7 +455,7 @@ export function GamifiedApplicationForm() {
         />
       )}
 
-      {/* ── Step: Offer 1 (1.5X) with 2 CTAs — Ampliar es PRIMARY */}
+      {/* ── Offer 1 (1.5X) ── */}
       {calculatingFor === null && flowStep === "offer1" && (
         <div className="space-y-4">
           <OfferRevealCard
@@ -439,12 +477,10 @@ export function GamifiedApplicationForm() {
             className="w-full bg-white border-2 border-black text-black font-bold h-12 rounded-btn text-[16px] transition-colors hover:bg-uber-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:opacity-40">
             {isSubmitting ? "Enviando..." : "Aplicar con este monto"}
           </button>
-
-          <p className="text-[12px] text-uber-gray-500 text-center">Sin compromiso hasta que confirmes en el paso de KYC.</p>
         </div>
       )}
 
-      {/* ── Step: Connections ── */}
+      {/* ── Connections ── */}
       {calculatingFor === null && flowStep === "connections" && (
         <Step2Connections
           defaultGoogleUrl={googleUrl}
@@ -459,7 +495,7 @@ export function GamifiedApplicationForm() {
         />
       )}
 
-      {/* ── Step: Offer 2 (2X) with 2 CTAs — Ampliar es PRIMARY */}
+      {/* ── Offer 2 (2X) ── */}
       {calculatingFor === null && flowStep === "offer2" && (
         <div className="space-y-4">
           <OfferRevealCard
@@ -481,12 +517,10 @@ export function GamifiedApplicationForm() {
             className="w-full bg-white border-2 border-black text-black font-bold h-12 rounded-btn text-[16px] transition-colors hover:bg-uber-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:opacity-40">
             {isSubmitting ? "Enviando..." : "Aplicar con este monto"}
           </button>
-
-          <p className="text-[12px] text-uber-gray-500 text-center">Sin compromiso hasta que confirmes en el paso de KYC.</p>
         </div>
       )}
 
-      {/* ── Step: Fiscal (RFC + CIEC + SAT consent) ── */}
+      {/* ── Fiscal (RFC + CIEC + SAT consent) ── */}
       {calculatingFor === null && flowStep === "fiscal" && (
         <StepFiscal
           onComplete={handleFiscalComplete}
@@ -495,7 +529,7 @@ export function GamifiedApplicationForm() {
         />
       )}
 
-      {/* ── Step: Offer 3 (4X, final) ── */}
+      {/* ── Offer 3 (4X, final) ── */}
       {calculatingFor === null && flowStep === "offer3" && (
         <div className="space-y-4">
           <OfferRevealCard
@@ -510,8 +544,6 @@ export function GamifiedApplicationForm() {
             className="w-full bg-black text-white font-bold h-12 rounded-btn text-[16px] transition-colors hover:bg-uber-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:opacity-40">
             {isSubmitting ? "Enviando..." : "Aplicar al préstamo"}
           </button>
-
-          <p className="text-[12px] text-uber-gray-500 text-center">Sin compromiso hasta que confirmes en el paso de KYC.</p>
         </div>
       )}
     </div>
