@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
@@ -50,7 +50,7 @@ function formatMxn(value: number) {
 
 type TabId = "ofertas" | "beneficios" | "como" | "faq";
 
-export default function FinanciamientoPage() {
+function FinanciamientoInner() {
   const { trackEvent } = useTracking();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabId>("ofertas");
@@ -495,5 +495,13 @@ function RbfFeature({ text }: { text: string }) {
       </svg>
       <span className="text-[12px] text-uber-gray-700 leading-[18px]">{text}</span>
     </div>
+  );
+}
+
+export default function FinanciamientoPage() {
+  return (
+    <Suspense>
+      <FinanciamientoInner />
+    </Suspense>
   );
 }
