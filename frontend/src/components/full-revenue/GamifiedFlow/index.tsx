@@ -11,6 +11,7 @@ import { StepConsent } from "./StepConsent";
 import { StepFiscal } from "./StepFiscal";
 import { OfferRevealCard } from "./OfferRevealCard";
 import { GamifiedProgressBar, FlowStep } from "./GamifiedProgressBar";
+import { OfferCalculatingLoader } from "./OfferCalculatingLoader";
 import type { Step1Values, FiscalValues } from "@/lib/validation";
 import type { AllFormData } from "@/types/application";
 
@@ -42,13 +43,7 @@ export function GamifiedApplicationForm() {
   const { trackEvent } = useTracking();
 
   /* ── State ── */
-  const [flowStep, setFlowStep] = useState<FlowStep>(() => {
-    if (typeof window !== "undefined") {
-      const saved = sessionStorage.getItem(SS_FLOW_STEP);
-      if (saved) return saved as FlowStep;
-    }
-    return "identity";
-  });
+  const [flowStep, setFlowStep] = useState<FlowStep>("identity");
 
   const [step1Data, setStep1Data] = useState<Partial<Step1Values>>(() => {
     if (typeof window !== "undefined") {
@@ -78,8 +73,9 @@ export function GamifiedApplicationForm() {
   const [instagramConnected, setInstagramConnected] = useState(false);
   const [facebookToken,      setFacebookToken]      = useState<string>("");
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError]               = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting]   = useState(false);
+  const [error, setError]                 = useState<string | null>(null);
+  const [calculatingFor, setCalculatingFor] = useState<"bureau" | "social" | "fiscal" | null>(null);
 
   // SSR-safe: initialize with fallback, update from sessionStorage after hydration
   const [offerAmounts, setOfferAmounts] = useState({
@@ -89,7 +85,7 @@ export function GamifiedApplicationForm() {
     fiscal: Math.round(FALLBACK_BASE * 4),
   });
 
-  /* ── Hydrate offer amounts from sessionStorage after mount (SSR-safe) ── */
+  /* ── Hydrate from sessionStorage after mount (SSR-safe) ── */
   useEffect(() => {
     const base = readBaseAmount();
     if (base !== FALLBACK_BASE) {
@@ -100,6 +96,8 @@ export function GamifiedApplicationForm() {
         fiscal: Math.round(base * 4),
       });
     }
+    const savedStep = sessionStorage.getItem(SS_FLOW_STEP);
+    if (savedStep) setFlowStep(savedStep as FlowStep);
   }, []);
 
   /* ── Persist flow step + track step view for funnel metrics ── */
@@ -208,7 +206,7 @@ export function GamifiedApplicationForm() {
 
     setIsSubmitting(false);
     trackEvent(EVENTS.STEP_COMPLETED, { step: "consent" });
-    setFlowStep("offer1");
+    setCalculatingFor("bureau");
   }, [applicationId, createNewApplication, trackEvent]);
 
   // 3a. Offer1 → Apply now
@@ -245,10 +243,7 @@ export function GamifiedApplicationForm() {
   const handleConnectionsComplete = useCallback(async (data: Step2Result) => {
     setGoogleUrl(data.google_business_url ?? "");
     trackEvent(EVENTS.STEP_COMPLETED, { step: "connections" });
-    setIsSubmitting(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setIsSubmitting(false);
-    setFlowStep("offer2");
+    setCalculatingFor("social");
   }, [trackEvent]);
 
   // 6a. Offer2 → Apply now
@@ -270,10 +265,7 @@ export function GamifiedApplicationForm() {
     setFiscalData(data);
     sessionStorage.setItem(SS_FISCAL, JSON.stringify(data));
     trackEvent(EVENTS.STEP_COMPLETED, { step: "fiscal" });
-    setIsSubmitting(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setIsSubmitting(false);
-    setFlowStep("offer3");
+    setCalculatingFor("fiscal");
   }, [trackEvent]);
 
   // 8. Offer3 → Apply (final) → goes directly to KYC
@@ -376,7 +368,16 @@ export function GamifiedApplicationForm() {
   }
 
   /* ── Render ── */
-  const showBack = flowStep !== "identity";
+  const showBack = flowStep !== "identity" && calculatingFor === null;
+
+  function handleCalculatingDone() {
+    const nextStep: FlowStep =
+      calculatingFor === "bureau" ? "offer1"
+      : calculatingFor === "social" ? "offer2"
+      : "offer3";
+    setFlowStep(nextStep);
+    setCalculatingFor(null);
+  }
 
   return (
     <div className="px-4 py-4">
@@ -392,22 +393,24 @@ export function GamifiedApplicationForm() {
         />
       </div>
 
-      {error && (
+      {calculatingFor !== null && (
+        <OfferCalculatingLoader stage={calculatingFor} onDone={handleCalculatingDone} />
+      )}
+
+      {calculatingFor === null && error && (
         <div className="mb-5 p-3 bg-uber-danger-bg border border-uber-danger/30 rounded-btn text-uber-danger text-[14px]">
           {error}
         </div>
       )}
 
-      {/* ── Step: Identity ── */}
-      {flowStep === "identity" && (
+      {calculatingFor === null && flowStep === "identity" && (
         <Step1Identity
           defaultValues={step1Data}
           onComplete={handleIdentityComplete}
         />
       )}
 
-      {/* ── Step: Consent (buró + Twilio) ── */}
-      {flowStep === "consent" && (
+      {calculatingFor === null && flowStep === "consent" && (
         <StepConsent
           onComplete={handleConsentComplete}
           isLoading={isSubmitting}
@@ -415,7 +418,7 @@ export function GamifiedApplicationForm() {
       )}
 
       {/* ── Step: Offer 1 (1.5X) with 2 CTAs — Ampliar es PRIMARY */}
-      {flowStep === "offer1" && (
+      {calculatingFor === null && flowStep === "offer1" && (
         <div className="space-y-4">
           <OfferRevealCard
             amount={offerAmounts.bureau}
@@ -442,7 +445,7 @@ export function GamifiedApplicationForm() {
       )}
 
       {/* ── Step: Connections ── */}
-      {flowStep === "connections" && (
+      {calculatingFor === null && flowStep === "connections" && (
         <Step2Connections
           defaultGoogleUrl={googleUrl}
           facebookConnected={facebookConnected}
@@ -457,7 +460,7 @@ export function GamifiedApplicationForm() {
       )}
 
       {/* ── Step: Offer 2 (2X) with 2 CTAs — Ampliar es PRIMARY */}
-      {flowStep === "offer2" && (
+      {calculatingFor === null && flowStep === "offer2" && (
         <div className="space-y-4">
           <OfferRevealCard
             amount={offerAmounts.social}
@@ -484,7 +487,7 @@ export function GamifiedApplicationForm() {
       )}
 
       {/* ── Step: Fiscal (RFC + CIEC + SAT consent) ── */}
-      {flowStep === "fiscal" && (
+      {calculatingFor === null && flowStep === "fiscal" && (
         <StepFiscal
           onComplete={handleFiscalComplete}
           onBack={() => setFlowStep("offer2")}
@@ -493,7 +496,7 @@ export function GamifiedApplicationForm() {
       )}
 
       {/* ── Step: Offer 3 (4X, final) ── */}
-      {flowStep === "offer3" && (
+      {calculatingFor === null && flowStep === "offer3" && (
         <div className="space-y-4">
           <OfferRevealCard
             amount={offerAmounts.fiscal}
