@@ -75,6 +75,21 @@ export async function runUnderwriting(
       tax_regime: raw.tax_regime,
       cfdi_count_last_12m: raw.cfdi_count_last_12m,
       tax_compliance: raw.tax_compliance ?? true,
+      // Cashflow real
+      avg_monthly_invoiced_inflows_6m: raw.avg_monthly_invoiced_inflows_6m,
+      avg_monthly_invoiced_outflows_6m: raw.avg_monthly_invoiced_outflows_6m,
+      avg_monthly_fiscal_net_flow_6m: raw.avg_monthly_fiscal_net_flow_6m,
+      invoiced_revenue_std_dev_6m: raw.invoiced_revenue_std_dev_6m,
+      // Salud operativa
+      fs_operating_margin: raw.fs_operating_margin,
+      fs_net_income_year: raw.fs_net_income_year,
+      // Compliance
+      active_tax_debt_amount: raw.active_tax_debt_amount,
+      invoice_cancelation_ratio_6m: raw.invoice_cancelation_ratio_6m,
+      counterparty_tax_fraud_flag_rate: raw.counterparty_tax_fraud_flag_rate,
+      // Concentración / mix
+      cfdi_top_counterparties: raw.cfdi_top_counterparties,
+      cfdi_payment_method_split: raw.cfdi_payment_method_split,
       raw_response: raw as unknown as Record<string, unknown>,
       fetched_at: new Date().toISOString(),
     };

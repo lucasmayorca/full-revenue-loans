@@ -19,6 +19,33 @@ const DEMO_PLACES_STUB: PlacesResult = {
   has_website: false,
   business_status: "OPERATIONAL",
   signals_score: 72,
+  // Cross-check con KYC
+  formatted_address: "Av. Juárez 1234, Centro, 72000 Puebla, Pue., México",
+  formatted_phone_number: "222 234 5678",
+  international_phone_number: "+52 222 234 5678",
+  // Geo
+  geometry: { lat: 19.0414, lng: -98.2063 },
+  // Horarios
+  opening_hours: {
+    open_now: true,
+    weekday_text: [
+      "lunes: 8:00–22:00",
+      "martes: 8:00–22:00",
+      "miércoles: 8:00–22:00",
+      "jueves: 8:00–22:00",
+      "viernes: 8:00–23:00",
+      "sábado: 9:00–23:00",
+      "domingo: 9:00–21:00",
+    ],
+    weekly_open_hours: 99,
+  },
+  permanently_closed: false,
+  photo_count: 27,
+  reviews: [
+    { author_name: "María G.", rating: 5, text: "Excelentes tacos, atención rápida.", time: 1721260800, relative_time_description: "hace 1 mes" },
+    { author_name: "Juan P.",  rating: 4, text: "Muy buena comida, precio justo.",     time: 1718668800, relative_time_description: "hace 2 meses" },
+  ],
+  editorial_summary: "Taquería tradicional poblana con especialidad en tacos al pastor.",
   fetched_at: new Date().toISOString(),
 };
 
@@ -123,6 +150,12 @@ class GooglePlacesClient {
             "business_status",
             "geometry",
             "permanently_closed",
+            "formatted_address",
+            "formatted_phone_number",
+            "international_phone_number",
+            "photos",
+            "reviews",
+            "editorial_summary",
           ].join(","),
           key: env.GOOGLE_PLACES_API_KEY,
           language: "es-419",
@@ -133,6 +166,24 @@ class GooglePlacesClient {
       const p = detailsResp.data.result;
       if (!p) {
         return { connected: false, fetched_at: new Date().toISOString() };
+      }
+
+      // Calcular horas semanales abiertas si vienen los periods
+      let weeklyOpenHours: number | undefined;
+      const periods = p.opening_hours?.periods as
+        | Array<{ open?: { day: number; time: string }; close?: { day: number; time: string } }>
+        | undefined;
+      if (Array.isArray(periods)) {
+        weeklyOpenHours = periods.reduce((acc, per) => {
+          if (!per.open || !per.close) return acc;
+          const o = parseInt(per.open.time, 10);
+          const c = parseInt(per.close.time, 10);
+          const oH = Math.floor(o / 100) + (o % 100) / 60;
+          const cH = Math.floor(c / 100) + (c % 100) / 60;
+          const diff = cH >= oH ? cH - oH : 24 - oH + cH;
+          return acc + diff;
+        }, 0);
+        weeklyOpenHours = Math.round(weeklyOpenHours);
       }
 
       const result: PlacesResult = {
@@ -146,6 +197,35 @@ class GooglePlacesClient {
         has_website: !!p.website,
         business_status: p.business_status ?? "UNKNOWN",
         is_verified: true, // Place Details solo devuelve negocios verificados
+        // Cross-check con KYC
+        formatted_address: p.formatted_address,
+        formatted_phone_number: p.formatted_phone_number,
+        international_phone_number: p.international_phone_number,
+        // Geo
+        geometry: p.geometry?.location
+          ? { lat: p.geometry.location.lat, lng: p.geometry.location.lng }
+          : undefined,
+        // Horarios
+        opening_hours: p.opening_hours
+          ? {
+              open_now: p.opening_hours.open_now,
+              weekday_text: p.opening_hours.weekday_text,
+              weekly_open_hours: weeklyOpenHours,
+            }
+          : undefined,
+        permanently_closed: p.permanently_closed === true,
+        // Calidad de listing
+        photo_count: Array.isArray(p.photos) ? p.photos.length : undefined,
+        reviews: Array.isArray(p.reviews)
+          ? p.reviews.slice(0, 5).map((r: any) => ({
+              author_name: r.author_name,
+              rating: r.rating,
+              text: r.text,
+              time: r.time,
+              relative_time_description: r.relative_time_description,
+            }))
+          : undefined,
+        editorial_summary: p.editorial_summary?.overview,
         fetched_at: new Date().toISOString(),
       };
 
