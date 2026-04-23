@@ -288,11 +288,15 @@ export function GamifiedApplicationForm() {
     ]);
 
     if (prequal.status === "fulfilled") {
+      // Siempre usamos el base del prefill (sessionStorage) para mantener
+      // consistencia con /offers. El backend sirve como validación pero
+      // el monto base personalizado por merchant tiene prioridad.
+      const base = readBaseAmount();
       setOfferAmounts({
-        base:   prequal.value.base_amount,
-        bureau: prequal.value.bureau_offer,
-        social: prequal.value.social_offer,
-        fiscal: prequal.value.fiscal_offer,
+        base,
+        bureau: Math.round(base * 1.25),
+        social: Math.round(base * 1.5),
+        fiscal: Math.round(base * 3),
       });
     }
 

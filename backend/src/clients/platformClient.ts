@@ -27,11 +27,11 @@ export interface PlatformData {
   fetched_at: string;
 }
 
-// Stub demo: base pre-aprobada de $50k
+// Stub demo: base pre-aprobada de $62,800
 const DEMO_STUB: PlatformData = {
   avg_platform_gmv_6m: 900_000,     // 900K MXN/mes en Rappi
   tenure_months: 36,                 // 3 años en la plataforma
-  pre_approved_amount: 50_000,       // Oferta base pre-aprobada
+  pre_approved_amount: 62_800,       // Oferta base pre-aprobada
   // Volatilidad & tendencia
   platform_gmv_volatility_6m: 0.14,  // 14% coef variación — bajo
   gmv_growth_3m: 0.08,                // +8% último trimestre

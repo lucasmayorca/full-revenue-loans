@@ -677,7 +677,7 @@ function computeCreditOffer(
 export async function runPrequalification(
   merchantId: string
 ): Promise<{ base_amount: number; bureau_offer: number; social_offer: number; fiscal_offer: number }> {
-  let baseAmount = 50_000; // fallback
+  let baseAmount = 62_800; // fallback
 
   try {
     const platform = await withTimeout(
@@ -692,10 +692,10 @@ export async function runPrequalification(
     // fallback to default
   }
 
-  // Fixed multipliers applied to pre-approved base
-  const bureauOffer = Math.round((baseAmount * 1.5) / 1000) * 1000;
-  const socialOffer = Math.round((baseAmount * 2.0) / 1000) * 1000;
-  const fiscalOffer = Math.round((baseAmount * 4.0) / 1000) * 1000;
+  // Fixed multipliers applied to pre-approved base (1.25x / 1.5x / 3x)
+  const bureauOffer = Math.round((baseAmount * 1.25) / 100) * 100;
+  const socialOffer = Math.round((baseAmount * 1.5)  / 100) * 100;
+  const fiscalOffer = Math.round((baseAmount * 3.0)  / 100) * 100;
 
   logger.info("prequal_completed", {
     merchant_id: merchantId,
