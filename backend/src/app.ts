@@ -5,6 +5,7 @@ import { requestLogger } from "./middleware/requestLogger";
 import { errorHandler } from "./middleware/errorHandler";
 import applicationsRouter from "./routes/applications";
 import eventsRouter from "./routes/events";
+import prefillLinksRouter from "./routes/prefillLinks";
 
 export function createApp(): express.Application {
   const app = express();
@@ -20,6 +21,7 @@ export function createApp(): express.Application {
 
   app.use("/full-revenue/applications", applicationsRouter);
   app.use("/full-revenue", applicationsRouter);
+  app.use("/full-revenue", prefillLinksRouter);
   // Events router: mount en ambos paths para compat con frontends que usan
   // BASE_URL con o sin prefijo `/full-revenue`.
   app.use("/events", eventsRouter);

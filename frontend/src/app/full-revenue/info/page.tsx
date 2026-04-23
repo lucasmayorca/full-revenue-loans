@@ -89,7 +89,7 @@ export default function FullRevenueInfoPage() {
       {/* Title */}
       <div>
         <p className="text-[13px] font-bold text-uber-green uppercase tracking-wider mb-3">
-          Nuevo · Préstamo MÁS
+          Nuevo · Financiamiento MÁS
         </p>
         <h1 className="text-[40px] leading-[1.1] font-bold text-black mb-3 tracking-tight">
           Desbloquea hasta 4x más crédito basado en el 100% de tus ingresos.

@@ -139,6 +139,24 @@ export const api = {
 
   listApplications: (limit = 500) =>
     request<ApplicationsListResponse>(`/applications?limit=${limit}`),
+
+  /* ── Prefill Links ── */
+  generatePrefillLinks: (
+    csv: string,
+    options?: { base_url?: string; expires_in_days?: number }
+  ) =>
+    request<PrefillBulkResponse>("/prefill-links/bulk", {
+      method: "POST",
+      body: JSON.stringify({ csv, ...options }),
+    }),
+
+  getPrefillLink: (token: string) =>
+    request<PrefillLinkResponse>(`/prefill/${token}`),
+
+  listPrefillLinks: (limit = 500) =>
+    request<{ count: number; links: PrefillLinkResponse[] }>(
+      `/prefill-links?limit=${limit}`
+    ),
 };
 
 export interface ApplicationsListResponse {
@@ -186,6 +204,63 @@ export interface MetricsResponse {
   form_started_sessions: number;
   form_submitted_sessions: number;
   kyc_submitted_sessions: number;
+}
+
+export interface PrefillOffer {
+  id?: string;
+  receive: number;
+  retention?: number;
+  totalToPay?: number;
+  fixedFee?: number;
+  monthlyMin?: number;
+  maxTerm?: string;
+}
+
+export interface PrefillData {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
+  curp?: string;
+  birth_date?: string;
+  nationality?: string;
+  marital_status?: string;
+  legal_name?: string;
+  tax_id?: string;
+  ciec?: string;
+  address?: string;
+  street?: string;
+  neighborhood?: string;
+  postal_code?: string;
+  city?: string;
+  state?: string;
+  clabe?: string;
+  bank_name?: string;
+  account_type?: string;
+  account_holder?: string;
+}
+
+export interface PrefillLinkResponse {
+  token: string;
+  merchant_id: string | null;
+  offers: PrefillOffer[] | null;
+  base_amount: number | null;
+  prefill: PrefillData | null;
+  expires_at?: string | null;
+  opened_at: string | null;
+  used_at?: string | null;
+  created_at?: string;
+}
+
+export interface PrefillBulkResponse {
+  total: number;
+  created: number;
+  errors: Array<{ row: number; error: string }>;
+  links: Array<{
+    token: string;
+    merchant_id: string | null;
+    url: string;
+  }>;
 }
 
 export interface EventsListResponse {

@@ -270,7 +270,9 @@ export function OfferRevealCard({
               </p>
               <div className="bg-uber-gray-100 rounded-card p-3 space-y-3">
                 <div className="flex items-start gap-2.5">
-                  <span className="text-base flex-shrink-0">🍔</span>
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 flex-shrink-0 mt-0.5 text-black" fill="currentColor">
+                    <path d="M18.6 7.62L17 6l-8 8-3-3-1.59 1.59L9 17.17z M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
+                  </svg>
                   <div>
                     <p className="text-[13px] font-bold text-black">
                       Retención Uber Eats — 20% de tus ventas
@@ -282,7 +284,9 @@ export function OfferRevealCard({
                   </div>
                 </div>
                 <div className="border-t border-uber-gray-300 pt-3 flex items-start gap-2.5">
-                  <span className="text-base flex-shrink-0">🏦</span>
+                  <svg viewBox="0 0 24 24" className="w-5 h-5 flex-shrink-0 mt-0.5 text-black" fill="currentColor">
+                    <path d="M6.5 10h-2v7h2v-7zm6 0h-2v7h2v-7zm8.5 9H2v2h19v-2zm-2.5-9h-2v7h2v-7zM11.5 1L2 6v2h19V6l-9.5-5z" />
+                  </svg>
                   <div>
                     <p className="text-[13px] font-bold text-black">
                       Débito directo — remanente

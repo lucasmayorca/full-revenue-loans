@@ -12,29 +12,95 @@ import { Step5Contract } from "./Step5Contract";
 import { Step6Confirm } from "./Step6Confirm";
 
 const TOTAL_STEPS = 6;
+const SS_PREFILL = "fr_prefill";
 
 interface Props {
   applicationId: string;
 }
 
-/**
- * Este prototipo NO pre-llena PII — los merchants la capturan manualmente
- * porque no estamos jalando datos desde Uber Eats. Titular bancario puede
- * sugerirse a partir del nombre ingresado en Step 1 para reducir fricción,
- * pero arranca vacío si el usuario aún no llenó Step 1.
- */
-function deriveBankPrefill(personal: Step1PersonalValues | null): Partial<Step3BankValues> {
-  if (personal?.first_name || personal?.last_name) {
-    return {
-      account_holder: `${personal.first_name ?? ""} ${personal.last_name ?? ""}`.trim(),
-    };
+interface PrefillSnapshot {
+  first_name?: string;
+  last_name?: string;
+  birth_date?: string;
+  tax_id?: string;          // mapea a `cedula` (RFC) en el form
+  nationality?: string;
+  marital_status?: string;
+  street?: string;
+  neighborhood?: string;
+  postal_code?: string;
+  city?: string;
+  state?: string;
+  address?: string;         // fallback si no hay campos estructurados
+  clabe?: string;
+  bank_name?: string;
+  account_type?: string;
+  account_holder?: string;
+}
+
+/** Lee el prefill del sessionStorage (seteado desde /offers?t=...). */
+function readPrefill(): PrefillSnapshot {
+  if (typeof window === "undefined") return {};
+  const raw = sessionStorage.getItem(SS_PREFILL);
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return {};
   }
-  return {};
+}
+
+function personalDefaults(p: PrefillSnapshot): Partial<Step1PersonalValues> {
+  const d: Partial<Step1PersonalValues> = {};
+  if (p.first_name)  d.first_name = p.first_name;
+  if (p.last_name)   d.last_name = p.last_name;
+  if (p.birth_date)  d.birth_date = p.birth_date;
+  if (p.tax_id)      d.cedula = p.tax_id;
+  if (p.nationality) d.nationality = p.nationality;
+  if (p.marital_status) {
+    const allowed = ["soltero", "casado", "divorciado", "viudo", "union_libre"] as const;
+    const lower = p.marital_status.toLowerCase().replace(/[\s-]/g, "_");
+    if ((allowed as readonly string[]).includes(lower)) {
+      d.marital_status = lower as Step1PersonalValues["marital_status"];
+    }
+  }
+  return d;
+}
+
+function addressDefaults(p: PrefillSnapshot): Partial<Step2AddressValues> {
+  const d: Partial<Step2AddressValues> = {};
+  if (p.street)       d.street = p.street;
+  else if (p.address) d.street = p.address;
+  if (p.neighborhood) d.neighborhood = p.neighborhood;
+  if (p.postal_code)  d.postal_code = p.postal_code;
+  if (p.city)         d.city = p.city;
+  if (p.state)        d.state = p.state;
+  return d;
+}
+
+function bankDefaults(
+  p: PrefillSnapshot,
+  personal: Step1PersonalValues | null
+): Partial<Step3BankValues> {
+  const d: Partial<Step3BankValues> = {};
+  if (p.clabe)     d.clabe = p.clabe;
+  if (p.bank_name) d.bank_name = p.bank_name;
+  if (p.account_type === "debito" || p.account_type === "cheques") {
+    d.account_type = p.account_type;
+  }
+  if (p.account_holder) {
+    d.account_holder = p.account_holder;
+  } else if (personal?.first_name || personal?.last_name) {
+    d.account_holder = `${personal.first_name ?? ""} ${personal.last_name ?? ""}`.trim();
+  } else if (p.first_name || p.last_name) {
+    d.account_holder = `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim();
+  }
+  return d;
 }
 
 export function KycForm({ applicationId }: Props) {
   const router = useRouter();
 
+  const [prefillSnapshot] = useState<PrefillSnapshot>(readPrefill);
   const [step,         setStep]        = useState(1);
   const [personal,     setPersonal]    = useState<Step1PersonalValues | null>(null);
   const [address,      setAddress]     = useState<Step2AddressValues | null>(null);
@@ -95,7 +161,7 @@ export function KycForm({ applicationId }: Props) {
       {/* Paso 1 — Datos personales */}
       {step === 1 && (
         <Step1Personal
-          defaultValues={personal ?? {}}
+          defaultValues={personal ?? personalDefaults(prefillSnapshot)}
           onComplete={handleStep1}
         />
       )}
@@ -103,7 +169,7 @@ export function KycForm({ applicationId }: Props) {
       {/* Paso 2 — Dirección del negocio */}
       {step === 2 && (
         <Step2Address
-          defaultValues={address ?? {}}
+          defaultValues={address ?? addressDefaults(prefillSnapshot)}
           onComplete={handleStep2}
           onBack={() => setStep(1)}
         />
@@ -112,7 +178,7 @@ export function KycForm({ applicationId }: Props) {
       {/* Paso 3 — Cuenta bancaria */}
       {step === 3 && (
         <Step3BankAccount
-          defaultValues={bank ?? deriveBankPrefill(personal)}
+          defaultValues={bank ?? bankDefaults(prefillSnapshot, personal)}
           onComplete={handleStep3}
           onBack={() => setStep(2)}
         />

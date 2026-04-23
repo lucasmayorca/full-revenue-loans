@@ -55,7 +55,7 @@ function FinanciamientoInner() {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TabId>("ofertas");
   const [offers, setOffers] = useState<RbfOffer[]>(DEFAULT_OFFERS);
-  const [fullRevenueMax, setFullRevenueMax] = useState<number>(DEFAULT_OFFERS[0].receive * 4);
+  const [fullRevenueMax, setFullRevenueMax] = useState<number>(DEFAULT_OFFERS[0].receive * 3);
   const [personaType, setPersonaType] = useState<"fisica" | "moral">("fisica");
   const [consentChecked, setConsentChecked] = useState(false);
   const [surveyOpen, setSurveyOpen] = useState(false);
@@ -86,12 +86,12 @@ function FinanciamientoInner() {
           setOffers(mapped);
         }
 
-        // Base amount para Préstamo MÁS
+        // Base amount para Financiamiento MÁS
         const baseAmount =
           data.base_amount ??
           (data.offers && data.offers[0] ? data.offers[0].receive : null);
         if (baseAmount) {
-          setFullRevenueMax(baseAmount * 4);
+          setFullRevenueMax(baseAmount * 3);
           sessionStorage.setItem(SS_BASE_AMOUNT, String(baseAmount));
         }
 
@@ -209,7 +209,7 @@ function FinanciamientoInner() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* ── Préstamo MÁS — Full Revenue Loans ── */}
+              {/* ── Financiamiento MÁS — Full Revenue Loans ── */}
               <FullRevenueCard maxAmount={fullRevenueMax} baseAmount={offers[0]?.receive ?? 0} />
 
               {/* ── Ofertas RBF — una por columna ── */}
@@ -359,28 +359,47 @@ function FinanciamientoInner() {
   );
 }
 
+/* ── Material Symbols filled — same style as sidebar icons ── */
+const IconBarChart = (
+  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+    <path d="M3 3v18h18v-2H5V3H3zm16 4h-4v10h4V7zm-6 3H9v7h4v-7zm-6 2H3v5h4v-5z" />
+  </svg>
+);
+const IconAccountBalance = (
+  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+    <path d="M6.5 10h-2v7h2v-7zm6 0h-2v7h2v-7zm8.5 9H2v2h19v-2zm-2.5-9h-2v7h2v-7zM11.5 1L2 6v2h19V6l-9.5-5z" />
+  </svg>
+);
+const IconCalendar = (
+  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+    <path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z" />
+  </svg>
+);
+const IconBolt = (
+  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+    <path d="M7 2v11h3v9l7-12h-4l4-8z" />
+  </svg>
+);
+
 /* ── Préstamo MÁS / Full Revenue Loans card ── */
 function FullRevenueCard({ maxAmount, baseAmount }: { maxAmount: number; baseAmount: number }) {
   return (
-    <div className="bg-black text-white rounded-card pt-6 pb-5 px-5 flex flex-col gap-5 relative overflow-hidden">
-      {/* Background subtle pattern */}
-      <div className="absolute inset-0 opacity-[0.04]" style={{
-        backgroundImage: "radial-gradient(circle at 80% 20%, white 1px, transparent 1px), radial-gradient(circle at 20% 80%, white 1px, transparent 1px)",
-        backgroundSize: "32px 32px"
-      }} />
-
+    <Link
+      href="/full-revenue/apply"
+      className="bg-black text-white rounded-[8px] pt-6 pb-5 px-5 flex flex-col gap-5 relative overflow-hidden hover:opacity-95 transition-opacity cursor-pointer"
+    >
       {/* Badge */}
       <div className="flex items-center gap-2">
         <span className="text-[10px] font-bold uppercase tracking-widest bg-white text-black px-2 py-0.5 rounded-full">
           Nuevo
         </span>
-        <span className="text-[12px] text-white/60">Préstamo MÁS</span>
+        <span className="text-[12px] text-white/60">Financiamiento MÁS</span>
       </div>
 
       {/* Amount */}
       <div>
-        <p className="text-[13px] text-white/60 leading-4 mb-1">Hasta</p>
-        <p className="text-[32px] leading-8 font-bold text-white">
+        <p className="text-[13px] text-white/60 leading-[20px] mb-1">Hasta</p>
+        <p className="text-[32px] leading-[40px] font-bold text-white">
           {formatMxn(maxAmount)}
         </p>
         <p className="text-[12px] text-white/50 mt-1">
@@ -389,32 +408,29 @@ function FullRevenueCard({ maxAmount, baseAmount }: { maxAmount: number; baseAmo
       </div>
 
       {/* Value props */}
-      <div className="flex flex-col gap-2.5">
-        <FeaturePill icon="📊" text="Evaluamos el 100% de tus ingresos reales" />
-        <FeaturePill icon="🏦" text="Hasta 4x más que tu oferta en plataforma" />
-        <FeaturePill icon="📅" text="Cuota mensual fija — sin retención sorpresa" />
-        <FeaturePill icon="⚡" text="Respuesta rápida por email o WhatsApp" />
+      <div className="flex flex-col gap-3">
+        <FeaturePill icon={IconBarChart} text="Evaluamos el 100% de tus ingresos reales" />
+        <FeaturePill icon={IconAccountBalance} text="Hasta 4x más que tu oferta en plataforma" />
+        <FeaturePill icon={IconCalendar} text="Cuota mensual fija — sin retención sorpresa" />
+        <FeaturePill icon={IconBolt} text="Respuesta rápida por email o WhatsApp" />
       </div>
 
       {/* CTA */}
-      <Link
-        href="/full-revenue/apply"
-        className="w-full h-11 bg-white text-black text-[15px] font-bold rounded-btn hover:bg-uber-gray-200 transition-colors flex items-center justify-center gap-2 mt-1"
-      >
+      <div className="w-full h-11 bg-white text-black text-[15px] font-bold rounded-[2px] flex items-center justify-center gap-2 mt-1">
         Ver mi oferta ampliada
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8-8-8z" />
         </svg>
-      </Link>
-    </div>
+      </div>
+    </Link>
   );
 }
 
-function FeaturePill({ icon, text }: { icon: string; text: string }) {
+function FeaturePill({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
     <div className="flex items-center gap-2.5">
-      <span className="text-[14px] w-5 text-center flex-shrink-0">{icon}</span>
-      <span className="text-[12px] text-white/80 leading-4">{text}</span>
+      <span className="w-5 h-5 flex-shrink-0 text-white/70">{icon}</span>
+      <span className="text-[14px] font-medium text-white/80 leading-[20px]">{text}</span>
     </div>
   );
 }

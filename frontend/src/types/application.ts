@@ -70,9 +70,8 @@ export interface Application {
 }
 
 export interface Step1Data {
-  legal_name: string;
-  tax_id?: string;
-  ciec?: string;
+  legal_name?: string;
+  tax_id: string;
   address: string;
   phone?: string;
   email: string;

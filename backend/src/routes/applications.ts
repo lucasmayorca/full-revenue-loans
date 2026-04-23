@@ -42,7 +42,7 @@ const createSchema = z.object({
 });
 
 const formDataSchema = z.object({
-  legal_name: z.string().min(2).max(200),
+  legal_name: z.string().min(2).max(200).optional().or(z.literal("")),
   tax_id: z.string().min(12).max(13).optional().or(z.literal("")),
   ciec: z.string().min(8).max(20).optional().or(z.literal("")),
   address: z.string().min(5).max(500),

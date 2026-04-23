@@ -1,63 +1,38 @@
 import { z } from "zod";
 
 export const step1Schema = z.object({
-  legal_name: z
-    .string()
-    .min(2, "El nombre legal debe tener al menos 2 caracteres")
-    .max(200),
+  legal_name: z.string().optional().or(z.literal("")),
   address: z.string().min(5, "La dirección es demasiado corta").max(500),
   email: z.string().email("Email inválido"),
 
-  // Teléfono en formato E.164 para México (+52 seguido de 10 dígitos)
+  // Teléfono en formato E.164 — acepta cualquier país
   phone: z
     .string()
     .min(1, "El teléfono es requerido")
     .transform((v) => {
       // Quitar espacios, guiones y paréntesis (conservar el +)
       let n = v.replace(/[\s\-()]/g, "");
-      // "525512345678" → "+525512345678"
-      if (/^52\d{10}$/.test(n)) return `+${n}`;
       // "5512345678" (10 dígitos locales) → "+525512345678"
       if (/^\d{10}$/.test(n)) return `+52${n}`;
+      // "525512345678" → "+525512345678"
+      if (/^52\d{10}$/.test(n)) return `+${n}`;
       return n;
     })
     .refine(
-      (v) => /^\+52\d{10}$/.test(v),
-      "Formato inválido. Usá: +52 seguido de 10 dígitos (ej: +52 55 1234 5678)"
+      (v) => /^\+\d{7,15}$/.test(v),
+      "Incluí el código de país con + (ej: +52 55 1234 5678, +1 800 555 0100, +34 612 345 678)"
     ),
 
-  // CURP del dueño o representante legal — necesario para consulta al Buró
-  curp: z
-    .string()
-    .regex(
-      /^[A-Z]{4}\d{6}[HMX][A-Z]{5}[A-Z0-9]\d$/i,
-      "CURP inválida. Debe tener 18 caracteres (ej: GOPO820116MDFRRR09)"
-    )
-    .refine((v) => v.length === 18, "El CURP debe tener exactamente 18 caracteres"),
-
-  // Campos opcionales (usados en pasos posteriores)
-  tax_id: z
-    .string()
-    .min(12, "El RFC debe tener 12 o 13 caracteres")
-    .max(13, "El RFC debe tener 12 o 13 caracteres")
-    .regex(/^[A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3}$/i, "Formato de RFC inválido (ej: XAXX010101000)")
-    .optional()
-    .or(z.literal("")),
-  ciec: z
-    .string()
-    .min(8, "La Clave CIEC debe tener al menos 8 caracteres")
-    .max(20, "La Clave CIEC es demasiado larga")
-    .optional()
-    .or(z.literal("")),
-});
-
-// Schema for fiscal step (RFC + CIEC)
-export const fiscalSchema = z.object({
+  // RFC del dueño o representante legal — requerido para Buró de Crédito y SAT
   tax_id: z
     .string()
     .min(12, "El RFC debe tener 12 o 13 caracteres")
     .max(13, "El RFC debe tener 12 o 13 caracteres")
     .regex(/^[A-ZÑ&]{3,4}[0-9]{6}[A-Z0-9]{3}$/i, "Formato de RFC inválido (ej: XAXX010101000)"),
+});
+
+// Schema for fiscal step — solo CIEC (RFC ya se capturó en Step 1)
+export const fiscalSchema = z.object({
   ciec: z
     .string()
     .min(8, "La Clave CIEC debe tener al menos 8 caracteres")

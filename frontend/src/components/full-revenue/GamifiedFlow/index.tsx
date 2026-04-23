@@ -22,10 +22,30 @@ const SS_FLOW_STEP   = "fr_gflow_step";
 const SS_APP_ID      = "fr_app_id";
 const SS_FB_TOKEN    = "fr_fb_token";
 const SS_FISCAL      = "fr_fiscal_data";
+const SS_PREFILL     = "fr_prefill";
 
 /* ── Default offer amounts ── */
 const SS_BASE_AMOUNT = "fr_base_amount";
-const FALLBACK_BASE  = 50_000;
+const FALLBACK_BASE  = 62_800;
+
+/** Extrae los campos relevantes del prefill para Step1Identity. */
+function readPrefillForStep1(): Partial<Step1Values> {
+  if (typeof window === "undefined") return {};
+  const raw = sessionStorage.getItem(SS_PREFILL);
+  if (!raw) return {};
+  try {
+    const p = JSON.parse(raw) as Record<string, string | undefined>;
+    const out: Partial<Step1Values> = {};
+    if (p.email)      out.email = p.email;
+    if (p.legal_name) out.legal_name = p.legal_name;
+    if (p.address)    out.address = p.address;
+    if (p.phone)      out.phone = p.phone;
+    if (p.tax_id)     out.tax_id = p.tax_id;
+    return out;
+  } catch {
+    return {};
+  }
+}
 
 function readBaseAmount(): number {
   if (typeof window === "undefined") return FALLBACK_BASE;
@@ -47,7 +67,14 @@ export function GamifiedApplicationForm() {
   const [step1Data, setStep1Data] = useState<Partial<Step1Values>>(() => {
     if (typeof window !== "undefined") {
       const saved = sessionStorage.getItem(SS_FORM_DATA);
-      if (saved) { try { return JSON.parse(saved); } catch { /* ignore */ } }
+      if (saved) {
+        try {
+          // Merge: datos ya ingresados tienen prioridad sobre el prefill
+          return { ...readPrefillForStep1(), ...JSON.parse(saved) };
+        } catch { /* ignore */ }
+      }
+      // Sin datos guardados — usar solo prefill
+      return readPrefillForStep1();
     }
     return {};
   });
@@ -80,9 +107,9 @@ export function GamifiedApplicationForm() {
   // SSR-safe: initialize with fallback, update from sessionStorage after hydration
   const [offerAmounts, setOfferAmounts] = useState({
     base:   FALLBACK_BASE,
-    bureau: Math.round(FALLBACK_BASE * 1.5),
-    social: Math.round(FALLBACK_BASE * 2),
-    fiscal: Math.round(FALLBACK_BASE * 4),
+    bureau: Math.round(FALLBACK_BASE * 1.25),
+    social: Math.round(FALLBACK_BASE * 1.5),
+    fiscal: Math.round(FALLBACK_BASE * 3),
   });
 
   /* ── Hydrate from sessionStorage after mount (SSR-safe) ── */
@@ -91,9 +118,9 @@ export function GamifiedApplicationForm() {
     if (base !== FALLBACK_BASE) {
       setOfferAmounts({
         base,
-        bureau: Math.round(base * 1.5),
-        social: Math.round(base * 2),
-        fiscal: Math.round(base * 4),
+        bureau: Math.round(base * 1.25),
+        social: Math.round(base * 1.5),
+        fiscal: Math.round(base * 3),
       });
     }
     const savedStep = sessionStorage.getItem(SS_FLOW_STEP);
@@ -170,18 +197,19 @@ export function GamifiedApplicationForm() {
     }
 
     const s1 = step1Data as Step1Values;
-    if (!s1.legal_name || !s1.address || !s1.email) {
+    if (!s1.address || !s1.email) {
       setError("Volvé a ingresar los datos de tu negocio para continuar con tu solicitud.");
       setFlowStep("identity");
       return false;
     }
 
     const fbTok = facebookToken || (typeof window !== "undefined" ? sessionStorage.getItem(SS_FB_TOKEN) ?? "" : "");
+    const resolvedGoogleUrl = googleUrl || (typeof window !== "undefined" ? sessionStorage.getItem(SS_GOOGLE_URL) ?? "" : "");
 
     const allData: AllFormData = {
       ...s1,
-      ...(withFiscal && fiscalData ? { tax_id: fiscalData.tax_id, ciec: fiscalData.ciec } : {}),
-      ...(withSocial && googleUrl ? { google_business_url: googleUrl } : {}),
+      ...(withFiscal && fiscalData ? { ciec: fiscalData.ciec } : {}),
+      ...(withSocial && resolvedGoogleUrl ? { google_business_url: resolvedGoogleUrl } : {}),
       ...(withSocial && fbTok ? {
         facebook_access_token: fbTok,
         instagram_access_token: fbTok,
@@ -368,7 +396,7 @@ export function GamifiedApplicationForm() {
   // ── Fake door: evaluating screen ──
   if (isEvaluating) {
     return (
-      <div className="px-4 py-8 flex flex-col items-center text-center gap-6">
+      <div className="max-w-[640px] mx-auto px-4 py-8 flex flex-col items-center text-center gap-6">
         <div className="w-20 h-20 rounded-full bg-black flex items-center justify-center shadow-lg">
           <svg className="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -418,7 +446,7 @@ export function GamifiedApplicationForm() {
   }
 
   return (
-    <div className="px-4 py-4">
+    <div className="max-w-[640px] mx-auto px-4 py-4">
       <div className="mb-6">
         <GamifiedProgressBar
           current={flowStep}

@@ -52,9 +52,9 @@ function getActionStepNum(current: FlowStep): number {
 export function GamifiedProgressBar({ current, onBack, offerAmounts }: Props) {
   const currentIdx = STEP_ORDER.indexOf(current);
 
-  const bureauLabel = offerAmounts ? fmtK(offerAmounts.bureau) : "$75k";
-  const socialLabel = offerAmounts ? fmtK(offerAmounts.social) : "$100k";
-  const fiscalLabel = offerAmounts ? fmtK(offerAmounts.fiscal) : "$200k";
+  const bureauLabel = offerAmounts ? fmtK(offerAmounts.bureau) : "1.25x";
+  const socialLabel = offerAmounts ? fmtK(offerAmounts.social) : "1.5x";
+  const fiscalLabel = offerAmounts ? fmtK(offerAmounts.fiscal) : "3x";
 
   // State for each action node
   const getActionState = (key: FlowStep): "done" | "active" | "pending" => {

@@ -22,7 +22,7 @@ export function FullRevenueBanner() {
     <button
       onClick={handleClick}
       className="w-full h-full bg-gradient-to-br from-rappi-orange to-rappi-orange-mid text-white rounded-2xl p-6 text-left shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 active:scale-98 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rappi-orange flex flex-col relative overflow-hidden"
-      aria-label="Conocer más sobre Préstamo MÁS"
+      aria-label="Conocer más sobre Financiamiento MÁS"
     >
       {/* Fondo decorativo: círculo grande */}
       <div className="absolute -right-8 -top-8 w-40 h-40 bg-white opacity-5 rounded-full" />
@@ -45,7 +45,7 @@ export function FullRevenueBanner() {
 
       {/* Tag label */}
       <p className="text-xs font-semibold opacity-80 uppercase tracking-widest mb-2">
-        Préstamo MÁS
+        Financiamiento MÁS
       </p>
 
       {/* Headline sin monto fijo */}

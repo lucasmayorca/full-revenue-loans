@@ -573,7 +573,7 @@ function buildReason(params: {
   twilioRiskScore: number | undefined;
 }): string {
   const parts: string[] = [
-    "Solicitud en revisión manual para determinar nuevo monto Préstamo MÁS.",
+    "Solicitud en revisión manual para determinar nuevo monto Financiamiento MÁS.",
   ];
 
   if (params.syntageAvailable) {

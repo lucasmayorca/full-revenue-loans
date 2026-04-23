@@ -29,7 +29,7 @@ export function StepFiscal({ onComplete, onBack, isLoading }: Props) {
           Datos fiscales
         </h2>
         <p className="text-sm text-gray-500 leading-relaxed">
-          Con tu RFC y Clave CIEC podemos consultar tu historial fiscal en el SAT
+          Con tu Clave CIEC podemos consultar tu historial fiscal en el SAT
           y calcular tu oferta máxima.
         </p>
       </div>
@@ -44,14 +44,6 @@ export function StepFiscal({ onComplete, onBack, isLoading }: Props) {
           <p className="text-xs text-purple-600 mt-0.5">Tu crédito puede crecer hasta <strong>4X</strong> con datos del SAT</p>
         </div>
       </div>
-
-      <Input
-        label="RFC"
-        placeholder="Ej: REST123456ABC"
-        error={errors.tax_id?.message}
-        hint="12 o 13 caracteres, tal como aparece en tu constancia fiscal"
-        {...register("tax_id")}
-      />
 
       <Input
         label="Clave CIEC"

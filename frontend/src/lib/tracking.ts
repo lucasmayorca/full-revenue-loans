@@ -36,6 +36,9 @@ export const EVENTS = {
   // KYC post-aprobación
   KYC_STEP_VIEWED: "kyc_step_viewed",
   KYC_SUBMITTED: "kyc_submitted",
+
+  // Prefill links (experimentos personalizados)
+  PREFILL_LINK_OPENED: "prefill_link_opened",
 } as const;
 
 export type EventName = (typeof EVENTS)[keyof typeof EVENTS];

@@ -310,7 +310,7 @@ export function Step2Connections({
             {...register("consent_given")}
           />
           <label htmlFor="consent_given" className="text-sm text-gray-700 leading-snug cursor-pointer">
-            Acepto los términos y condiciones del Préstamo MÁS y autorizo el uso de mis datos fiscales y digitales para la evaluación crediticia
+            Acepto los términos y condiciones del Financiamiento MÁS y autorizo el uso de mis datos fiscales y digitales para la evaluación crediticia
             <WhatWeEvaluateTooltip />
           </label>
         </div>
