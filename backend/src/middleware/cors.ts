@@ -13,7 +13,7 @@ if (process.env.CORS_EXTRA_ORIGINS) {
 
 export const corsMiddleware = cors({
   origin: env.NODE_ENV === "development" ? true : allowedOrigins,
-  methods: ["GET", "POST", "OPTIONS"],
+  methods: ["GET", "POST", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: false,
 });

@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --primary: #FF441F;
+    --background: #F5F5F5;
+    --background-text: #E8E8E8;
+    --border-line: #E8E8E8;
+    --text: #706967;
+    --text-dark: #332927;
+    --rappi-orange: #FF441F;
+    --rappi-orange-dark: #E03518;
+  }
+
+  html {
+    font-family: var(--font-poppins), "Poppins", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-[#F5F5F5] text-[#332927];
+  }
+}
