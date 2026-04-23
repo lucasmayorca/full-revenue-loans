@@ -208,6 +208,8 @@ export function GamifiedApplicationForm() {
 
     const allData: AllFormData = {
       ...s1,
+      // Defensive: ensure legal_name satisfies backend min(2) even if field was removed from UI
+      legal_name: s1.legal_name?.trim() || "NA",
       ...(withFiscal && fiscalData ? { ciec: fiscalData.ciec } : {}),
       ...(withSocial && resolvedGoogleUrl ? { google_business_url: resolvedGoogleUrl } : {}),
       ...(withSocial && fbTok ? {
