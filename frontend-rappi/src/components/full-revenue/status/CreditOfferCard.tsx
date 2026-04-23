@@ -130,7 +130,7 @@ export function CreditOfferCard({ offer, basicAmount = 50000, applicationId }: P
               <p className="text-xs text-gray-400 leading-relaxed">
                 Se retiene automáticamente el{" "}
                 <span className="font-semibold text-gray-600">{retPct}% de cada liquidación</span> de tu
-                cuenta Uber Eats hasta cubrir la cuota mensual de{" "}
+                cuenta Rappi hasta cubrir la cuota mensual de{" "}
                 <span className="font-semibold text-gray-600">${fmt(offer.monthly_payment)} MXN</span>.
               </p>
             </div>
@@ -161,7 +161,7 @@ export function CreditOfferCard({ offer, basicAmount = 50000, applicationId }: P
             <span className="text-base flex-shrink-0 mt-0.5">💡</span>
             <p className="text-xs text-orange-800 leading-relaxed">
               <span className="font-semibold">Cuanto más vendas, menos debitas.</span>{" "}
-              A mayor volumen en Uber Eats, más rápido se cubre la cuota por retención y menor será el débito mensual en cuenta.
+              A mayor volumen en Rappi, más rápido se cubre la cuota por retención y menor será el débito mensual en cuenta.
             </p>
           </div>
         </div>

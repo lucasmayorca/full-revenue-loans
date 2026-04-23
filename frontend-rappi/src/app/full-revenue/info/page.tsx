@@ -95,7 +95,7 @@ export default function FullRevenueInfoPage() {
           Desbloquea hasta 4x más crédito basado en el 100% de tus ingresos.
         </h1>
         <p className="text-[16px] leading-6 text-uber-gray-700">
-          Evaluamos tus datos fiscales, tus ventas en Uber Eats y tu presencia
+          Evaluamos tus datos fiscales, tus ventas en Rappi y tu presencia
           digital para calcular una oferta personalizada. Proceso guiado,
           menos de 3 minutos.
         </p>

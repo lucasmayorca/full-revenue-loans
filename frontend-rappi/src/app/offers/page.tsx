@@ -147,7 +147,7 @@ function FinanciamientoInner() {
     <div className="max-w-[1200px] mx-auto px-8 py-8">
       {/* Title */}
       <h1 className="text-[40px] font-bold text-black leading-[1.1] tracking-tight mb-8">
-        {merchantName ? `Hola ${merchantName}` : "Financiamiento MÁS"}
+        {merchantName ? `Hola ${merchantName}` : "Préstamos para ti"}
       </h1>
 
       {prefillLoading && (
@@ -272,7 +272,7 @@ function FinanciamientoInner() {
               className="mt-1 w-[18px] h-[18px] accent-black flex-shrink-0"
             />
             <span className="text-[12px] leading-5 text-uber-gray-700">
-              Autorizo a Uber Eats a compartir con{" "}
+              Autorizo a Rappi a compartir con{" "}
               <strong className="text-black">
                 R2 CAPITAL TECHNOLOGIES MX S.A. DE C.V.
               </strong>{" "}
@@ -350,8 +350,8 @@ function FinanciamientoInner() {
       {activeTab !== "ofertas" && (
         <div className="py-20 text-center">
           <p className="text-[16px] text-uber-gray-500">
-            Esta pestaña es parte de la experiencia completa de Uber Eats
-            Manager y no está disponible en este prototipo.
+            Esta pestaña es parte de la experiencia completa de Rappi
+            y no está disponible en este prototipo.
           </p>
         </div>
       )}
@@ -393,7 +393,7 @@ function FullRevenueCard({ maxAmount, baseAmount }: { maxAmount: number; baseAmo
         <span className="text-[10px] font-bold uppercase tracking-widest bg-white text-black px-2 py-0.5 rounded-full">
           Nuevo
         </span>
-        <span className="text-[12px] text-white/60">Financiamiento MÁS</span>
+        <span className="text-[12px] text-white/60">Préstamo MÁS</span>
       </div>
 
       {/* Amount */}
@@ -481,7 +481,7 @@ function OfferCard({
         <p className="text-[16px] text-black leading-[24px] mt-1">
           Retenemos el{" "}
           <strong className="font-bold">{offer.retention}% de tus ventas</strong>{" "}
-          realizadas en la aplicación de Uber Eats hasta que pagues{" "}
+          realizadas en la aplicación de Rappi hasta que pagues{" "}
           <strong className="font-bold">{formatMxn(offer.totalToPay)}</strong>
         </p>
       </div>

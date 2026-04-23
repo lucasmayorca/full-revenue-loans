@@ -44,7 +44,7 @@ export function Step3BankAccount({ defaultValues, onComplete, onBack }: Props) {
       {/* Header de sección */}
       <div className="pb-1">
         <h2 className="text-base font-bold text-gray-900">Cuenta bancaria</h2>
-        <p className="text-xs text-gray-400 mt-0.5">Donde Uber Eats realizará el desembolso del crédito</p>
+        <p className="text-xs text-gray-400 mt-0.5">Donde Rappi realizará el desembolso del crédito</p>
       </div>
 
       {/* Info box */}
@@ -53,7 +53,7 @@ export function Step3BankAccount({ defaultValues, onComplete, onBack }: Props) {
           <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
         </svg>
         <p className="text-xs text-blue-700 leading-relaxed">
-          Esta cuenta se usará para el débito directo del remanente mensual en caso de que las retenciones de Uber Eats no cubran la cuota completa.
+          Esta cuenta se usará para el débito directo del remanente mensual en caso de que las retenciones de Rappi no cubran la cuota completa.
         </p>
       </div>
 

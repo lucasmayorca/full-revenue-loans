@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 interface Props {
   amount: number;
   previousAmount?: number;
-  /** Monto base inicial (Uber Eats estándar) — se usa en stage="final" para mostrar mejora total */
+  /** Monto base inicial (Rappi estándar) — se usa en stage="final" para mostrar mejora total */
   baseAmount?: number;
   stage: "bureau" | "social" | "final";
   isAnimating?: boolean;
@@ -275,7 +275,7 @@ export function OfferRevealCard({
                   </svg>
                   <div>
                     <p className="text-[13px] font-bold text-black">
-                      Retención Uber Eats — 20% de tus ventas
+                      Retención Rappi — 20% de tus ventas
                     </p>
                     <p className="text-[12px] text-uber-gray-700 leading-5 mt-0.5">
                       Se retiene automáticamente el 20% de tus ventas en Uber

@@ -10,7 +10,7 @@ interface Source {
 }
 
 const SOURCES: Source[] = [
-  { key: "ubereats", label: "Ventas históricas en Uber Eats", icon: "🍔",  delayMs: 700  },
+  { key: "ubereats", label: "Ventas históricas en Rappi", icon: "🍔",  delayMs: 700  },
   { key: "sat",      label: "Historial fiscal SAT",           icon: "🏛️",  delayMs: 1600 },
   { key: "buro",     label: "Buró de Crédito",               icon: "📋",  delayMs: 2500 },
   { key: "google",   label: "Reputación en Google Maps",     icon: "📍",  delayMs: 3300 },

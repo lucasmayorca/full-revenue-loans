@@ -69,7 +69,7 @@ export function StepFiscal({ onComplete, onBack, isLoading }: Props) {
               <span className="text-[10px] font-bold text-red-500 uppercase tracking-wide">Requerido</span>
             </div>
             <p className="text-xs text-gray-500 leading-relaxed">
-              Autorizo el procesamiento de mis datos fiscales del SAT (vía Syntage) y mis datos de ventas en Uber Eats para evaluar mi perfil crediticio.
+              Autorizo el procesamiento de mis datos fiscales del SAT (vía Syntage) y mis datos de ventas en Rappi para evaluar mi perfil crediticio.
             </p>
           </div>
         </label>

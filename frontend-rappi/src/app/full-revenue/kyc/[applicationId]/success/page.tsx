@@ -153,8 +153,8 @@ export default function KycSuccessPage({ params }: Props) {
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">¿Qué sigue?</p>
         {[
           { icon: "📧", title: "Confirmación por email y WhatsApp", desc: "Recibirás el comprobante de tu contrato firmado." },
-          { icon: "📅", title: "Primera cuota en 30 días", desc: "La retención sobre ventas de Uber Eats arranca de forma automática." },
-          { icon: "📊", title: "Seguí tu saldo en tiempo real", desc: "Consulta tu estado de cuenta desde Uber Eats Manager." },
+          { icon: "📅", title: "Primera cuota en 30 días", desc: "La retención sobre ventas de Rappi arranca de forma automática." },
+          { icon: "📊", title: "Seguí tu saldo en tiempo real", desc: "Consulta tu estado de cuenta desde Rappi." },
         ].map(({ icon, title, desc }) => (
           <div key={title} className="flex items-start gap-3">
             <span className="text-xl flex-shrink-0">{icon}</span>

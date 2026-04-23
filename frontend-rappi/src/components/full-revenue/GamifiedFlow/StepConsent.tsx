@@ -54,7 +54,7 @@ export function StepConsent({ onComplete, isLoading }: Props) {
       <div>
         <h2 className="text-h2 text-black mb-2">Autorizaciones necesarias</h2>
         <p className="text-[14px] text-uber-gray-700 leading-5">
-          Autorizo a Uber Eats a compartir con <strong className="text-black">R2 Capital Technologies MX</strong> los datos necesarios para consultar mi historial crediticio y verificar mi identidad. Ninguna de estas consultas afecta tu score.
+          Autorizo a Rappi a compartir con <strong className="text-black">R2 Capital Technologies MX</strong> los datos necesarios para consultar mi historial crediticio y verificar mi identidad. Ninguna de estas consultas afecta tu score.
         </p>
       </div>
 
