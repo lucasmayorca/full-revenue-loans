@@ -261,6 +261,49 @@ export async function submitKyc(
   return updated;
 }
 
+/**
+ * Actualiza la URL de Google Maps en una aplicación existente y re-corre
+ * solo el lookup de Google Places, actualizando places_result.
+ */
+export async function patchGoogleUrl(
+  id: string,
+  googleBusinessUrl: string
+): Promise<ApplicationDoc> {
+  const { googlePlacesClient } = await import("../clients/googleClient");
+
+  const application = await fetchDoc(id);
+  if (!application) {
+    const err = new Error(`Application ${id} not found`) as Error & {
+      statusCode: number;
+      isOperational: boolean;
+    };
+    err.statusCode = 404;
+    err.isOperational = true;
+    throw err;
+  }
+
+  const placesResult = await googlePlacesClient.getPlacesData(googleBusinessUrl);
+
+  const updated: ApplicationDoc = {
+    ...application,
+    form_data: {
+      ...application.form_data,
+      google_business_url: googleBusinessUrl,
+    } as ApplicationDoc["form_data"],
+    places_result: placesResult,
+    updated_at: Timestamp.now(),
+  };
+
+  await upsertDoc(updated);
+  logger.info("google_url_patched", {
+    id,
+    connected: placesResult.connected,
+    signals_score: placesResult.signals_score,
+    business_name: placesResult.business_name,
+  });
+  return updated;
+}
+
 export interface PrequalResult {
   bureau_offer: number;
   social_offer: number;

@@ -5,6 +5,7 @@ import fs from "fs";
 import { z } from "zod";
 import { validateBody } from "../middleware/validateRequest";
 import * as ctrl from "../controllers/applications.controller";
+import { patchGoogleUrl } from "../services/application.service";
 import { facebookClient } from "../clients/facebookClient";
 import { env } from "../config/env";
 
@@ -156,5 +157,28 @@ router.post(
 
 // GET /full-revenue/applications/:id/prequal
 router.get("/:id([0-9a-f-]{36})/prequal", ctrl.prequalify);
+
+// PATCH /full-revenue/applications/:id/google-url — admin: re-corre Google Places
+router.patch(
+  "/:id([0-9a-f-]{36})/google-url",
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const { id } = req.params;
+      const { google_business_url } = req.body as { google_business_url?: string };
+      if (!google_business_url || typeof google_business_url !== "string") {
+        res.status(400).json({ error: "google_business_url is required" });
+        return;
+      }
+      const app = await patchGoogleUrl(id, google_business_url);
+      res.json({
+        id: app.id,
+        places_result: app.places_result,
+        message: "Google Places data updated",
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
 
 export default router;

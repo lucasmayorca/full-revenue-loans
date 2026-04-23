@@ -49,48 +49,57 @@ const DEMO_PLACES_STUB: PlacesResult = {
   fetched_at: new Date().toISOString(),
 };
 
+interface ParsedMapUrl {
+  identifier: string | null;  // Place ID (ChIJ) o nombre para text search
+  lat?: number;
+  lng?: number;
+}
+
 /**
- * Extrae el Place ID de una URL de Google Maps.
+ * Parsea una URL de Google Maps y extrae:
+ *  - Place ID ChIJ directo si está disponible
+ *  - Coordenadas @lat,lng para usar como location bias en text search
+ *  - Nombre del negocio como fallback para text search
  *
- * Soporta los formatos más comunes:
- *  - /maps/place/NOMBRE/...data=...!1sChIJ<PLACE_ID>  → Place ID ChIJ en segmento !1s
- *  - /maps/place/NOMBRE/...data=...!1s0x<hex>:<hex>   → hex encode en segmento !1s
- *  - maps.google.com/?cid=<CID>                       → CID numérico
- *  - Nombre del negocio en la URL                     → fallback para Text Search
+ * Soporta formatos:
+ *  - /maps/place/NOMBRE/...!1sChIJ<ID>    → Place ID directo
+ *  - /maps/place/NOMBRE/...!1s0x<hex>     → coords + nombre para text search
+ *  - /maps/place/NOMBRE/@lat,lng,...      → coords + nombre para text search
+ *  - maps.google.com/?cid=<CID>           → CID numérico
  */
-function extractPlaceId(mapsUrl: string): string | null {
+function parseMapUrl(mapsUrl: string): ParsedMapUrl {
   try {
-    // Formato más común: !1sChIJ... (Place ID en base64-like, URL-encoded)
+    // Coordenadas: @lat,lng
+    const coordMatch = mapsUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+    const lat = coordMatch ? parseFloat(coordMatch[1]) : undefined;
+    const lng = coordMatch ? parseFloat(coordMatch[2]) : undefined;
+
+    // Formato más confiable: !1sChIJ... (Place ID real)
     const chijMatch = mapsUrl.match(/!1s(ChIJ[^!&?]+)/);
     if (chijMatch) {
-      return decodeURIComponent(chijMatch[1]);
+      return { identifier: decodeURIComponent(chijMatch[1]), lat, lng };
     }
 
     // Formato CID: ?cid=12345678
     const cidMatch = mapsUrl.match(/[?&]cid=(\d+)/);
     if (cidMatch) {
-      return cidMatch[1];
+      return { identifier: cidMatch[1], lat, lng };
     }
 
-    // Formato hex (!1s0x...) o cualquier otro: usar el nombre del negocio
-    // de la URL para hacer Text Search — es más confiable que pasar el hex
+    // Fallback: nombre del negocio en la URL (para text search con location bias)
     const nameMatch = mapsUrl.match(/\/maps\/place\/([^/@?]+)/);
     if (nameMatch) {
-      return decodeURIComponent(nameMatch[1].replace(/\+/g, " "));
+      return {
+        identifier: decodeURIComponent(nameMatch[1].replace(/\+/g, " ")),
+        lat,
+        lng,
+      };
     }
 
-    return null;
+    return { identifier: null };
   } catch {
-    return null;
+    return { identifier: null };
   }
-}
-
-/**
- * Determina si el identificador extraído es un Place ID real o un nombre de texto.
- */
-function isRealPlaceId(identifier: string): boolean {
-  // Place ID real: empieza con ChIJ, es hex 0x..., o es un CID numérico largo
-  return identifier.startsWith("ChIJ") || identifier.startsWith("0x") || /^\d{15,}$/.test(identifier);
 }
 
 class GooglePlacesClient {
@@ -107,7 +116,7 @@ class GooglePlacesClient {
       return { ...DEMO_PLACES_STUB, fetched_at: new Date().toISOString() };
     }
 
-    const identifier = extractPlaceId(mapsUrl);
+    const { identifier, lat, lng } = parseMapUrl(mapsUrl);
     if (!identifier) {
       logger.warn("google_places_invalid_url", { url: mapsUrl });
       return { connected: false, fetched_at: new Date().toISOString() };
@@ -116,21 +125,25 @@ class GooglePlacesClient {
     try {
       let placeId = identifier;
 
-      // Si NO es un Place ID ChIJ directo, resolver primero con Text Search
-      // (aplica para: nombres de texto, hex 0x..., CID numérico)
+      // Si NO es un Place ID ChIJ directo, resolver con Text Search
       if (!identifier.startsWith("ChIJ")) {
+        const searchParams: Record<string, string> = {
+          input: identifier,
+          inputtype: "textquery",
+          fields: "place_id",
+          key: env.GOOGLE_PLACES_API_KEY ?? "",
+        };
+        // Location bias: círculo de 5 km alrededor de las coordenadas de la URL
+        if (lat !== undefined && lng !== undefined) {
+          searchParams.locationbias = `circle:5000@${lat},${lng}`;
+        }
         const searchResp = await axios.get(`${this.baseUrl}/findplacefromtext/json`, {
-          params: {
-            input: identifier,
-            inputtype: "textquery",
-            fields: "place_id",
-            key: env.GOOGLE_PLACES_API_KEY,
-          },
+          params: searchParams,
           timeout: 8000,
         });
         placeId = searchResp.data.candidates?.[0]?.place_id;
         if (!placeId) {
-          logger.warn("google_places_not_found", { identifier });
+          logger.warn("google_places_not_found", { identifier, lat, lng });
           return { connected: false, fetched_at: new Date().toISOString() };
         }
       }

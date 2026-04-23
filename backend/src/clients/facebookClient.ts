@@ -285,9 +285,9 @@ class FacebookClient {
     const params = new URLSearchParams({
       client_id: env.FACEBOOK_APP_ID,
       redirect_uri: `${env.BACKEND_URL}/full-revenue/oauth/facebook/callback`,
-      // Camino B: scopes básicos. Cuando se aprueben pages_show_list/instagram_basic
-      // sumarlos acá: "public_profile,email,pages_show_list,pages_read_engagement,instagram_basic"
-      scope: "public_profile,email",
+      // Scopes completos: pages_show_list + pages_read_engagement requieren App Review
+      // para usuarios generales, pero funcionan inmediatamente para App Admins y Testers.
+      scope: "public_profile,email,pages_show_list,pages_read_engagement,instagram_basic",
       state: applicationId,
       response_type: "code",
     });
