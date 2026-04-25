@@ -14,7 +14,7 @@ export default function FullRevenueLayout({
       <div className="max-w-[1200px] mx-auto px-8 pt-6">
         <button
           onClick={() => router.back()}
-          className="inline-flex items-center gap-1.5 h-9 px-3 rounded-btn text-[14px] font-medium text-uber-gray-700 hover:bg-uber-gray-100 hover:text-black transition-colors -ml-3"
+          className="inline-flex items-center gap-1.5 h-9 px-3 rounded-btn text-[14px] font-medium text-uber-gray-700 hover:bg-rappi-orange-light hover:text-rappi-orange transition-colors -ml-3"
           aria-label="Volver"
         >
           <svg

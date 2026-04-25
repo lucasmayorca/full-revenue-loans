@@ -39,7 +39,7 @@ export function UnderwritingLoader() {
       <div className="w-full max-w-md">
         {/* Título */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-card bg-black flex items-center justify-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-card bg-rappi-orange flex items-center justify-center">
             {allDone ? (
               <svg className="w-8 h-8 text-uber-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -74,7 +74,7 @@ export function UnderwritingLoader() {
                   isDone
                     ? "bg-uber-success-bg border border-uber-success/30"
                     : isActive
-                    ? "bg-uber-gray-100 border border-black"
+                    ? "bg-rappi-orange-light border border-rappi-orange"
                     : "bg-white border border-uber-gray-200 opacity-40"
                 }`}
               >
@@ -89,7 +89,7 @@ export function UnderwritingLoader() {
                     isDone
                       ? "text-uber-success"
                       : isActive
-                      ? "text-black"
+                      ? "text-rappi-dark"
                       : "text-uber-gray-500"
                   }`}
                 >
@@ -103,7 +103,7 @@ export function UnderwritingLoader() {
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
                   ) : isActive ? (
-                    <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                    <div className="w-4 h-4 border-2 border-rappi-orange border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <div className="w-2 h-2 rounded-full bg-uber-gray-300" />
                   )}
@@ -121,7 +121,7 @@ export function UnderwritingLoader() {
           </div>
           <div className="w-full h-1 bg-uber-gray-200 rounded-full overflow-hidden">
             <div
-              className="h-full bg-black rounded-full transition-all duration-700 ease-out"
+              className="h-full bg-rappi-orange rounded-full transition-all duration-700 ease-out"
               style={{ width: `${(completed.size / SOURCES.length) * 100}%` }}
             />
           </div>

@@ -146,9 +146,14 @@ function FinanciamientoInner() {
   return (
     <div className="max-w-[1200px] mx-auto px-8 py-8">
       {/* Title */}
-      <h1 className="text-[40px] font-bold text-black leading-[1.1] tracking-tight mb-8">
-        {merchantName ? `Hola ${merchantName}` : "Préstamos para ti"}
-      </h1>
+      <div className="mb-8">
+        <p className="text-[12px] font-semibold uppercase tracking-widest mb-1" style={{ color: "#9C8880" }}>
+          RappiPresta
+        </p>
+        <h1 className="text-[36px] font-extrabold leading-[1.1] tracking-tight" style={{ color: "#17100C" }}>
+          {merchantName ? `Hola, ${merchantName} 👋` : "Préstamos para ti"}
+        </h1>
+      </div>
 
       {prefillLoading && (
         <div className="mb-4 p-3 bg-uber-gray-100 border border-uber-gray-200 rounded-card text-[13px] text-uber-gray-700">
@@ -162,7 +167,7 @@ function FinanciamientoInner() {
       )}
 
       {/* Tabs row */}
-      <div className="border-b border-uber-gray-300 flex items-center justify-between pt-[5px] mb-8">
+      <div className="flex items-center justify-between pt-[5px] mb-8" style={{ borderBottom: "1px solid #EDE8E6" }}>
         <nav className="flex items-center gap-2">
           <TabButton
             active={activeTab === "ofertas"}
@@ -191,7 +196,7 @@ function FinanciamientoInner() {
         </nav>
         <button
           type="button"
-          className="border-2 border-black rounded-pill px-4 py-2 text-[14px] font-bold text-black hover:bg-uber-gray-100 transition-colors"
+          className="border-2 border-rappi-orange rounded-pill px-4 py-2 text-[14px] font-bold text-rappi-orange hover:bg-rappi-orange-light transition-colors"
         >
           Dar Sugerencias
         </button>
@@ -202,10 +207,10 @@ function FinanciamientoInner() {
           {/* ── Productos disponibles (Full Revenue + 2 RBF) ── */}
           <div>
             <div className="flex items-center gap-3 mb-5">
-              <p className="text-[11px] font-semibold text-uber-gray-500 uppercase tracking-widest">
+              <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "#9C8880" }}>
                 Productos disponibles
               </p>
-              <div className="flex-1 h-px bg-uber-gray-200" />
+              <div className="flex-1 h-px" style={{ background: "#EDE8E6" }} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -242,7 +247,7 @@ function FinanciamientoInner() {
                   name="persona"
                   checked={personaType === "fisica"}
                   onChange={() => setPersonaType("fisica")}
-                  className="w-5 h-5 accent-black"
+                  className="w-5 h-5 accent-[#FF441F]"
                 />
                 <span className="text-[16px] text-uber-gray-700">
                   Persona física
@@ -254,7 +259,7 @@ function FinanciamientoInner() {
                   name="persona"
                   checked={personaType === "moral"}
                   onChange={() => setPersonaType("moral")}
-                  className="w-5 h-5 accent-black"
+                  className="w-5 h-5 accent-[#FF441F]"
                 />
                 <span className="text-[16px] text-uber-gray-700">
                   Persona moral
@@ -269,7 +274,7 @@ function FinanciamientoInner() {
               type="checkbox"
               checked={consentChecked}
               onChange={(e) => setConsentChecked(e.target.checked)}
-              className="mt-1 w-[18px] h-[18px] accent-black flex-shrink-0"
+              className="mt-1 w-[18px] h-[18px] accent-[#FF441F] flex-shrink-0"
             />
             <span className="text-[12px] leading-5 text-uber-gray-700">
               Autorizo a Rappi a compartir con{" "}
@@ -279,11 +284,11 @@ function FinanciamientoInner() {
               la información de mi negocio (incluyendo datos financieros, de
               contacto y personales) con fines de elegibilidad para el
               otorgamiento de un crédito. Lo anterior, de acuerdo con la{" "}
-              <a className="underline font-bold text-black" href="#">
+              <a className="underline font-bold text-rappi-orange" href="#">
                 Autorización para compartir datos personales
               </a>{" "}
               y los{" "}
-              <a className="underline font-bold text-black" href="#">
+              <a className="underline font-bold text-rappi-orange" href="#">
                 Términos y Condiciones
               </a>
               .
@@ -291,7 +296,7 @@ function FinanciamientoInner() {
           </label>
 
           {/* Survey accordion */}
-          <div className="border border-black rounded-card overflow-hidden">
+          <div className="border border-rappi-orange rounded-card overflow-hidden">
             <button
               type="button"
               className="w-full flex items-center justify-between p-4 hover:bg-uber-gray-100 transition-colors"
@@ -339,7 +344,7 @@ function FinanciamientoInner() {
                 </p>
                 <textarea
                   placeholder="Tu opinión nos ayuda a mejorar"
-                  className="w-full h-24 p-3 border border-uber-gray-300 rounded-btn text-[14px] resize-none focus:outline-none focus:border-black"
+                  className="w-full h-24 p-3 border border-uber-gray-300 rounded-btn text-[14px] resize-none focus:outline-none focus:border-rappi-orange"
                 />
               </div>
             )}
@@ -386,37 +391,69 @@ function FullRevenueCard({ maxAmount, baseAmount }: { maxAmount: number; baseAmo
   return (
     <Link
       href="/full-revenue/apply"
-      className="bg-black text-white rounded-[8px] pt-6 pb-5 px-5 flex flex-col gap-5 relative overflow-hidden hover:opacity-95 transition-opacity cursor-pointer"
+      className="text-white rounded-[12px] pt-6 pb-5 px-5 flex flex-col gap-5 relative overflow-hidden cursor-pointer group"
+      style={{
+        background: "linear-gradient(145deg, #D93010 0%, #FF441F 45%, #FF6B3D 100%)",
+        boxShadow: "0 8px 32px rgba(255, 68, 31, 0.35)",
+      }}
     >
-      {/* Badge */}
-      <div className="flex items-center gap-2">
-        <span className="text-[10px] font-bold uppercase tracking-widest bg-white text-black px-2 py-0.5 rounded-full">
-          Nuevo
+      {/* Decorative circles */}
+      <div
+        aria-hidden
+        className="absolute -right-10 -top-10 w-44 h-44 rounded-full opacity-[0.12]"
+        style={{ background: "radial-gradient(circle, #FFFFFF 0%, transparent 70%)" }}
+      />
+      <div
+        aria-hidden
+        className="absolute -left-6 bottom-0 w-32 h-32 rounded-full opacity-[0.07]"
+        style={{ background: "radial-gradient(circle, #FFFFFF 0%, transparent 70%)" }}
+      />
+
+      {/* Header row */}
+      <div className="flex items-center justify-between relative z-10">
+        <span
+          className="text-[10px] font-extrabold uppercase tracking-[0.12em] bg-white px-2.5 py-1 rounded-full"
+          style={{ color: "#FF441F" }}
+        >
+          NUEVO
         </span>
-        <span className="text-[12px] text-white/60">Préstamo MÁS</span>
+        <span className="text-[11px] font-medium text-white/60 uppercase tracking-wider">
+          Préstamo MÁS
+        </span>
       </div>
 
       {/* Amount */}
-      <div>
-        <p className="text-[13px] text-white/60 leading-[20px] mb-1">Hasta</p>
-        <p className="text-[32px] leading-[40px] font-bold text-white">
+      <div className="relative z-10">
+        <p className="text-[12px] font-medium text-white/60 leading-[18px] uppercase tracking-wider mb-1">
+          Hasta
+        </p>
+        <p className="text-[36px] leading-[42px] font-extrabold text-white tracking-tight">
           {formatMxn(maxAmount)}
         </p>
-        <p className="text-[12px] text-white/50 mt-1">
-          vs {formatMxn(baseAmount)} con tu oferta actual
-        </p>
+        <div className="flex items-center gap-1.5 mt-2">
+          <span className="text-white/40 text-[11px]">vs</span>
+          <span
+            className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
+            style={{ background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.9)" }}
+          >
+            {formatMxn(baseAmount)} oferta actual
+          </span>
+        </div>
       </div>
 
       {/* Value props */}
-      <div className="flex flex-col gap-3">
-        <FeaturePill icon={IconBarChart} text="Evaluamos el 100% de tus ingresos reales" />
-        <FeaturePill icon={IconAccountBalance} text="Hasta 4x más que tu oferta en plataforma" />
-        <FeaturePill icon={IconCalendar} text="Cuota mensual fija — sin retención sorpresa" />
-        <FeaturePill icon={IconBolt} text="Respuesta rápida por email o WhatsApp" />
+      <div className="flex flex-col gap-2.5 relative z-10">
+        <FeaturePill icon={IconBarChart} text="100% de tus ingresos evaluados" />
+        <FeaturePill icon={IconAccountBalance} text="Hasta 4x tu oferta en plataforma" />
+        <FeaturePill icon={IconCalendar} text="Cuota fija mensual, sin sorpresas" />
+        <FeaturePill icon={IconBolt} text="Respuesta rápida por WhatsApp" />
       </div>
 
       {/* CTA */}
-      <div className="w-full h-11 bg-white text-black text-[15px] font-bold rounded-[2px] flex items-center justify-center gap-2 mt-1">
+      <div
+        className="w-full h-11 text-[14px] font-bold rounded-[8px] flex items-center justify-center gap-2 mt-1 relative z-10 transition-opacity group-hover:opacity-90"
+        style={{ background: "rgba(255,255,255,0.18)", border: "1.5px solid rgba(255,255,255,0.35)" }}
+      >
         Ver mi oferta ampliada
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
           <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8-8-8z" />
@@ -428,9 +465,9 @@ function FullRevenueCard({ maxAmount, baseAmount }: { maxAmount: number; baseAmo
 
 function FeaturePill({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
-    <div className="flex items-center gap-2.5">
-      <span className="w-5 h-5 flex-shrink-0 text-white/70">{icon}</span>
-      <span className="text-[14px] font-medium text-white/80 leading-[20px]">{text}</span>
+    <div className="flex items-center gap-2">
+      <span className="w-[18px] h-[18px] flex-shrink-0 text-white/60">{icon}</span>
+      <span className="text-[13px] font-medium text-white/85 leading-[18px]">{text}</span>
     </div>
   );
 }
@@ -452,8 +489,8 @@ function TabButton({
       className={[
         "relative px-3 py-4 text-[14px] leading-4 tracking-[0.03em] transition-colors",
         active
-          ? "font-bold text-black after:absolute after:left-0 after:right-0 after:-bottom-[1px] after:h-[2px] after:bg-black"
-          : "font-normal text-uber-gray-500 hover:text-black",
+          ? "font-bold text-rappi-orange after:absolute after:left-0 after:right-0 after:-bottom-[1px] after:h-[2px] after:bg-rappi-orange"
+          : "font-normal text-uber-gray-500 hover:text-rappi-orange",
       ].join(" ")}
     >
       {children}
@@ -471,18 +508,26 @@ function OfferCard({
   const [detailsOpen, setDetailsOpen] = useState(false);
 
   return (
-    <div className="bg-white border border-[#E8E8E8] rounded-[8px] pt-[24px] pb-[16px] px-[16px] flex flex-col gap-[24px]">
+    <div
+      className="bg-white rounded-[12px] pt-0 pb-5 px-5 flex flex-col gap-5 overflow-hidden"
+      style={{ boxShadow: "0 1px 8px rgba(23,16,12,0.08), 0 0 0 1px rgba(23,16,12,0.06)" }}
+    >
+      {/* Orange top accent */}
+      <div className="h-[4px] w-full -mx-5 mb-0" style={{ width: "calc(100% + 2.5rem)", marginLeft: "-1.25rem", background: "linear-gradient(90deg, #FF441F, #FF6B4A)" }} />
+
       {/* Recibe + monto + descripción */}
-      <div className="flex flex-col gap-2">
-        <p className="text-[16px] text-[#8A8A8A] leading-[20px]">Recibe</p>
-        <p className="text-[24px] leading-[32px] font-bold text-black">
+      <div className="flex flex-col gap-1.5">
+        <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "#9C8880" }}>
+          Recibe
+        </p>
+        <p className="text-[28px] leading-[34px] font-extrabold tracking-tight" style={{ color: "#17100C" }}>
           {formatMxn(offer.receive)}
         </p>
-        <p className="text-[16px] text-black leading-[24px] mt-1">
+        <p className="text-[14px] leading-[22px] mt-1" style={{ color: "#5C4A44" }}>
           Retenemos el{" "}
-          <strong className="font-bold">{offer.retention}% de tus ventas</strong>{" "}
-          realizadas en la aplicación de Rappi hasta que pagues{" "}
-          <strong className="font-bold">{formatMxn(offer.totalToPay)}</strong>
+          <strong className="font-bold" style={{ color: "#17100C" }}>{offer.retention}% de tus ventas</strong>{" "}
+          en Rappi hasta pagar{" "}
+          <strong className="font-bold" style={{ color: "#17100C" }}>{formatMxn(offer.totalToPay)}</strong>
         </p>
       </div>
 
@@ -491,9 +536,13 @@ function OfferCard({
         <button
           type="button"
           onClick={() => setDetailsOpen((o) => !o)}
-          className="w-full bg-[#E8E8E8] rounded-[8px] px-[8px] py-[8px] flex items-center justify-between text-[14px] font-medium text-black"
+          className="w-full rounded-[8px] px-3 py-2.5 flex items-center justify-between text-[13px] font-semibold transition-colors"
+          style={{
+            background: detailsOpen ? "#FFF0EC" : "#F7F3F1",
+            color: detailsOpen ? "#FF441F" : "#5C4A44",
+          }}
         >
-          <span>Detalles</span>
+          <span>Detalles del préstamo</span>
           <svg
             className={`w-4 h-4 transition-transform ${detailsOpen ? "rotate-180" : ""}`}
             viewBox="0 0 24 24"
@@ -503,7 +552,7 @@ function OfferCard({
           </svg>
         </button>
         {detailsOpen && (
-          <div className="flex flex-col divide-y divide-[#D9D9D9]">
+          <div className="flex flex-col divide-y" style={{ borderColor: "#EDE8E6" }}>
             <DetailRow label="Cargo fijo + IVA:" value={formatMxn(offer.fixedFee)} />
             <DetailRow label="Total a pagar:" value={formatMxn(offer.totalToPay)} />
             <DetailRow label="Pago mínimo mensual:" value={formatMxn(offer.monthlyMin)} />
@@ -516,7 +565,8 @@ function OfferCard({
       <button
         type="button"
         onClick={onSelect}
-        className="w-full h-[40px] bg-black text-white text-[16px] font-bold rounded-[2px] hover:bg-[#333] transition-colors mt-auto"
+        className="w-full h-[42px] text-white text-[14px] font-bold rounded-[8px] transition-all mt-auto"
+        style={{ background: "linear-gradient(90deg, #FF2D00, #FF5A1F)" }}
       >
         Seleccionar
       </button>

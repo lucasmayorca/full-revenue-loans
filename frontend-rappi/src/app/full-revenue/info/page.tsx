@@ -102,10 +102,10 @@ export default function FullRevenueInfoPage() {
       </div>
 
       {/* Hero card */}
-      <div className="relative bg-black text-white rounded-card p-8 overflow-hidden">
+      <div className="relative bg-rappi-orange text-white rounded-card p-8 overflow-hidden">
         <div
           aria-hidden
-          className="absolute -right-20 -top-20 w-72 h-72 bg-uber-green opacity-10 rounded-full"
+          className="absolute -right-20 -top-20 w-72 h-72 bg-white opacity-10 rounded-full"
         />
         <div className="relative">
           <p className="text-[12px] uppercase tracking-wider text-white/60 mb-1">
@@ -158,7 +158,7 @@ export default function FullRevenueInfoPage() {
               )}
 
               <div className="relative z-10 flex items-start gap-4">
-                <div className="w-12 h-12 bg-black text-white rounded-card flex items-center justify-center flex-shrink-0 font-bold text-[18px]">
+                <div className="w-12 h-12 bg-rappi-orange text-white rounded-card flex items-center justify-center flex-shrink-0 font-bold text-[18px]">
                   {step.number}
                 </div>
 

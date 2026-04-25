@@ -26,7 +26,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           {...props}
           className={[
             "w-full px-4 h-12 rounded-btn border text-[16px] leading-6 transition-colors bg-white text-black",
-            "focus:outline-none focus:border-black focus:ring-1 focus:ring-black",
+            "focus:outline-none focus:border-rappi-orange focus:ring-1 focus:ring-rappi-orange",
             error
               ? "border-uber-danger"
               : "border-uber-gray-300 hover:border-uber-gray-500",

@@ -37,7 +37,7 @@ export function PrestamoMasBanner({ baseAmount }: Props) {
       type="button"
       onClick={handleClick}
       aria-label="Conocer Préstamo MÁS, opción alternativa"
-      className="w-full flex items-center justify-between gap-4 border-2 border-black bg-white hover:bg-uber-gray-100 transition-colors rounded-card px-5 py-4 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2"
+      className="w-full flex items-center justify-between gap-4 border-2 border-rappi-orange bg-white hover:bg-rappi-orange-light transition-colors rounded-card px-5 py-4 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-rappi-orange focus-visible:ring-offset-2"
     >
       <div className="flex items-center gap-4 min-w-0">
         {/* Icono verde */}
@@ -69,7 +69,7 @@ export function PrestamoMasBanner({ baseAmount }: Props) {
       </div>
 
       {/* CTA */}
-      <span className="inline-flex items-center gap-1.5 text-[14px] font-bold text-black whitespace-nowrap flex-shrink-0">
+      <span className="inline-flex items-center gap-1.5 text-[14px] font-bold text-rappi-orange whitespace-nowrap flex-shrink-0">
         Conocer más
         <svg
           className="w-4 h-4"

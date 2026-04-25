@@ -85,7 +85,7 @@ export function OfferCalculatingLoader({ stage, onDone }: Props) {
           >
             <path
               d="M28 6 A22 22 0 0 1 50 28"
-              stroke="black"
+              stroke="#FF441F"
               strokeWidth="4"
               strokeLinecap="round"
             />
@@ -117,7 +117,7 @@ export function OfferCalculatingLoader({ stage, onDone }: Props) {
               <div
                 className={`w-[22px] h-[22px] rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
                   checked
-                    ? "bg-black"
+                    ? "bg-rappi-orange"
                     : visible
                     ? "border-2 border-uber-gray-300 animate-pulse"
                     : "border-2 border-uber-gray-200"
@@ -138,7 +138,7 @@ export function OfferCalculatingLoader({ stage, onDone }: Props) {
 
               <span
                 className={`text-[14px] transition-colors duration-300 ${
-                  checked ? "text-black font-medium" : "text-uber-gray-500"
+                  checked ? "text-rappi-dark font-medium" : "text-uber-gray-500"
                 }`}
               >
                 {source}

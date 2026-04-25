@@ -37,7 +37,7 @@ export default function KycPage({ params }: Props) {
   if (loading) {
     return (
       <div className="px-4 py-10 flex flex-col items-center gap-3">
-        <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-rappi-orange border-t-transparent rounded-full animate-spin" />
         <p className="text-[14px] text-uber-gray-500">Verificando solicitud...</p>
       </div>
     );
@@ -50,7 +50,7 @@ export default function KycPage({ params }: Props) {
         <p className="text-[14px] text-uber-gray-700">{error}</p>
         <button
           onClick={() => router.push("/full-revenue/info")}
-          className="text-black font-bold text-[14px] underline"
+          className="text-rappi-orange font-bold text-[14px] underline"
         >
           Volver al inicio
         </button>

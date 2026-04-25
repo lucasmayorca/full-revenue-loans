@@ -12,13 +12,13 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses = {
   primary:
-    "bg-black text-white hover:bg-uber-gray-900 active:bg-uber-gray-900 disabled:opacity-40",
+    "bg-rappi-orange text-white hover:bg-rappi-orange-dark active:bg-rappi-orange-dark disabled:opacity-40",
   outline:
-    "border border-black text-black bg-white hover:bg-uber-gray-100 active:bg-uber-gray-200",
+    "border border-rappi-orange text-rappi-orange bg-white hover:bg-rappi-orange-light active:bg-rappi-orange-light",
   "outline-pill":
-    "border-2 border-black text-black bg-white hover:bg-uber-gray-100 rounded-pill",
+    "border-2 border-rappi-orange text-rappi-orange bg-white hover:bg-rappi-orange-light rounded-pill",
   ghost:
-    "text-black hover:bg-uber-gray-100 active:bg-uber-gray-200",
+    "text-rappi-orange hover:bg-rappi-orange-light active:bg-rappi-orange-light",
 };
 
 const sizeClasses = {
@@ -43,7 +43,7 @@ export function Button({
       {...props}
       disabled={disabled || isLoading}
       className={[
-        "font-bold transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 inline-flex items-center justify-center gap-2",
+        "font-bold transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-rappi-orange focus-visible:ring-offset-2 inline-flex items-center justify-center gap-2",
         isPill ? "" : "rounded-btn",
         variantClasses[variant],
         sizeClasses[size],

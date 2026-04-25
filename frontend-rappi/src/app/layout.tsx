@@ -24,12 +24,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" className={poppins.variable}>
-      <body className="bg-[#F5F5F5]">
+      <body className="bg-[#F7F3F1]">
         <div className="flex h-screen overflow-hidden">
           <RappiSidebar />
           <div className="flex flex-col flex-1 min-w-0">
             <RappiHeader />
-            <main className="flex-1 overflow-auto bg-[#F5F5F5]">{children}</main>
+            <main className="flex-1 overflow-auto bg-[#F7F3F1]">{children}</main>
           </div>
         </div>
       </body>

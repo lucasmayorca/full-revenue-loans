@@ -145,7 +145,7 @@ export function GamifiedProgressBar({ current, onBack, offerAmounts }: Props) {
         <div className="flex flex-col items-center ml-1.5 flex-shrink-0">
           <div className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap transition-colors duration-300 ${
             offer3Unlocked
-              ? "bg-uber-green text-black"
+              ? "bg-rappi-orange text-white"
               : "bg-uber-gray-100 text-uber-gray-500"
           }`}>
             {fiscalLabel}
@@ -157,7 +157,7 @@ export function GamifiedProgressBar({ current, onBack, offerAmounts }: Props) {
       {/* Overall progress bar */}
       <div className="h-1 bg-uber-gray-200 rounded-full overflow-hidden">
         <div
-          className="h-full bg-black rounded-full transition-all duration-700"
+          className="h-full bg-rappi-orange rounded-full transition-all duration-700"
           style={{ width: `${(currentIdx / (STEP_ORDER.length - 1)) * 100}%` }}
         />
       </div>
@@ -181,9 +181,9 @@ function ActionNode({
       <div
         className={`w-6 h-6 rounded-full flex items-center justify-center transition-all duration-300 ${
           state === "done"
-            ? "bg-black text-white"
+            ? "bg-rappi-orange text-white"
             : state === "active"
-            ? "bg-black text-white ring-2 ring-black ring-offset-2"
+            ? "bg-rappi-orange text-white ring-2 ring-rappi-orange ring-offset-2"
             : "bg-uber-gray-200 text-uber-gray-500"
         }`}
       >
@@ -203,7 +203,7 @@ function ActionNode({
       </div>
       <p
         className={`text-[8px] mt-0.5 font-medium text-center ${
-          state === "pending" ? "text-uber-gray-500" : "text-black font-bold"
+          state === "pending" ? "text-uber-gray-500" : "text-rappi-orange font-bold"
         }`}
       >
         {label}
@@ -216,7 +216,7 @@ function SimpleConnector({ done }: { done: boolean }) {
   return (
     <div
       className={`flex-1 h-px min-w-[6px] transition-colors duration-500 ${
-        done ? "bg-black" : "bg-uber-gray-200"
+        done ? "bg-rappi-orange" : "bg-uber-gray-200"
       }`}
     />
   );
@@ -238,14 +238,14 @@ function BadgeConnector({
       {/* Left half of connector */}
       <div
         className={`flex-1 h-px transition-colors duration-500 ${
-          leftDone ? "bg-black" : "bg-uber-gray-200"
+          leftDone ? "bg-rappi-orange" : "bg-uber-gray-200"
         }`}
       />
       {/* Amount badge */}
       <div
         className={`mx-1 flex-shrink-0 text-[8px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap transition-all duration-300 ${
           unlocked
-            ? "bg-black text-white"
+            ? "bg-rappi-orange text-white"
             : "bg-uber-gray-100 text-uber-gray-500"
         }`}
       >
@@ -254,7 +254,7 @@ function BadgeConnector({
       {/* Right half of connector */}
       <div
         className={`flex-1 h-px transition-colors duration-500 ${
-          rightDone ? "bg-black" : "bg-uber-gray-200"
+          rightDone ? "bg-rappi-orange" : "bg-uber-gray-200"
         }`}
       />
     </div>

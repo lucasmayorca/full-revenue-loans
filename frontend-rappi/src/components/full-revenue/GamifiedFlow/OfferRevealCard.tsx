@@ -135,11 +135,11 @@ export function OfferRevealCard({
         </div>
       )}
 
-      {/* Card principal — Uber black with green accent */}
-      <div className="relative bg-black rounded-card p-7 text-white overflow-hidden">
+      {/* Card principal — Rappi orange */}
+      <div className="relative bg-rappi-orange rounded-card p-7 text-white overflow-hidden">
         <div
           aria-hidden
-          className="absolute -right-16 -top-16 w-60 h-60 bg-uber-green opacity-10 rounded-full"
+          className="absolute -right-16 -top-16 w-60 h-60 bg-white opacity-10 rounded-full"
         />
         <div
           aria-hidden
@@ -148,7 +148,7 @@ export function OfferRevealCard({
 
         <div className="relative">
           <div className="flex items-center gap-2 mb-5">
-            <div className="inline-flex items-center gap-1.5 bg-uber-green text-black text-[12px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-sm">
+            <div className="inline-flex items-center gap-1.5 bg-white text-rappi-orange text-[12px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-sm">
               {config.badge}
             </div>
           </div>

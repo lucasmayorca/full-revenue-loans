@@ -104,7 +104,7 @@ export function UberSidebar() {
             <span
               className={[
                 "shrink-0",
-                active ? "text-black" : "text-uber-gray-700",
+                active ? "text-rappi-orange" : "text-uber-gray-700",
               ].join(" ")}
             >
               {item.icon}
@@ -112,7 +112,7 @@ export function UberSidebar() {
             <span
               className={[
                 "text-[14px] leading-6",
-                active ? "font-bold text-black" : "font-medium text-uber-gray-900",
+                active ? "font-bold text-rappi-orange" : "font-medium text-uber-gray-900",
               ].join(" ")}
             >
               {item.label}
@@ -123,7 +123,7 @@ export function UberSidebar() {
         const baseClasses =
           "flex items-center gap-3 px-3 py-2 rounded-sm w-full transition-colors";
         const stateClasses = active
-          ? "bg-uber-gray-200 border-l-2 border-black -ml-[2px] pl-[14px]"
+          ? "bg-rappi-orange-light border-l-2 border-rappi-orange -ml-[2px] pl-[14px]"
           : item.disabled
           ? "opacity-70 cursor-default"
           : "hover:bg-uber-gray-100";

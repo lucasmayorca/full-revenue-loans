@@ -60,7 +60,7 @@ export function StepConsent({ onComplete, isLoading }: Props) {
 
       {/* Banner: qué obtenés a cambio */}
       <div className="bg-uber-gray-100 border border-uber-gray-200 rounded-card px-4 py-3 flex items-center gap-3">
-        <div className="w-10 h-10 bg-black text-white rounded-card flex items-center justify-center flex-shrink-0 font-bold text-[18px]">
+        <div className="w-10 h-10 bg-rappi-orange text-white rounded-card flex items-center justify-center flex-shrink-0 font-bold text-[18px]">
           →
         </div>
         <div>
@@ -81,17 +81,17 @@ export function StepConsent({ onComplete, isLoading }: Props) {
               onClick={() => toggle(consent.id)}
               className={`w-full text-left border rounded-card p-4 transition-colors focus:outline-none ${
                 isChecked
-                  ? "border-black bg-uber-gray-100"
+                  ? "border-rappi-orange bg-rappi-orange-light"
                   : hasError
                   ? "border-uber-danger bg-uber-danger-bg"
-                  : "border-uber-gray-300 bg-white hover:border-black"
+                  : "border-uber-gray-300 bg-white hover:border-rappi-orange"
               }`}
             >
               <div className="flex items-start gap-3">
                 {/* Custom checkbox */}
                 <div className={`w-5 h-5 rounded-[4px] border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors ${
                   isChecked
-                    ? "border-black bg-black"
+                    ? "border-rappi-orange bg-rappi-orange"
                     : hasError
                     ? "border-uber-danger"
                     : "border-uber-gray-500"
