@@ -46,7 +46,7 @@ const SECTIONS: NavSection[] = [
     title: "INICIO",
     items: [
       { label: "Visión general",    href: "#", icon: IconHome,     disabled: true },
-      { label: "Notificaciones",    href: "#", icon: IconBell,     badge: "2", disabled: true },
+      { label: "Notificaciones",    href: "#", icon: IconBell,     badge: "22", disabled: true },
       { label: "Centro de ayuda",   href: "#", icon: IconHelp,     disabled: true },
     ],
   },
@@ -89,13 +89,13 @@ export function RappiSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-[172px] flex flex-col py-3 overflow-y-auto flex-shrink-0 z-20" style={{ background: "#17100C" }}>
+    <aside className="w-[172px] flex flex-col py-3 overflow-y-auto flex-shrink-0 z-20 bg-white border-r border-[#E8E8E8]">
       {SECTIONS.map((section) => (
         <div key={section.title} className="mb-1">
           {section.title && (
             <p
               className="px-4 pt-3 pb-1 text-[10px] font-semibold tracking-wider uppercase"
-              style={{ color: "#5C4A44" }}
+              style={{ color: "#ADADAD" }}
             >
               {section.title}
             </p>
@@ -108,23 +108,19 @@ export function RappiSidebar() {
 
             const content = (
               <>
-                <span
-                  style={{
-                    color: isActive ? "#FF441F" : "#7A6963",
-                  }}
-                >
+                <span style={{ color: isActive ? "#FF441F" : "#5C5C5C" }}>
                   {item.icon}
                 </span>
                 <span
                   className="text-[12px] leading-[18px] truncate"
                   style={{
-                    color: isActive ? "#FFFFFF" : "#9C8880",
+                    color: isActive ? "#1A1A1A" : "#5C5C5C",
                     fontWeight: isActive ? 600 : 400,
                   }}
                 >
                   {item.label}
                 </span>
-                {item.badge && !isActive && (
+                {item.badge && (
                   <span
                     className="ml-auto shrink-0 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none"
                     style={{ background: "#FF441F" }}
@@ -138,7 +134,7 @@ export function RappiSidebar() {
             const baseClasses = "flex items-center gap-2 px-4 py-[7px] w-full transition-colors";
 
             const activeStyle = isActive
-              ? { borderLeft: "3px solid #FF441F", paddingLeft: "13px", background: "#2C1A13" }
+              ? { borderLeft: "3px solid #FF441F", paddingLeft: "13px", background: "#FFF5F3" }
               : {};
 
             if (item.disabled) {
@@ -146,7 +142,7 @@ export function RappiSidebar() {
                 <div
                   key={item.label}
                   className={baseClasses}
-                  style={{ opacity: 0.45, cursor: "default", ...activeStyle }}
+                  style={{ opacity: 0.5, cursor: "default", ...activeStyle }}
                   aria-disabled
                 >
                   {content}
@@ -160,7 +156,7 @@ export function RappiSidebar() {
                 href={item.href}
                 className={[
                   baseClasses,
-                  !isActive ? "hover:bg-[#231510]" : "",
+                  !isActive ? "hover:bg-[#F5F5F5]" : "",
                 ].join(" ")}
                 style={activeStyle}
               >

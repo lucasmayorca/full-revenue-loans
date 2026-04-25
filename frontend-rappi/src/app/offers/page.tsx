@@ -147,10 +147,10 @@ function FinanciamientoInner() {
     <div className="max-w-[1200px] mx-auto px-8 py-8">
       {/* Title */}
       <div className="mb-8">
-        <p className="text-[12px] font-semibold uppercase tracking-widest mb-1" style={{ color: "#9C8880" }}>
-          RappiPresta
+        <p className="text-[12px] font-semibold uppercase tracking-widest mb-1" style={{ color: "#ADADAD" }}>
+          Financiamiento
         </p>
-        <h1 className="text-[36px] font-extrabold leading-[1.1] tracking-tight" style={{ color: "#17100C" }}>
+        <h1 className="text-[36px] font-extrabold leading-[1.1] tracking-tight" style={{ color: "#1A1A1A" }}>
           {merchantName ? `Hola, ${merchantName} 👋` : "Préstamos para ti"}
         </h1>
       </div>
@@ -196,7 +196,8 @@ function FinanciamientoInner() {
         </nav>
         <button
           type="button"
-          className="border-2 border-rappi-orange rounded-pill px-4 py-2 text-[14px] font-bold text-rappi-orange hover:bg-rappi-orange-light transition-colors"
+          className="border-2 rounded-full px-4 py-2 text-[14px] font-bold transition-colors hover:bg-[#F0F7FF]"
+          style={{ borderColor: "#3B82F6", color: "#3B82F6" }}
         >
           Dar Sugerencias
         </button>
@@ -206,11 +207,10 @@ function FinanciamientoInner() {
         <div className="flex flex-col gap-10">
           {/* ── Productos disponibles (Full Revenue + 2 RBF) ── */}
           <div>
-            <div className="flex items-center gap-3 mb-5">
-              <p className="text-[11px] font-bold uppercase tracking-widest" style={{ color: "#9C8880" }}>
-                Productos disponibles
-              </p>
-              <div className="flex-1 h-px" style={{ background: "#EDE8E6" }} />
+            <div className="mb-5">
+              <h2 className="text-[22px] font-bold leading-[1.2]" style={{ color: "#1A1A1A" }}>
+                Elige la oferta que más te convenga
+              </h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -247,7 +247,7 @@ function FinanciamientoInner() {
                   name="persona"
                   checked={personaType === "fisica"}
                   onChange={() => setPersonaType("fisica")}
-                  className="w-5 h-5 accent-[#FF441F]"
+                  className="w-5 h-5 accent-[#3B82F6]"
                 />
                 <span className="text-[16px] text-uber-gray-700">
                   Persona física
@@ -259,7 +259,7 @@ function FinanciamientoInner() {
                   name="persona"
                   checked={personaType === "moral"}
                   onChange={() => setPersonaType("moral")}
-                  className="w-5 h-5 accent-[#FF441F]"
+                  className="w-5 h-5 accent-[#3B82F6]"
                 />
                 <span className="text-[16px] text-uber-gray-700">
                   Persona moral
@@ -274,7 +274,7 @@ function FinanciamientoInner() {
               type="checkbox"
               checked={consentChecked}
               onChange={(e) => setConsentChecked(e.target.checked)}
-              className="mt-1 w-[18px] h-[18px] accent-[#FF441F] flex-shrink-0"
+              className="mt-1 w-[18px] h-[18px] accent-[#3B82F6] flex-shrink-0"
             />
             <span className="text-[12px] leading-5 text-uber-gray-700">
               Autorizo a Rappi a compartir con{" "}
@@ -284,11 +284,11 @@ function FinanciamientoInner() {
               la información de mi negocio (incluyendo datos financieros, de
               contacto y personales) con fines de elegibilidad para el
               otorgamiento de un crédito. Lo anterior, de acuerdo con la{" "}
-              <a className="underline font-bold text-rappi-orange" href="#">
+              <a className="underline font-bold" style={{ color: "#3B82F6" }} href="#">
                 Autorización para compartir datos personales
               </a>{" "}
               y los{" "}
-              <a className="underline font-bold text-rappi-orange" href="#">
+              <a className="underline font-bold" style={{ color: "#3B82F6" }} href="#">
                 Términos y Condiciones
               </a>
               .
@@ -296,7 +296,7 @@ function FinanciamientoInner() {
           </label>
 
           {/* Survey accordion */}
-          <div className="border border-rappi-orange rounded-card overflow-hidden">
+          <div className="border border-[#E8E8E8] rounded-card overflow-hidden">
             <button
               type="button"
               className="w-full flex items-center justify-between p-4 hover:bg-uber-gray-100 transition-colors"
@@ -344,7 +344,7 @@ function FinanciamientoInner() {
                 </p>
                 <textarea
                   placeholder="Tu opinión nos ayuda a mejorar"
-                  className="w-full h-24 p-3 border border-uber-gray-300 rounded-btn text-[14px] resize-none focus:outline-none focus:border-rappi-orange"
+                  className="w-full h-24 p-3 border border-uber-gray-300 rounded-btn text-[14px] resize-none focus:outline-none focus:border-[#3B82F6]"
                 />
               </div>
             )}
@@ -393,8 +393,8 @@ function FullRevenueCard({ maxAmount, baseAmount }: { maxAmount: number; baseAmo
       href="/full-revenue/apply"
       className="text-white rounded-[12px] pt-6 pb-5 px-5 flex flex-col gap-5 relative overflow-hidden cursor-pointer group"
       style={{
-        background: "linear-gradient(145deg, #D93010 0%, #FF441F 45%, #FF6B3D 100%)",
-        boxShadow: "0 8px 32px rgba(255, 68, 31, 0.35)",
+        background: "linear-gradient(145deg, #1E40AF 0%, #3B82F6 45%, #60A5FA 100%)",
+        boxShadow: "0 8px 32px rgba(59, 130, 246, 0.35)",
       }}
     >
       {/* Decorative circles */}
@@ -413,7 +413,7 @@ function FullRevenueCard({ maxAmount, baseAmount }: { maxAmount: number; baseAmo
       <div className="flex items-center justify-between relative z-10">
         <span
           className="text-[10px] font-extrabold uppercase tracking-[0.12em] bg-white px-2.5 py-1 rounded-full"
-          style={{ color: "#FF441F" }}
+          style={{ color: "#3B82F6" }}
         >
           NUEVO
         </span>
@@ -512,22 +512,22 @@ function OfferCard({
       className="bg-white rounded-[12px] pt-0 pb-5 px-5 flex flex-col gap-5 overflow-hidden"
       style={{ boxShadow: "0 1px 8px rgba(23,16,12,0.08), 0 0 0 1px rgba(23,16,12,0.06)" }}
     >
-      {/* Orange top accent */}
-      <div className="h-[4px] w-full -mx-5 mb-0" style={{ width: "calc(100% + 2.5rem)", marginLeft: "-1.25rem", background: "linear-gradient(90deg, #FF441F, #FF6B4A)" }} />
+      {/* Blue top accent */}
+      <div className="h-[4px] w-full -mx-5 mb-0" style={{ width: "calc(100% + 2.5rem)", marginLeft: "-1.25rem", background: "linear-gradient(90deg, #3B82F6, #60A5FA)" }} />
 
       {/* Recibe + monto + descripción */}
       <div className="flex flex-col gap-1.5">
-        <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "#9C8880" }}>
+        <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "#9E9E9E" }}>
           Recibe
         </p>
-        <p className="text-[28px] leading-[34px] font-extrabold tracking-tight" style={{ color: "#17100C" }}>
+        <p className="text-[28px] leading-[34px] font-extrabold tracking-tight" style={{ color: "#1A1A1A" }}>
           {formatMxn(offer.receive)}
         </p>
-        <p className="text-[14px] leading-[22px] mt-1" style={{ color: "#5C4A44" }}>
+        <p className="text-[14px] leading-[22px] mt-1" style={{ color: "#5C5C5C" }}>
           Retenemos el{" "}
-          <strong className="font-bold" style={{ color: "#17100C" }}>{offer.retention}% de tus ventas</strong>{" "}
+          <strong className="font-bold" style={{ color: "#1A1A1A" }}>{offer.retention}% de tus ventas</strong>{" "}
           en Rappi hasta pagar{" "}
-          <strong className="font-bold" style={{ color: "#17100C" }}>{formatMxn(offer.totalToPay)}</strong>
+          <strong className="font-bold" style={{ color: "#1A1A1A" }}>{formatMxn(offer.totalToPay)}</strong>
         </p>
       </div>
 
@@ -538,8 +538,8 @@ function OfferCard({
           onClick={() => setDetailsOpen((o) => !o)}
           className="w-full rounded-[8px] px-3 py-2.5 flex items-center justify-between text-[13px] font-semibold transition-colors"
           style={{
-            background: detailsOpen ? "#FFF0EC" : "#F7F3F1",
-            color: detailsOpen ? "#FF441F" : "#5C4A44",
+            background: detailsOpen ? "#EFF6FF" : "#F5F5F5",
+            color: detailsOpen ? "#3B82F6" : "#5C5C5C",
           }}
         >
           <span>Detalles del préstamo</span>
@@ -566,7 +566,7 @@ function OfferCard({
         type="button"
         onClick={onSelect}
         className="w-full h-[42px] text-white text-[14px] font-bold rounded-[8px] transition-all mt-auto"
-        style={{ background: "linear-gradient(90deg, #FF2D00, #FF5A1F)" }}
+        style={{ background: "#3B82F6" }}
       >
         Seleccionar
       </button>
