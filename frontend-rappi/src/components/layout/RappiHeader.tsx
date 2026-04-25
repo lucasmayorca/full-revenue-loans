@@ -52,7 +52,7 @@ export function RappiHeader() {
           </div>
           <div
             className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-            style={{ background: "linear-gradient(135deg, #FF441F, #FF6B4A)" }}
+            style={{ background: "linear-gradient(135deg, #3B82F6, #60A5FA)" }}
           >
             <span className="text-white text-[13px] font-bold">CG</span>
           </div>

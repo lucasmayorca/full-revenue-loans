@@ -1,10 +1,10 @@
 import type { Config } from "tailwindcss";
 
 const rappi = {
-  orange: "#FF441F",
-  "orange-dark": "#E03518",
-  "orange-mid": "#FF6B4A",
-  "orange-light": "#FFF3F0",
+  orange: "#3B82F6",
+  "orange-dark": "#2563EB",
+  "orange-mid": "#60A5FA",
+  "orange-light": "#EFF6FF",
   dark: "#332927",
   muted: "#706967",
   "gray-100": "#F5F5F5",
@@ -15,7 +15,7 @@ const rappi = {
   "gray-900": "#332927",
   white: "#FFFFFF",
   sidebar: "#FFFFFF",
-  "sidebar-hover": "#FFF3F0",
+  "sidebar-hover": "#EFF6FF",
   surface: "#F5F5F5",
   "card-border": "#E8E8E8",
   success: "#00A650",
@@ -35,8 +35,8 @@ const uber = {
   "gray-700": "#706967",
   "gray-900": "#332927",
   hero: "#332927",
-  green: "#FF441F",        // map green → rappi orange so CTA buttons stay orange
-  "green-dark": "#E03518",
+  green: "#3B82F6",        // map green → rappi blue
+  "green-dark": "#2563EB",
   success: "#00A650",
   "success-bg": "#E6F7ED",
   danger: "#E11900",

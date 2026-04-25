@@ -391,50 +391,38 @@ function FullRevenueCard({ maxAmount, baseAmount }: { maxAmount: number; baseAmo
   return (
     <Link
       href="/full-revenue/apply"
-      className="text-white rounded-[12px] pt-6 pb-5 px-5 flex flex-col gap-5 relative overflow-hidden cursor-pointer group"
+      className="bg-white rounded-[12px] pt-6 pb-5 px-5 flex flex-col gap-5 overflow-hidden cursor-pointer group"
       style={{
-        background: "linear-gradient(145deg, #1E40AF 0%, #3B82F6 45%, #60A5FA 100%)",
-        boxShadow: "0 8px 32px rgba(59, 130, 246, 0.35)",
+        border: "2px solid #3B82F6",
+        boxShadow: "0 4px 16px rgba(59, 130, 246, 0.12)",
       }}
     >
-      {/* Decorative circles */}
-      <div
-        aria-hidden
-        className="absolute -right-10 -top-10 w-44 h-44 rounded-full opacity-[0.12]"
-        style={{ background: "radial-gradient(circle, #FFFFFF 0%, transparent 70%)" }}
-      />
-      <div
-        aria-hidden
-        className="absolute -left-6 bottom-0 w-32 h-32 rounded-full opacity-[0.07]"
-        style={{ background: "radial-gradient(circle, #FFFFFF 0%, transparent 70%)" }}
-      />
-
       {/* Header row */}
-      <div className="flex items-center justify-between relative z-10">
+      <div className="flex items-center justify-between">
         <span
-          className="text-[10px] font-extrabold uppercase tracking-[0.12em] bg-white px-2.5 py-1 rounded-full"
-          style={{ color: "#3B82F6" }}
+          className="text-[10px] font-extrabold uppercase tracking-[0.12em] px-2.5 py-1 rounded-full"
+          style={{ background: "#EFF6FF", color: "#3B82F6" }}
         >
           NUEVO
         </span>
-        <span className="text-[11px] font-medium text-white/60 uppercase tracking-wider">
+        <span className="text-[11px] font-medium uppercase tracking-wider" style={{ color: "#9E9E9E" }}>
           Préstamo MÁS
         </span>
       </div>
 
       {/* Amount */}
-      <div className="relative z-10">
-        <p className="text-[12px] font-medium text-white/60 leading-[18px] uppercase tracking-wider mb-1">
+      <div>
+        <p className="text-[12px] font-medium leading-[18px] uppercase tracking-wider mb-1" style={{ color: "#9E9E9E" }}>
           Hasta
         </p>
-        <p className="text-[36px] leading-[42px] font-extrabold text-white tracking-tight">
+        <p className="text-[36px] leading-[42px] font-extrabold tracking-tight" style={{ color: "#1A1A1A" }}>
           {formatMxn(maxAmount)}
         </p>
         <div className="flex items-center gap-1.5 mt-2">
-          <span className="text-white/40 text-[11px]">vs</span>
+          <span className="text-[11px]" style={{ color: "#BDBDBD" }}>vs</span>
           <span
             className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
-            style={{ background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.9)" }}
+            style={{ background: "#F5F5F5", color: "#5C5C5C" }}
           >
             {formatMxn(baseAmount)} oferta actual
           </span>
@@ -442,7 +430,7 @@ function FullRevenueCard({ maxAmount, baseAmount }: { maxAmount: number; baseAmo
       </div>
 
       {/* Value props */}
-      <div className="flex flex-col gap-2.5 relative z-10">
+      <div className="flex flex-col gap-2.5">
         <FeaturePill icon={IconBarChart} text="100% de tus ingresos evaluados" />
         <FeaturePill icon={IconAccountBalance} text="Hasta 4x tu oferta en plataforma" />
         <FeaturePill icon={IconCalendar} text="Cuota fija mensual, sin sorpresas" />
@@ -451,8 +439,8 @@ function FullRevenueCard({ maxAmount, baseAmount }: { maxAmount: number; baseAmo
 
       {/* CTA */}
       <div
-        className="w-full h-11 text-[14px] font-bold rounded-[8px] flex items-center justify-center gap-2 mt-1 relative z-10 transition-opacity group-hover:opacity-90"
-        style={{ background: "rgba(255,255,255,0.18)", border: "1.5px solid rgba(255,255,255,0.35)" }}
+        className="w-full h-11 text-white text-[14px] font-bold rounded-[8px] flex items-center justify-center gap-2 mt-1 transition-opacity group-hover:opacity-90"
+        style={{ background: "#3B82F6" }}
       >
         Ver mi oferta ampliada
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -466,8 +454,8 @@ function FullRevenueCard({ maxAmount, baseAmount }: { maxAmount: number; baseAmo
 function FeaturePill({ icon, text }: { icon: React.ReactNode; text: string }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="w-[18px] h-[18px] flex-shrink-0 text-white/60">{icon}</span>
-      <span className="text-[13px] font-medium text-white/85 leading-[18px]">{text}</span>
+      <span className="w-[18px] h-[18px] flex-shrink-0" style={{ color: "#3B82F6" }}>{icon}</span>
+      <span className="text-[13px] font-medium leading-[18px]" style={{ color: "#5C5C5C" }}>{text}</span>
     </div>
   );
 }

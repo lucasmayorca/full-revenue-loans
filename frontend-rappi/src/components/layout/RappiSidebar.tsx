@@ -108,7 +108,7 @@ export function RappiSidebar() {
 
             const content = (
               <>
-                <span style={{ color: isActive ? "#FF441F" : "#5C5C5C" }}>
+                <span style={{ color: isActive ? "#3B82F6" : "#5C5C5C" }}>
                   {item.icon}
                 </span>
                 <span
@@ -123,7 +123,7 @@ export function RappiSidebar() {
                 {item.badge && (
                   <span
                     className="ml-auto shrink-0 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none"
-                    style={{ background: "#FF441F" }}
+                    style={{ background: "#3B82F6" }}
                   >
                     {item.badge}
                   </span>
@@ -134,7 +134,7 @@ export function RappiSidebar() {
             const baseClasses = "flex items-center gap-2 px-4 py-[7px] w-full transition-colors";
 
             const activeStyle = isActive
-              ? { borderLeft: "3px solid #FF441F", paddingLeft: "13px", background: "#FFF5F3" }
+              ? { borderLeft: "3px solid #3B82F6", paddingLeft: "13px", background: "#EFF6FF" }
               : {};
 
             if (item.disabled) {
