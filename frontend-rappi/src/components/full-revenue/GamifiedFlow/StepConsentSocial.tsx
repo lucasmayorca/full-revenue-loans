@@ -46,7 +46,14 @@ export function StepConsentSocial({
   onInstagramConnect,
   defaultGoogleUrl = "",
 }: Props) {
-  const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const SS_CONSENT = "fr_consent_state";
+
+  const [checked, setChecked] = useState<Record<string, boolean>>(() => {
+    if (typeof window === "undefined") return {};
+    const saved = sessionStorage.getItem(SS_CONSENT);
+    if (saved) { try { return JSON.parse(saved); } catch { /* ignore */ } }
+    return {};
+  });
   const [attempted, setAttempted] = useState(false);
   const [googleUrl, setGoogleUrl] = useState(defaultGoogleUrl);
 
@@ -59,12 +66,17 @@ export function StepConsentSocial({
   const allChecked = CONSENTS.every((c) => checked[c.id]);
 
   function toggle(id: string) {
-    setChecked((prev) => ({ ...prev, [id]: !prev[id] }));
+    setChecked((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      sessionStorage.setItem(SS_CONSENT, JSON.stringify(next));
+      return next;
+    });
   }
 
   function handleSubmit() {
     setAttempted(true);
     if (!allChecked) return;
+    sessionStorage.removeItem(SS_CONSENT);
     onComplete({
       bureau_consent: true,
       twilio_consent: true,
@@ -180,8 +192,11 @@ export function StepConsentSocial({
           Comparte los datos de tu negocio para que podamos evaluar tu presencia digital.
         </p>
         <div>
-          <label className="block text-[12px] font-medium text-black mb-1">
-            <span className="mr-1.5">📍</span>Google Maps
+          <label className="flex items-center gap-1.5 text-[12px] font-medium text-black mb-1">
+            <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#EA4335"/>
+            </svg>
+            Google Maps
           </label>
           <input
             type="url"
