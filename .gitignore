@@ -34,3 +34,9 @@ Thumbs.db
 !tsconfig.json
 !package-lock.json
 !railway.json
+
+# TypeScript incremental build info (auto-generated)
+*.tsbuildinfo
+
+# Temp files
+*.tmp
