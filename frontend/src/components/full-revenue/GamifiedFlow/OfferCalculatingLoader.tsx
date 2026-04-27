@@ -15,9 +15,9 @@ const CONFIG: Record<Stage, {
     sources: ["Buró de Crédito", "Twilio Identity", "Historial de plataforma"],
   },
   social: {
-    title: "Analizando tu presencia digital",
-    subtitle: "Revisamos tus conexiones de Google Maps y redes sociales.",
-    sources: ["Google Maps / Places", "Facebook Business", "Instagram"],
+    title: "Evaluando tu historial y presencia digital",
+    subtitle: "Verificamos buró, identidad y tus conexiones online para calcular tu primera oferta.",
+    sources: ["Buró de Crédito + Twilio", "Google Maps / Places", "Facebook & Instagram"],
   },
   fiscal: {
     title: "Calculando tu capacidad real de pago",
