@@ -22,20 +22,20 @@ interface RbfOffer {
 const DEFAULT_OFFERS: RbfOffer[] = [
   {
     id: "oferta1",
-    receive: 62800,
+    receive: 50000,
     retention: 32.92,
-    totalToPay: 81740,
-    fixedFee: 18940,
-    monthlyMin: 12975,
+    totalToPay: 65100,
+    fixedFee: 15100,
+    monthlyMin: 10300,
     maxTerm: "6.3 meses",
   },
   {
     id: "oferta2",
-    receive: 43000,
+    receive: 35000,
     retention: 24.9,
-    totalToPay: 54726,
-    fixedFee: 11726,
-    monthlyMin: 8700,
+    totalToPay: 44550,
+    fixedFee: 9550,
+    monthlyMin: 7100,
     maxTerm: "6.3 meses",
   },
 ];
@@ -53,13 +53,18 @@ type TabId = "ofertas" | "beneficios" | "como" | "faq";
 function FinanciamientoInner() {
   const { trackEvent } = useTracking();
   const searchParams = useSearchParams();
+  const hasToken = searchParams.get("t") !== null;
+
   const [activeTab, setActiveTab] = useState<TabId>("ofertas");
   const [offers, setOffers] = useState<RbfOffer[]>(DEFAULT_OFFERS);
   const [fullRevenueMax, setFullRevenueMax] = useState<number>(DEFAULT_OFFERS[0].receive * 3);
   const [personaType, setPersonaType] = useState<"fisica" | "moral">("fisica");
   const [consentChecked, setConsentChecked] = useState(false);
   const [surveyOpen, setSurveyOpen] = useState(false);
-  const [prefillLoading, setPrefillLoading] = useState(false);
+  // prefillResolved: true cuando el fetch terminó (éxito o error). Si NO hay
+  // token, arranca true (no hay nada que esperar). Si hay token, arranca false
+  // para evitar el flash de las ofertas default antes de que llegue la data.
+  const [prefillResolved, setPrefillResolved] = useState(!hasToken);
   const [prefillError, setPrefillError] = useState<string | null>(null);
   const [merchantName, setMerchantName] = useState<string | null>(null);
 
@@ -68,7 +73,6 @@ function FinanciamientoInner() {
     const token = searchParams.get("t");
     if (!token) return;
 
-    setPrefillLoading(true);
     api
       .getPrefillLink(token)
       .then((data) => {
@@ -115,7 +119,7 @@ function FinanciamientoInner() {
         else if (status === 410) setPrefillError("Link expirado.");
         else setPrefillError("No se pudo cargar la oferta personalizada.");
       })
-      .finally(() => setPrefillLoading(false));
+      .finally(() => setPrefillResolved(true));
   }, [searchParams, trackEvent]);
 
   useEffect(() => {
@@ -155,11 +159,6 @@ function FinanciamientoInner() {
         </h1>
       </div>
 
-      {prefillLoading && (
-        <div className="mb-4 p-3 bg-uber-gray-100 border border-uber-gray-200 rounded-card text-[13px] text-uber-gray-700">
-          Cargando tu oferta personalizada...
-        </div>
-      )}
       {prefillError && (
         <div className="mb-4 p-3 bg-uber-danger-bg border border-uber-danger/30 rounded-card text-[13px] text-uber-danger">
           {prefillError} Te mostramos las ofertas base.
@@ -213,19 +212,32 @@ function FinanciamientoInner() {
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* ── Financiamiento MÁS — Full Revenue Loans ── */}
-              <FullRevenueCard maxAmount={fullRevenueMax} baseAmount={offers[0]?.receive ?? 0} />
+            {!prefillResolved ? (
+              /* Skeleton mientras hidratamos el prefill — evita flash de defaults */
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4" aria-busy="true">
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="rounded-[12px] bg-white animate-pulse h-[360px]"
+                    style={{ boxShadow: "0 1px 8px rgba(23,16,12,0.08), 0 0 0 1px rgba(23,16,12,0.06)" }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* ── Financiamiento MÁS — Full Revenue Loans ── */}
+                <FullRevenueCard maxAmount={fullRevenueMax} baseAmount={offers[0]?.receive ?? 0} />
 
-              {/* ── Ofertas RBF — una por columna ── */}
-              {offers.map((offer) => (
-                <OfferCard
-                  key={offer.id}
-                  offer={offer}
-                  onSelect={() => handleOfferSelect(offer)}
-                />
-              ))}
-            </div>
+                {/* ── Ofertas RBF — una por columna ── */}
+                {offers.map((offer) => (
+                  <OfferCard
+                    key={offer.id}
+                    offer={offer}
+                    onSelect={() => handleOfferSelect(offer)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
           {/* CAT disclosure */}

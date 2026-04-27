@@ -25,7 +25,7 @@ const SS_PREFILL     = "fr_prefill";
 
 /* ── Default offer amounts ── */
 const SS_BASE_AMOUNT = "fr_base_amount";
-const FALLBACK_BASE  = 62_800;
+const FALLBACK_BASE  = 50_000;
 
 /** Extrae los campos relevantes del prefill para Step1Identity. */
 function readPrefillForStep1(): Partial<Step1Values> {
@@ -338,14 +338,69 @@ export function GamifiedApplicationForm() {
     setFlowStep("fiscal");
   }, [trackEvent]);
 
-  // 4. Facebook OAuth
+  // 4. Facebook OAuth — opens in popup to keep user in the flow
   const handleFacebookConnect = useCallback((currentUrl: string) => {
     if (!applicationId) { setError("Primero completá los datos del negocio."); return; }
     sessionStorage.setItem(SS_FORM_DATA, JSON.stringify(step1Data));
     sessionStorage.setItem(SS_GOOGLE_URL, currentUrl);
     sessionStorage.setItem(SS_FLOW_STEP, "consent_social");
+
     const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/full-revenue";
-    window.location.href = `${apiUrl}/oauth/facebook/redirect?applicationId=${applicationId}`;
+    const oauthUrl = `${apiUrl}/oauth/facebook/redirect?applicationId=${applicationId}`;
+
+    // Try popup first to avoid leaving the flow
+    const w = 600, h = 700;
+    const left = Math.max(0, (window.screen.width - w) / 2);
+    const top  = Math.max(0, (window.screen.height - h) / 2);
+    const popup = window.open(
+      oauthUrl,
+      "fb_oauth",
+      `width=${w},height=${h},left=${left},top=${top},scrollbars=yes,resizable=yes`
+    );
+
+    if (!popup) {
+      // Popup blocked — fallback to full redirect
+      window.location.href = oauthUrl;
+      return;
+    }
+
+    // Poll popup URL until it returns to our domain with the token
+    const poll = setInterval(() => {
+      if (!popup || popup.closed) {
+        clearInterval(poll);
+        return;
+      }
+      try {
+        const href = popup.location.href; // throws CORS while on Facebook
+        if (!href || href === "about:blank") return;
+
+        const url = new URL(href);
+        const fbStatus = url.searchParams.get("facebook");
+        const fbToken  = url.searchParams.get("fb_token");
+        const appId    = url.searchParams.get("appId");
+        const fbError  = url.searchParams.get("fb_error");
+
+        clearInterval(poll);
+        popup.close();
+
+        if (fbError) {
+          setError("Error al conectar Facebook: " + fbError);
+          return;
+        }
+        if (fbStatus === "connected" && fbToken) {
+          setFacebookConnected(true);
+          setInstagramConnected(true);
+          setFacebookToken(fbToken);
+          sessionStorage.setItem(SS_FB_TOKEN, fbToken);
+          if (appId) {
+            setApplicationId(appId);
+            sessionStorage.setItem(SS_APP_ID, appId);
+          }
+        }
+      } catch {
+        // CORS — popup still on Facebook's domain, keep polling
+      }
+    }, 500);
   }, [applicationId, step1Data]);
 
   const handleInstagramConnect = useCallback(

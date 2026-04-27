@@ -25,7 +25,7 @@ const SS_PREFILL     = "fr_prefill";
 
 /* ── Default offer amounts ── */
 const SS_BASE_AMOUNT = "fr_base_amount";
-const FALLBACK_BASE  = 62_800;
+const FALLBACK_BASE  = 50_000;
 
 /** Extrae los campos relevantes del prefill para Step1Identity. */
 function readPrefillForStep1(): Partial<Step1Values> {
