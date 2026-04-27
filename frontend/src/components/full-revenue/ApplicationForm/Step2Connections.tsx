@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { Landmark, FileText, ShoppingBag, ShieldCheck } from "lucide-react";
 
 // Schema local: URL de Maps (requerida) + consentimiento
 const schema = z.object({
@@ -48,13 +49,21 @@ function MapsTooltip() {
 // Tooltip Qué evaluamos
 function WhatWeEvaluateTooltip() {
   const [open, setOpen] = useState(false);
-  const items = [
-    { icon: "🏛️", text: "Historial fiscal en el SAT (CIEC)" },
-    { icon: "📋", text: "Score de Buró de Crédito" },
-    { icon: "🛍️", text: "Ventas históricas en Uber Eats" },
-    { icon: "📍", text: "Reputación en Google Maps" },
-    { icon: "💬", text: "Presencia en redes sociales" },
-    { icon: "🔐", text: "Verificación de identidad vía Twilio" },
+  const items: { icon: React.ReactNode; text: string }[] = [
+    { icon: <Landmark className="w-3.5 h-3.5" />, text: "Historial fiscal en el SAT (CIEC)" },
+    { icon: <FileText className="w-3.5 h-3.5" />, text: "Score de Buró de Crédito" },
+    { icon: <ShoppingBag className="w-3.5 h-3.5" />, text: "Ventas históricas en Uber Eats" },
+    { icon: (
+        <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#EA4335"/>
+        </svg>
+      ), text: "Reputación en Google Maps" },
+    { icon: (
+        <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="#1877F2">
+          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+        </svg>
+      ), text: "Presencia en redes sociales" },
+    { icon: <ShieldCheck className="w-3.5 h-3.5" />, text: "Verificación de identidad vía Twilio" },
   ];
   return (
     <span className="relative inline-flex items-center ml-1">
@@ -252,7 +261,9 @@ export function Step2Connections({
 
       {/* Banner */}
       <div className="bg-orange-50 border border-orange-100 rounded-xl px-3.5 py-2.5 flex items-start gap-2.5">
-        <span className="text-base mt-0.5">💡</span>
+        <svg className="w-4 h-4 mt-0.5 flex-shrink-0 text-orange-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 2a7 7 0 00-4 12.74V17a1 1 0 001 1h6a1 1 0 001-1v-2.26A7 7 0 0012 2zm-1 15h2v1a1 1 0 01-2 0v-1z"/>
+        </svg>
         <p className="text-xs text-orange-800 leading-relaxed">
           <span className="font-semibold">Cuantas más fuentes conectés, mayor será tu monto.</span>{" "}
           Usamos estos datos para evaluar la salud real de tu negocio.
@@ -262,8 +273,10 @@ export function Step2Connections({
       {/* Google Maps */}
       <div className="border border-gray-200 rounded-2xl p-4 space-y-3">
         <div>
-          <p className="font-medium text-sm text-gray-900 flex items-center">
-            <span className="mr-2">📍</span>
+          <p className="font-medium text-sm text-gray-900 flex items-center gap-2">
+            <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#EA4335"/>
+            </svg>
             Google Maps
             <MapsTooltip />
           </p>

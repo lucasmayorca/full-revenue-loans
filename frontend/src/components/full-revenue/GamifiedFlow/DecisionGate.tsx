@@ -1,5 +1,7 @@
 "use client";
 
+import { Zap, Lock } from "lucide-react";
+
 interface Props {
   currentAmount: number;
   potentialAmount: number;
@@ -14,11 +16,27 @@ function fmt(n: number) {
   return n.toLocaleString("es-MX", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
+function GoogleMapsPinIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none">
+      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#EA4335"/>
+    </svg>
+  );
+}
+
+function TrophyIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h7.5M8.25 6.75A2.25 2.25 0 006 9v.75m2.25-3A2.25 2.25 0 0110.5 4.5h3A2.25 2.25 0 0115.75 6.75m0 0A2.25 2.25 0 0118 9v.75m-12 0c0 2.01 1.458 3.686 3.375 3.938A2.992 2.992 0 0012 15a2.992 2.992 0 002.625-1.312C16.542 13.436 18 11.76 18 9.75m-12 0H4.5m13.5 0H19.5M12 15v3.75m-3.75 0h7.5" />
+    </svg>
+  );
+}
+
 const STAGE_CONFIG = {
   after_bureau: {
     continueTitle: "Conectá tu presencia digital",
     continueSubtitle: "Agregá Google Maps y redes sociales para ampliar tu oferta",
-    continueIcon: "📍",
+    continueIcon: <GoogleMapsPinIcon className="w-5 h-5" />,
     continueHighlight: "text-green-700",
     continueHighlightBg: "bg-green-50 border-green-200",
     applyNote: "También podés aplicar con la oferta actual",
@@ -26,7 +44,7 @@ const STAGE_CONFIG = {
   after_social: {
     continueTitle: "Esta es tu oferta máxima",
     continueSubtitle: "Ya aprovechaste todas las fuentes de datos disponibles",
-    continueIcon: "🏆",
+    continueIcon: <TrophyIcon className="w-5 h-5 text-orange-600" />,
     continueHighlight: "text-orange-700",
     continueHighlightBg: "bg-orange-50 border-orange-200",
     applyNote: "Podés aplicar al préstamo ahora",
@@ -52,7 +70,7 @@ export function DecisionGate({
         <p className="text-sm text-gray-500">Elegí cómo continuar</p>
       </div>
 
-      {/* Opción 1: Continuar (si hay más para desbloquear) */}
+      {/* Opción 1: Continuar */}
       {stage === "after_bureau" && (
         <button
           type="button"
@@ -60,7 +78,7 @@ export function DecisionGate({
           className={`w-full text-left border-2 rounded-2xl p-4 ${config.continueHighlightBg} transition-all hover:shadow-md active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-offset-1`}
         >
           <div className="flex items-start gap-3">
-            <div className="w-11 h-11 bg-white rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm text-xl">
+            <div className="w-11 h-11 bg-white rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm">
               {config.continueIcon}
             </div>
             <div className="flex-1">
@@ -107,10 +125,10 @@ export function DecisionGate({
         }`}
       >
         <div className="flex items-center gap-3">
-          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 text-xl ${
+          <div className={`w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 ${
             stage === "after_social" ? "bg-white bg-opacity-20" : "bg-orange-50"
           }`}>
-            🚀
+            <Zap className={`w-5 h-5 ${stage === "after_social" ? "text-white" : "text-rappi-orange"}`} />
           </div>
           <div className="text-left flex-1">
             <p className={`text-sm font-bold ${stage === "after_social" ? "text-white" : "text-gray-900"}`}>
@@ -134,8 +152,9 @@ export function DecisionGate({
       </button>
 
       {/* Nota de seguridad */}
-      <p className="text-xs text-gray-400 text-center leading-relaxed">
-        🔒 Sin compromiso hasta que confirmés en el paso de KYC.
+      <p className="text-xs text-gray-400 text-center leading-relaxed flex items-center justify-center gap-1">
+        <Lock className="w-3 h-3 flex-shrink-0" />
+        Sin compromiso hasta que confirmés en el paso de KYC.
         Tu oferta queda reservada por 72 hs.
       </p>
     </div>

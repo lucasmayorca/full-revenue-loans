@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { Landmark, FileText, ShoppingBag, ShieldCheck } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
@@ -45,16 +46,32 @@ function MapsTooltip() {
   );
 }
 
+function GoogleMapsPin({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none">
+      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#EA4335"/>
+    </svg>
+  );
+}
+
+function FbSmallIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="#1877F2">
+      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+    </svg>
+  );
+}
+
 // Tooltip Qué evaluamos
 function WhatWeEvaluateTooltip() {
   const [open, setOpen] = useState(false);
-  const items = [
-    { icon: "🏛️", text: "Historial fiscal en el SAT (CIEC)" },
-    { icon: "📋", text: "Score de Buró de Crédito" },
-    { icon: "🛍️", text: "Ventas históricas en Rappi" },
-    { icon: "📍", text: "Reputación en Google Maps" },
-    { icon: "💬", text: "Presencia en redes sociales" },
-    { icon: "🔐", text: "Verificación de identidad vía Twilio" },
+  const items: { icon: React.ReactNode; text: string }[] = [
+    { icon: <Landmark className="w-3.5 h-3.5" />, text: "Historial fiscal en el SAT (CIEC)" },
+    { icon: <FileText className="w-3.5 h-3.5" />, text: "Score de Buró de Crédito" },
+    { icon: <ShoppingBag className="w-3.5 h-3.5" />, text: "Ventas históricas en Rappi" },
+    { icon: <GoogleMapsPin className="w-3.5 h-3.5" />, text: "Reputación en Google Maps" },
+    { icon: <FbSmallIcon />, text: "Presencia en redes sociales" },
+    { icon: <ShieldCheck className="w-3.5 h-3.5" />, text: "Verificación de identidad vía Twilio" },
   ];
   return (
     <span className="relative inline-flex items-center ml-1">
@@ -69,7 +86,7 @@ function WhatWeEvaluateTooltip() {
             <p className="font-semibold text-white mb-1">Lo que vamos a evaluar</p>
             {items.map(({ icon, text }) => (
               <div key={text} className="flex items-center gap-2">
-                <span className="w-4 text-center flex-shrink-0">{icon}</span>
+                <span className="w-4 flex items-center justify-center flex-shrink-0 text-gray-300">{icon}</span>
                 <span className="text-gray-300">{text}</span>
               </div>
             ))}
@@ -252,7 +269,11 @@ export function Step2Connections({
 
       {/* Banner */}
       <div className="bg-orange-50 border border-orange-100 rounded-xl px-3.5 py-2.5 flex items-start gap-2.5">
-        <span className="text-base mt-0.5">💡</span>
+        <span className="mt-0.5 flex-shrink-0 text-orange-600">
+          <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+          </svg>
+        </span>
         <p className="text-xs text-orange-800 leading-relaxed">
           <span className="font-semibold">Cuantas más fuentes conectés, mayor será tu monto.</span>{" "}
           Usamos estos datos para evaluar la salud real de tu negocio.
@@ -263,7 +284,7 @@ export function Step2Connections({
       <div className="border border-gray-200 rounded-2xl p-4 space-y-3">
         <div>
           <p className="font-medium text-sm text-gray-900 flex items-center">
-            <span className="mr-2">📍</span>
+            <span className="mr-2 flex-shrink-0"><GoogleMapsPin className="w-4 h-4" /></span>
             Google Maps
             <MapsTooltip />
           </p>

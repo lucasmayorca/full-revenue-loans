@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { fiscalSchema, FiscalValues } from "@/lib/validation";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { Landmark, Lock } from "lucide-react";
 
 interface Props {
   onComplete: (data: FiscalValues) => void;
@@ -36,12 +36,12 @@ export function StepFiscal({ onComplete, onBack, isLoading }: Props) {
 
       {/* Banner motivacional */}
       <div className="bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-100 rounded-2xl px-4 py-3 flex items-center gap-3">
-        <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0 text-xl">
-          🏛️
+        <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+          <Landmark className="w-5 h-5 text-purple-700" />
         </div>
         <div>
           <p className="text-sm font-semibold text-purple-800">Desbloquea tu oferta máxima</p>
-          <p className="text-xs text-purple-600 mt-0.5">Tu crédito puede crecer hasta <strong>4X</strong> con datos del SAT</p>
+          <p className="text-xs text-purple-600 mt-0.5">Tu crédito puede crecer hasta <strong>3X</strong> con datos del SAT</p>
         </div>
       </div>
 
@@ -64,7 +64,7 @@ export function StepFiscal({ onComplete, onBack, isLoading }: Props) {
           />
           <div>
             <div className="flex items-center gap-2 mb-0.5">
-              <span className="text-base">🏛️</span>
+              <Landmark className="w-4 h-4 text-gray-600 flex-shrink-0" />
               <p className="text-sm font-semibold text-gray-900">Uso de datos fiscales y de plataforma</p>
               <span className="text-[10px] font-bold text-red-500 uppercase tracking-wide">Requerido</span>
             </div>
@@ -79,9 +79,10 @@ export function StepFiscal({ onComplete, onBack, isLoading }: Props) {
       </div>
 
       {/* Nota de seguridad */}
-      <div className="bg-blue-50 rounded-xl p-3 text-xs text-blue-700">
-        🔒 Tu Clave CIEC se transmite de forma encriptada y solo se usa para
-        consultar tu historial fiscal. No la almacenamos.
+      <div className="bg-blue-50 rounded-xl p-3 flex items-start gap-2 text-xs text-blue-700">
+        <Lock className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-blue-600" />
+        <span>Tu Clave CIEC se transmite de forma encriptada y solo se usa para
+        consultar tu historial fiscal. No la almacenamos.</span>
       </div>
 
       <div className="flex gap-3 pt-1">
