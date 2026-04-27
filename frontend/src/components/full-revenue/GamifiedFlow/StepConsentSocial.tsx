@@ -13,14 +13,12 @@ export interface ConsentSocialData {
 const CONSENTS = [
   {
     id: "bureau",
-    icon: "📋",
     title: "Consulta al Buró de Crédito",
     description:
       "Autorizo la consulta de mi historial crediticio en el Buró de Crédito de México para evaluar mi solicitud de préstamo.",
   },
   {
     id: "twilio",
-    icon: "🔐",
     title: "Verificación de identidad (Twilio)",
     description:
       "Autorizo la verificación de mi número de teléfono e identidad mediante Twilio Lookup para prevenir fraudes.",

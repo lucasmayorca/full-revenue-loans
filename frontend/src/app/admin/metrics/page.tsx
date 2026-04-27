@@ -34,14 +34,14 @@ const C = {
   textMuted: "#4B5563",
 };
 
+// Matches FlowStep in GamifiedProgressBar.tsx:
+// identity → consent_social → offer1 → fiscal → offer2
 const STEP_META: Record<string, { label: string }> = {
-  identity:    { label: "Identidad" },
-  consent:     { label: "Autorizaciones" },
-  offer1:      { label: "Oferta Buró" },
-  connections: { label: "Conexiones digitales" },
-  offer2:      { label: "Oferta Social" },
-  fiscal:      { label: "Datos fiscales SAT" },
-  offer3:      { label: "Oferta Final" },
+  identity:       { label: "Identidad" },
+  consent_social: { label: "Autorizar" },
+  offer1:         { label: "Oferta 1.5x" },
+  fiscal:         { label: "Datos fiscales SAT" },
+  offer2:         { label: "Oferta Final 3x" },
 };
 
 const EVENT_COLORS: Record<string, string> = {
@@ -1072,7 +1072,7 @@ function ApplicationDetail({
     <div className="p-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
       <DetailSection
         title="Datos del negocio"
-        icon="🏪"
+        icon={<svg className="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="6" width="14" height="9" rx="1"/><path d="M5 15V10h6v5"/><path d="M1 6l2-5h10l2 5"/></svg>}
         data={{
           email: form.email,
           legal_name: form.legal_name,
@@ -1084,7 +1084,7 @@ function ApplicationDetail({
       />
       <DetailSection
         title="Decision engine"
-        icon="⚡"
+        icon={<svg className="w-3 h-3" viewBox="0 0 16 16" fill="currentColor"><path d="M9.5 1L3 9h5l-1.5 6L14 7H9L9.5 1z"/></svg>}
         highlight
         data={{
           status: app.decision_status,
@@ -1103,17 +1103,17 @@ function ApplicationDetail({
           reason: decision.reason,
         }}
       />
-      <DetailSection title="Platform"      icon="🛵" data={platform} />
-      <DetailSection title="Bureau"        icon="📋" data={bureau} />
-      <DetailSection title="Syntage / SAT" icon="🧾" data={syntage} />
-      <DetailSection title="Google Places" icon="📍" data={places} />
-      <DetailSection title="Facebook"      icon="👥" data={facebook} />
-      <DetailSection title="Instagram"     icon="📸" data={instagram} />
-      <DetailSection title="Twilio"        icon="📱" data={twilio} />
+      <DetailSection title="Platform"      icon={<svg className="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="5" cy="13" r="1.5"/><circle cx="12" cy="13" r="1.5"/><path d="M1 2h2l2 7h7l1.5-5H5"/></svg>} data={platform} />
+      <DetailSection title="Bureau"        icon={<svg className="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="1" width="10" height="14" rx="1"/><path d="M6 5h4M6 8h4M6 11h2"/></svg>} data={bureau} />
+      <DetailSection title="Syntage / SAT" icon={<svg className="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 1h8l2 3v10a1 1 0 01-1 1H3a1 1 0 01-1-1V2a1 1 0 011-1z"/><path d="M12 1v4H4"/><path d="M5 9h6M5 12h4"/></svg>} data={syntage} />
+      <DetailSection title="Google Places" icon={<svg className="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 1C5.24 1 3 3.24 3 6c0 4 5 9 5 9s5-5 5-9c0-2.76-2.24-5-5-5z"/><circle cx="8" cy="6" r="2"/></svg>} data={places} />
+      <DetailSection title="Facebook"      icon={<svg className="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="6" cy="5" r="2.5"/><path d="M1 15c0-3.31 2.24-6 5-6"/><path d="M10.5 9.5c2.49 0 4.5 2.01 4.5 4.5H7c0-2.49 2.01-4.5 3.5-4.5z"/><circle cx="10.5" cy="6.5" r="2"/></svg>} data={facebook} />
+      <DetailSection title="Instagram"     icon={<svg className="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="12" height="12" rx="3"/><circle cx="8" cy="8" r="3"/><circle cx="12" cy="4" r="0.75" fill="currentColor" stroke="none"/></svg>} data={instagram} />
+      <DetailSection title="Twilio"        icon={<svg className="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="4" y="1" width="8" height="14" rx="2"/><line x1="8" y1="12" x2="8" y2="12" strokeWidth="2" strokeLinecap="round"/></svg>} data={twilio} />
       {Object.keys(kyc).length > 0 && (
         <DetailSection
           title="KYC"
-          icon="🪪"
+          icon={<svg className="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="3" width="14" height="10" rx="2"/><circle cx="5.5" cy="8" r="2"/><path d="M9 6h4M9 9h3"/></svg>}
           data={kyc}
           className="md:col-span-2 lg:col-span-3"
         />
@@ -1314,7 +1314,7 @@ function DetailSection({
   className,
 }: {
   title: string;
-  icon?: string;
+  icon?: ReactNode;
   data: Record<string, unknown>;
   highlight?: boolean;
   className?: string;
@@ -1329,7 +1329,11 @@ function DetailSection({
       }}
     >
       <div className="flex items-center gap-1.5 mb-3">
-        {icon && <span className="text-[13px]">{icon}</span>}
+        {icon && (
+          <span style={{ color: highlight ? C.blue : C.textMuted }} className="flex-shrink-0">
+            {icon}
+          </span>
+        )}
         <p
           className="text-[10px] font-bold uppercase tracking-widest"
           style={{ color: highlight ? C.blue : C.textMuted }}
