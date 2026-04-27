@@ -1,36 +1,31 @@
 "use client";
 
 export type FlowStep =
-  | "identity"     // 1. Datos del negocio
-  | "consent"      // 2. Autorizaciones (buró + twilio)
-  | "offer1"       // 3. Oferta inicial (1.5X)
-  | "connections"  // 4. Google Maps + redes
-  | "offer2"       // 5. Oferta ampliada (2X)
-  | "fiscal"       // 6. Datos fiscales (RFC + CIEC)
-  | "offer3";      // 7. Oferta máxima (4X)
+  | "identity"        // 1. Datos del negocio
+  | "consent_social"  // 2. Bureau + Twilio + Google Maps + FB/IG
+  | "offer1"          // Oferta inicial (1.5x)
+  | "fiscal"          // 3. Datos fiscales (RFC + CIEC)
+  | "offer2";         // Oferta máxima (3x)
 
 export const STEP_ORDER: FlowStep[] = [
   "identity",
-  "consent",
+  "consent_social",
   "offer1",
-  "connections",
-  "offer2",
   "fiscal",
-  "offer3",
+  "offer2",
 ];
 
-// The 4 "data input" steps shown as numbered nodes
+// The 3 "data input" steps shown as numbered nodes
 const ACTION_STEPS: { key: FlowStep; label: string }[] = [
-  { key: "identity",    label: "Negocio"   },
-  { key: "consent",     label: "Autorizar" },
-  { key: "connections", label: "Digital"   },
-  { key: "fiscal",      label: "Fiscal"    },
+  { key: "identity",       label: "Negocio"   },
+  { key: "consent_social", label: "Autorizar" },
+  { key: "fiscal",         label: "Fiscal"    },
 ];
 
 interface Props {
   current: FlowStep;
   onBack?: () => void;
-  offerAmounts?: { bureau: number; social: number; fiscal: number };
+  offerAmounts?: { social: number; fiscal: number };
 }
 
 function fmtK(n: number) {
@@ -42,17 +37,15 @@ function fmtK(n: number) {
 // Which action step number we're on (1-based, only counts data steps)
 function getActionStepNum(current: FlowStep): number {
   const idx = STEP_ORDER.indexOf(current);
-  // identity=0→1, consent=1→2, offer1=2→2, connections=3→3, offer2=4→3, fiscal=5→4, offer3=6→4
+  // identity=0→1, consent_social=1→2, offer1=2→2, fiscal=3→3, offer2=4→3
   if (idx <= 1) return idx + 1;
-  if (idx <= 3) return idx;
-  if (idx <= 5) return idx - 1;
-  return 4;
+  if (idx <= 2) return 2;
+  return 3;
 }
 
 export function GamifiedProgressBar({ current, onBack, offerAmounts }: Props) {
   const currentIdx = STEP_ORDER.indexOf(current);
 
-  const bureauLabel = offerAmounts ? fmtK(offerAmounts.bureau) : "1.25x";
   const socialLabel = offerAmounts ? fmtK(offerAmounts.social) : "1.5x";
   const fiscalLabel = offerAmounts ? fmtK(offerAmounts.fiscal) : "3x";
 
@@ -67,13 +60,10 @@ export function GamifiedProgressBar({ current, onBack, offerAmounts }: Props) {
   // Offer badges unlock as we pass their reveal step
   const offer1Unlocked = currentIdx >= STEP_ORDER.indexOf("offer1"); // ≥ 2
   const offer2Unlocked = currentIdx >= STEP_ORDER.indexOf("offer2"); // ≥ 4
-  const offer3Unlocked = currentIdx >= STEP_ORDER.indexOf("offer3"); // ≥ 6
 
-  // Connector fill: left half of badge area = action step done, right half = offer reveal done
-  const c1Left  = currentIdx > 1;  // consent passed
+  // Connector fill between ② and ③
+  const c1Left  = currentIdx > 1;  // consent_social passed
   const c1Right = currentIdx > 2;  // offer1 passed
-  const c2Left  = currentIdx > 3;  // connections passed
-  const c2Right = currentIdx > 4;  // offer2 passed
 
   const actionStepNum = getActionStepNum(current);
 
@@ -101,51 +91,35 @@ export function GamifiedProgressBar({ current, onBack, offerAmounts }: Props) {
 
       {/*
         Stepper layout:
-        [①Negocio] ─── [②Autorizar] ─$X─ [③Digital] ─$X─ [④Fiscal] ─$X
-
-        - Nodes: 4 action steps (numbered circles)
-        - Between consent → connections: offer1 amount badge on the connector
-        - Between connections → fiscal:  offer2 amount badge on the connector
-        - After fiscal:                  offer3 amount badge (terminal)
+        [①Negocio] ─── [②Autorizar] ─$1.5x─ [③Fiscal] ─$3x(máx)
       */}
       <div className="flex items-center w-full">
 
         {/* Node 1: identity */}
         <ActionNode num={1} label="Negocio" state={getActionState("identity")} />
 
-        {/* Simple connector identity → consent */}
+        {/* Simple connector identity → consent_social */}
         <SimpleConnector done={currentIdx > 0} />
 
-        {/* Node 2: consent */}
-        <ActionNode num={2} label="Autorizar" state={getActionState("consent")} />
+        {/* Node 2: consent_social */}
+        <ActionNode num={2} label="Autorizar" state={getActionState("consent_social")} />
 
-        {/* Badge connector consent → connections (shows offer1 amount) */}
+        {/* Badge connector consent_social → fiscal (shows offer1 amount) */}
         <BadgeConnector
-          label={bureauLabel}
+          label={socialLabel}
           unlocked={offer1Unlocked}
           leftDone={c1Left}
           rightDone={c1Right}
         />
 
-        {/* Node 3: connections */}
-        <ActionNode num={3} label="Digital" state={getActionState("connections")} />
+        {/* Node 3: fiscal */}
+        <ActionNode num={3} label="Fiscal" state={getActionState("fiscal")} />
 
-        {/* Badge connector connections → fiscal (shows offer2 amount) */}
-        <BadgeConnector
-          label={socialLabel}
-          unlocked={offer2Unlocked}
-          leftDone={c2Left}
-          rightDone={c2Right}
-        />
-
-        {/* Node 4: fiscal */}
-        <ActionNode num={4} label="Fiscal" state={getActionState("fiscal")} />
-
-        {/* Terminal badge: offer3 (final offer) */}
+        {/* Terminal badge: offer2 (final offer) */}
         <div className="flex flex-col items-center ml-1.5 flex-shrink-0">
           <div className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full whitespace-nowrap transition-colors duration-300 ${
-            offer3Unlocked
-              ? "bg-uber-green text-black"
+            offer2Unlocked
+              ? "bg-black text-white"
               : "bg-uber-gray-100 text-uber-gray-500"
           }`}>
             {fiscalLabel}

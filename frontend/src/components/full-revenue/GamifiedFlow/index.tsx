@@ -6,8 +6,7 @@ import { api } from "@/lib/api";
 import { EVENTS, DEMO_MERCHANT_ID } from "@/lib/tracking";
 import { useTracking } from "@/hooks/useTracking";
 import { Step1Identity } from "../ApplicationForm/Step1Identity";
-import { Step2Connections, Step2Result } from "../ApplicationForm/Step2Connections";
-import { StepConsent } from "./StepConsent";
+import { StepConsentSocial, ConsentSocialData } from "./StepConsentSocial";
 import { StepFiscal } from "./StepFiscal";
 import { OfferRevealCard } from "./OfferRevealCard";
 import { GamifiedProgressBar, FlowStep } from "./GamifiedProgressBar";
@@ -69,11 +68,9 @@ export function GamifiedApplicationForm() {
       const saved = sessionStorage.getItem(SS_FORM_DATA);
       if (saved) {
         try {
-          // Merge: datos ya ingresados tienen prioridad sobre el prefill
           return { ...readPrefillForStep1(), ...JSON.parse(saved) };
         } catch { /* ignore */ }
       }
-      // Sin datos guardados — usar solo prefill
       return readPrefillForStep1();
     }
     return {};
@@ -101,13 +98,12 @@ export function GamifiedApplicationForm() {
 
   const [isSubmitting, setIsSubmitting]     = useState(false);
   const [error, setError]                   = useState<string | null>(null);
-  const [calculatingFor, setCalculatingFor] = useState<"bureau" | "social" | "fiscal" | null>(null);
+  const [calculatingFor, setCalculatingFor] = useState<"social" | "fiscal" | null>(null);
   const [isEvaluating, setIsEvaluating]     = useState(false);
 
   // SSR-safe: initialize with fallback, update from sessionStorage after hydration
   const [offerAmounts, setOfferAmounts] = useState({
     base:   FALLBACK_BASE,
-    bureau: Math.round(FALLBACK_BASE * 1.25),
     social: Math.round(FALLBACK_BASE * 1.5),
     fiscal: Math.round(FALLBACK_BASE * 3),
   });
@@ -118,13 +114,22 @@ export function GamifiedApplicationForm() {
     if (base !== FALLBACK_BASE) {
       setOfferAmounts({
         base,
-        bureau: Math.round(base * 1.25),
         social: Math.round(base * 1.5),
         fiscal: Math.round(base * 3),
       });
     }
     const savedStep = sessionStorage.getItem(SS_FLOW_STEP);
     if (savedStep) setFlowStep(savedStep as FlowStep);
+
+    const savedUrl = sessionStorage.getItem(SS_GOOGLE_URL);
+    if (savedUrl) setGoogleUrl(savedUrl);
+
+    const savedToken = sessionStorage.getItem(SS_FB_TOKEN);
+    if (savedToken) {
+      setFacebookToken(savedToken);
+      setFacebookConnected(true);
+      setInstagramConnected(true);
+    }
   }, []);
 
   /* ── Persist flow step + track step view for funnel metrics ── */
@@ -133,7 +138,7 @@ export function GamifiedApplicationForm() {
     trackEvent(EVENTS.STEP_VIEWED, { step: flowStep });
   }, [flowStep, trackEvent]);
 
-  /* ── Restore state after OAuth redirect ── */
+  /* ── Restore state after Facebook OAuth redirect ── */
   useEffect(() => {
     const fbStatus = searchParams.get("facebook");
     const fbToken  = searchParams.get("fb_token");
@@ -144,7 +149,7 @@ export function GamifiedApplicationForm() {
       setError("Error al conectar Facebook: " + fbError);
       const cleanUrl = window.location.pathname;
       window.history.replaceState({}, "", cleanUrl);
-      setFlowStep("connections");
+      setFlowStep("consent_social");
       return;
     }
 
@@ -164,7 +169,7 @@ export function GamifiedApplicationForm() {
       const savedUrl = sessionStorage.getItem(SS_GOOGLE_URL) ?? "";
       setGoogleUrl(savedUrl);
 
-      setFlowStep("connections");
+      setFlowStep("consent_social");
 
       const cleanUrl = window.location.pathname;
       window.history.replaceState({}, "", cleanUrl);
@@ -221,7 +226,6 @@ export function GamifiedApplicationForm() {
 
     const allData: AllFormData = {
       ...s1,
-      // Defensive: ensure legal_name satisfies backend min(2) even if field was removed from UI
       legal_name: s1.legal_name?.trim() || "NA",
       ...(withFiscal && resolvedFiscalData ? { ciec: resolvedFiscalData.ciec } : {}),
       ...(withSocial && resolvedGoogleUrl ? { google_business_url: resolvedGoogleUrl } : {}),
@@ -273,7 +277,7 @@ export function GamifiedApplicationForm() {
 
   /* ── Step handlers ── */
 
-  // 1. Identity → Consent
+  // 1. Identity → ConsentSocial
   const handleIdentityComplete = useCallback(async (data: Step1Values) => {
     setStep1Data(data);
     sessionStorage.setItem(SS_FORM_DATA, JSON.stringify(data));
@@ -283,11 +287,13 @@ export function GamifiedApplicationForm() {
       if (!newId) return;
     }
     trackEvent(EVENTS.STEP_COMPLETED, { step: "identity" });
-    setFlowStep("consent");
+    setFlowStep("consent_social");
   }, [applicationId, createNewApplication, trackEvent]);
 
-  // 2. Consent → Offer1
-  const handleConsentComplete = useCallback(async (data: { bureau_consent: true; twilio_consent: true; data_processing_consent: true }) => {
+  // 2. ConsentSocial → Offer1
+  const handleConsentSocialComplete = useCallback(async (data: ConsentSocialData) => {
+    setGoogleUrl(data.google_business_url);
+    sessionStorage.setItem(SS_GOOGLE_URL, data.google_business_url);
     setIsSubmitting(true);
     setError(null);
 
@@ -297,41 +303,39 @@ export function GamifiedApplicationForm() {
       if (!appId) { setIsSubmitting(false); return; }
     }
 
-    const [, prequal] = await Promise.allSettled([
-      api.submitConsent(appId, data),
+    await Promise.allSettled([
+      api.submitConsent(appId, {
+        bureau_consent: true,
+        twilio_consent: true,
+        data_processing_consent: true,
+      }),
       api.prequalify(appId),
     ]);
 
-    if (prequal.status === "fulfilled") {
-      // Siempre usamos el base del prefill (sessionStorage) para mantener
-      // consistencia con /offers. El backend sirve como validación pero
-      // el monto base personalizado por merchant tiene prioridad.
-      const base = readBaseAmount();
-      setOfferAmounts({
-        base,
-        bureau: Math.round(base * 1.25),
-        social: Math.round(base * 1.5),
-        fiscal: Math.round(base * 3),
-      });
-    }
+    const base = readBaseAmount();
+    setOfferAmounts({
+      base,
+      social: Math.round(base * 1.5),
+      fiscal: Math.round(base * 3),
+    });
 
     setIsSubmitting(false);
-    trackEvent(EVENTS.STEP_COMPLETED, { step: "consent" });
-    setCalculatingFor("bureau");
+    trackEvent(EVENTS.STEP_COMPLETED, { step: "consent_social" });
+    setCalculatingFor("social");
   }, [applicationId, createNewApplication, trackEvent]);
 
-  // 3a. Offer1 → Apply now → fake door
+  // 3a. Offer1 → Apply now
   const handleApplyFromOffer1 = useCallback(async () => {
     setIsSubmitting(true);
     setError(null);
-    const submitted = await doSubmit({ withSocial: false, withFiscal: false });
+    const submitted = await doSubmit({ withSocial: true, withFiscal: false });
     if (!submitted) setIsSubmitting(false);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 3b. Offer1 → Continue to connections
-  const handleContinueToConnections = useCallback(() => {
+  // 3b. Offer1 → Continue to fiscal
+  const handleContinueToFiscal = useCallback(() => {
     trackEvent(EVENTS.STEP_COMPLETED, { step: "offer1_continue" });
-    setFlowStep("connections");
+    setFlowStep("fiscal");
   }, [trackEvent]);
 
   // 4. Facebook OAuth
@@ -339,7 +343,7 @@ export function GamifiedApplicationForm() {
     if (!applicationId) { setError("Primero completá los datos del negocio."); return; }
     sessionStorage.setItem(SS_FORM_DATA, JSON.stringify(step1Data));
     sessionStorage.setItem(SS_GOOGLE_URL, currentUrl);
-    sessionStorage.setItem(SS_FLOW_STEP, "connections");
+    sessionStorage.setItem(SS_FLOW_STEP, "consent_social");
     const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/full-revenue";
     window.location.href = `${apiUrl}/oauth/facebook/redirect?applicationId=${applicationId}`;
   }, [applicationId, step1Data]);
@@ -349,28 +353,7 @@ export function GamifiedApplicationForm() {
     [handleFacebookConnect]
   );
 
-  // 5. Connections → Offer2
-  const handleConnectionsComplete = useCallback(async (data: Step2Result) => {
-    setGoogleUrl(data.google_business_url ?? "");
-    trackEvent(EVENTS.STEP_COMPLETED, { step: "connections" });
-    setCalculatingFor("social");
-  }, [trackEvent]);
-
-  // 6a. Offer2 → Apply now → fake door
-  const handleApplyFromOffer2 = useCallback(async () => {
-    setIsSubmitting(true);
-    setError(null);
-    const submitted = await doSubmit({ withSocial: true, withFiscal: false });
-    if (!submitted) setIsSubmitting(false);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // 6b. Offer2 → Continue to fiscal
-  const handleContinueToFiscal = useCallback(() => {
-    trackEvent(EVENTS.STEP_COMPLETED, { step: "offer2_continue" });
-    setFlowStep("fiscal");
-  }, [trackEvent]);
-
-  // 7. Fiscal → Offer3
+  // 5. Fiscal → Offer2 (final)
   const handleFiscalComplete = useCallback(async (data: FiscalValues) => {
     setFiscalData(data);
     sessionStorage.setItem(SS_FISCAL, JSON.stringify(data));
@@ -378,7 +361,7 @@ export function GamifiedApplicationForm() {
     setCalculatingFor("fiscal");
   }, [trackEvent]);
 
-  // 8. Offer3 → Apply (final) → fake door
+  // 6. Offer2 → Apply (final)
   const handleApplyFinal = useCallback(async () => {
     setIsSubmitting(true);
     setError(null);
@@ -389,22 +372,17 @@ export function GamifiedApplicationForm() {
   /* ── Back navigation ── */
   function handleBack() {
     const backMap: Partial<Record<FlowStep, FlowStep>> = {
-      consent:     "identity",
-      offer1:      "consent",
-      connections: "offer1",
-      offer2:      "connections",
-      fiscal:      "offer2",
-      offer3:      "fiscal",
+      consent_social: "identity",
+      offer1:         "consent_social",
+      fiscal:         "offer1",
+      offer2:         "fiscal",
     };
     const prev = backMap[flowStep];
     if (prev) setFlowStep(prev);
   }
 
   function handleCalculatingDone() {
-    const nextStep: FlowStep =
-      calculatingFor === "bureau" ? "offer1"
-      : calculatingFor === "social" ? "offer2"
-      : "offer3";
+    const nextStep: FlowStep = calculatingFor === "social" ? "offer1" : "offer2";
     setFlowStep(nextStep);
     setCalculatingFor(null);
   }
@@ -471,7 +449,6 @@ export function GamifiedApplicationForm() {
           current={flowStep}
           onBack={showBack ? handleBack : undefined}
           offerAmounts={{
-            bureau: offerAmounts.bureau,
             social: offerAmounts.social,
             fiscal: offerAmounts.fiscal,
           }}
@@ -488,6 +465,7 @@ export function GamifiedApplicationForm() {
         </div>
       )}
 
+      {/* ── Step 1: Identity ── */}
       {calculatingFor === null && flowStep === "identity" && (
         <Step1Identity
           defaultValues={step1Data}
@@ -495,26 +473,32 @@ export function GamifiedApplicationForm() {
         />
       )}
 
-      {calculatingFor === null && flowStep === "consent" && (
-        <StepConsent
-          onComplete={handleConsentComplete}
+      {/* ── Step 2: ConsentSocial (bureau + twilio + Google Maps + FB/IG) ── */}
+      {calculatingFor === null && flowStep === "consent_social" && (
+        <StepConsentSocial
+          onComplete={handleConsentSocialComplete}
           isLoading={isSubmitting}
+          facebookConnected={facebookConnected}
+          instagramConnected={instagramConnected}
+          onFacebookConnect={handleFacebookConnect}
+          onInstagramConnect={handleInstagramConnect}
+          defaultGoogleUrl={googleUrl}
         />
       )}
 
-      {/* ── Offer 1 (1.5X) ── */}
+      {/* ── Offer 1 (1.5x) ── */}
       {calculatingFor === null && flowStep === "offer1" && (
         <div className="space-y-4">
           <OfferRevealCard
-            amount={offerAmounts.bureau}
+            amount={offerAmounts.social}
             previousAmount={offerAmounts.base}
-            stage="bureau"
+            stage="social"
             isAnimating={true}
           />
 
-          <button type="button" onClick={handleContinueToConnections} disabled={isSubmitting}
+          <button type="button" onClick={handleContinueToFiscal} disabled={isSubmitting}
             className="w-full bg-black text-white font-bold h-12 rounded-btn text-[16px] transition-colors hover:bg-uber-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:opacity-40 inline-flex items-center justify-center gap-2">
-            Ampliar el monto con más información
+            Ampliar el monto con datos fiscales
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
             </svg>
@@ -527,57 +511,17 @@ export function GamifiedApplicationForm() {
         </div>
       )}
 
-      {/* ── Connections ── */}
-      {calculatingFor === null && flowStep === "connections" && (
-        <Step2Connections
-          defaultGoogleUrl={googleUrl}
-          facebookConnected={facebookConnected}
-          instagramConnected={instagramConnected}
-          onFacebookConnect={handleFacebookConnect}
-          onInstagramConnect={handleInstagramConnect}
-          onComplete={handleConnectionsComplete}
-          onBack={() => setFlowStep("offer1")}
-          isSubmitting={isSubmitting}
-          applicationId={applicationId ?? undefined}
-        />
-      )}
-
-      {/* ── Offer 2 (2X) ── */}
-      {calculatingFor === null && flowStep === "offer2" && (
-        <div className="space-y-4">
-          <OfferRevealCard
-            amount={offerAmounts.social}
-            previousAmount={offerAmounts.bureau}
-            stage="social"
-            isAnimating={true}
-          />
-
-          <button type="button" onClick={handleContinueToFiscal} disabled={isSubmitting}
-            className="w-full bg-black text-white font-bold h-12 rounded-btn text-[16px] transition-colors hover:bg-uber-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:opacity-40 inline-flex items-center justify-center gap-2">
-            Ampliar el monto con más información
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-            </svg>
-          </button>
-
-          <button type="button" onClick={handleApplyFromOffer2} disabled={isSubmitting}
-            className="w-full bg-white border-2 border-black text-black font-bold h-12 rounded-btn text-[16px] transition-colors hover:bg-uber-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2 disabled:opacity-40">
-            {isSubmitting ? "Enviando..." : "Aplicar con este monto"}
-          </button>
-        </div>
-      )}
-
-      {/* ── Fiscal (RFC + CIEC + SAT consent) ── */}
+      {/* ── Step 3: Fiscal (RFC + CIEC) ── */}
       {calculatingFor === null && flowStep === "fiscal" && (
         <StepFiscal
           onComplete={handleFiscalComplete}
-          onBack={() => setFlowStep("offer2")}
+          onBack={() => setFlowStep("offer1")}
           isLoading={isSubmitting}
         />
       )}
 
-      {/* ── Offer 3 (4X, final) ── */}
-      {calculatingFor === null && flowStep === "offer3" && (
+      {/* ── Offer 2 (3x, final) ── */}
+      {calculatingFor === null && flowStep === "offer2" && (
         <div className="space-y-4">
           <OfferRevealCard
             amount={offerAmounts.fiscal}
