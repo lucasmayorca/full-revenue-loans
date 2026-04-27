@@ -196,7 +196,13 @@ export function GamifiedApplicationForm() {
       if (!appId) return false;
     }
 
-    const s1 = step1Data as Step1Values;
+    // Stale closure fix: read step1Data from sessionStorage when state was captured before user filled form
+    let s1 = step1Data as Step1Values;
+    if (!s1.address || !s1.email) {
+      const saved = sessionStorage.getItem(SS_FORM_DATA);
+      if (saved) { try { s1 = JSON.parse(saved) as Step1Values; } catch { /* ignore */ } }
+    }
+
     if (!s1.address || !s1.email) {
       setError("Volvé a ingresar los datos de tu negocio para continuar con tu solicitud.");
       setFlowStep("identity");
@@ -206,11 +212,18 @@ export function GamifiedApplicationForm() {
     const fbTok = facebookToken || (typeof window !== "undefined" ? sessionStorage.getItem(SS_FB_TOKEN) ?? "" : "");
     const resolvedGoogleUrl = googleUrl || (typeof window !== "undefined" ? sessionStorage.getItem(SS_GOOGLE_URL) ?? "" : "");
 
+    // Stale closure fix: read fiscalData from sessionStorage when state was captured before user filled fiscal form
+    let resolvedFiscalData = fiscalData;
+    if (withFiscal && !resolvedFiscalData) {
+      const saved = sessionStorage.getItem(SS_FISCAL);
+      if (saved) { try { resolvedFiscalData = JSON.parse(saved); } catch { /* ignore */ } }
+    }
+
     const allData: AllFormData = {
       ...s1,
       // Defensive: ensure legal_name satisfies backend min(2) even if field was removed from UI
       legal_name: s1.legal_name?.trim() || "NA",
-      ...(withFiscal && fiscalData ? { ciec: fiscalData.ciec } : {}),
+      ...(withFiscal && resolvedFiscalData ? { ciec: resolvedFiscalData.ciec } : {}),
       ...(withSocial && resolvedGoogleUrl ? { google_business_url: resolvedGoogleUrl } : {}),
       ...(withSocial && fbTok ? {
         facebook_access_token: fbTok,
