@@ -1,0 +1,52 @@
+{{define "steps"}}
+<div style="display: flex; align-items: center; gap: 0; margin-bottom: 28px;">
+  {{$cur := .Current}}{{$tot := .Total}}
+  {{range $i := seq .Total}}
+  <div style="display: flex; align-items: center; flex: {{if lt $i $tot}}1{{else}}0{{end}};">
+    <div style="width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+                background: {{if le $i $cur}}#3B82F6{{else}}#E8E8E8{{end}};
+                color: {{if le $i $cur}}white{{else}}#9E9E9E{{end}};
+                display: flex; align-items: center; justify-content: center;
+                font-size: 12px; font-weight: 700;">{{$i}}</div>
+    {{if lt $i $tot}}
+    <div style="flex: 1; height: 2px; background: {{if lt $i $cur}}#3B82F6{{else}}#E8E8E8{{end}};"></div>
+    {{end}}
+  </div>
+  {{end}}
+</div>
+{{end}}
+
+{{define "layout"}}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Préstamo MÁS — R2 Capital</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Poppins', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { font-family: 'Poppins', sans-serif; background: #F7F3F1; min-height: 100vh; margin: 0; }
+    input, textarea, select { font-family: inherit; }
+    details > summary { list-style: none; }
+    details > summary::-webkit-details-marker { display: none; }
+  </style>
+</head>
+<body>
+  {{block "content" .}}{{end}}
+  <script src="/static/app.js"></script>
+</body>
+</html>
+{{end}}

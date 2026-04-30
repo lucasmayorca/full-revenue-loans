@@ -1,0 +1,113 @@
+{{define "content"}}
+<div style="max-width: 1100px; margin: 0 auto; padding: 32px 24px;">
+
+  <!-- Header -->
+  <div style="margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid #EDE8E6;">
+    <p style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: #ADADAD; letter-spacing: 0.1em; margin: 0 0 6px;">Financiamiento para tu negocio</p>
+    {{if .MerchantName}}
+    <h1 style="font-size: 30px; font-weight: 800; color: #1A1A1A; margin: 0;">Hola, {{.MerchantName}}</h1>
+    {{else}}
+    <h1 style="font-size: 30px; font-weight: 800; color: #1A1A1A; margin: 0;">Préstamos disponibles para ti</h1>
+    {{end}}
+  </div>
+
+  {{if .Flash}}
+  <div style="background: #FEF2F2; border: 1px solid #FECACA; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; color: #DC2626; font-size: 14px;">
+    {{.Flash}}
+  </div>
+  {{end}}
+
+  <!-- Cards grid -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 28px;">
+
+    <!-- Préstamo MÁS (Full Revenue) card -->
+    <div style="background: white; border-radius: 12px; border: 2px solid #3B82F6; box-shadow: 0 4px 16px rgba(59,130,246,0.12); padding: 24px; display: flex; flex-direction: column; gap: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div>
+          <p style="font-size: 11px; font-weight: 600; color: #9E9E9E; text-transform: uppercase; letter-spacing: 0.08em; margin: 0 0 4px;">Préstamo MÁS</p>
+          <p style="font-size: 12px; color: #9E9E9E; margin: 0 0 2px;">hasta</p>
+          <p style="font-size: 36px; font-weight: 800; color: #1A1A1A; line-height: 1.1; margin: 0;" data-countup="{{.FullRevAmount}}">{{formatMXN .FullRevAmount}}</p>
+          <p style="font-size: 12px; color: #9E9E9E; margin: 2px 0 0;">MXN</p>
+        </div>
+        <span style="background: #EFF6FF; color: #3B82F6; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 100px; white-space: nowrap;">NUEVO</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span style="font-size: 13px; color: #5C5C5C;">100% de tus ingresos considerados</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span style="font-size: 13px; color: #5C5C5C;">Hasta 3× tu oferta actual</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span style="font-size: 13px; color: #5C5C5C;">Cuota fija mensual</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <span style="font-size: 13px; color: #5C5C5C;">Respuesta en 24 horas</span>
+        </div>
+      </div>
+
+      <a href="/full-revenue/apply"
+         style="display: block; background: #3B82F6; color: white; text-align: center; font-size: 14px; font-weight: 700; height: 44px; line-height: 44px; border-radius: 8px; text-decoration: none;">
+        Ver mi oferta ampliada
+      </a>
+    </div>
+
+    <!-- RBF offer cards -->
+    {{range .Offers}}
+    <div style="background: white; border-radius: 12px; box-shadow: 0 1px 8px rgba(23,16,12,0.08), 0 0 0 1px rgba(23,16,12,0.06); overflow: hidden; display: flex; flex-direction: column;">
+      <div style="height: 4px; background: linear-gradient(90deg, #3B82F6, #60A5FA);"></div>
+      <div style="padding: 24px; flex: 1; display: flex; flex-direction: column; gap: 16px;">
+        <div>
+          <p style="font-size: 11px; font-weight: 600; color: #9E9E9E; text-transform: uppercase; margin: 0 0 4px;">Recibe</p>
+          <p style="font-size: 28px; font-weight: 800; color: #1A1A1A; margin: 0;">{{formatMXN .Amount}}</p>
+          <p style="font-size: 13px; color: #5C5C5C; margin: 6px 0 0;">Pagas con <strong>{{pct .Retention}}</strong> de tus ventas</p>
+        </div>
+
+        <details style="border-radius: 8px; overflow: hidden;">
+          <summary style="background: #F5F5F5; padding: 10px 14px; cursor: pointer; font-size: 13px; color: #5C5C5C; font-weight: 500; display: flex; justify-content: space-between; align-items: center;">
+            <span>Ver condiciones</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9E9E9E" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </summary>
+          <div style="background: #EFF6FF; padding: 14px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; font-size: 13px;">
+              <span style="color: #5C5C5C;">Total a pagar</span>
+              <strong style="color: #3B82F6;">{{formatMXN .Total}}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 13px;">
+              <span style="color: #5C5C5C;">Comisión fija</span>
+              <strong style="color: #3B82F6;">{{formatMXN .Fee}}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 13px;">
+              <span style="color: #5C5C5C;">Plazo máximo</span>
+              <strong style="color: #3B82F6;">{{.Term}} meses</strong>
+            </div>
+          </div>
+        </details>
+
+        <button onclick="alert('Esta oferta base no está disponible en el prototipo. Prueba Préstamo MÁS.')"
+                style="background: linear-gradient(90deg, #2563EB, #3B82F6); color: white; font-size: 14px; font-weight: 700; height: 42px; border-radius: 8px; border: none; cursor: pointer; width: 100%;">
+          Seleccionar
+        </button>
+      </div>
+    </div>
+    {{end}}
+
+  </div>
+
+  <p style="font-size: 11px; color: #ADADAD; text-align: center; margin: 0;">
+    Promedio CAT 105% sin IVA informativo &nbsp;|&nbsp; Sujeto a aprobación de crédito
+  </p>
+
+  {{if .ReturnURL}}
+  <div style="text-align: center; margin-top: 24px;">
+    <a href="{{.ReturnURL}}" style="font-size: 13px; color: #9E9E9E; text-decoration: underline;">Volver al portal</a>
+  </div>
+  {{end}}
+
+</div>
+{{end}}
