@@ -57,7 +57,7 @@ function FinanciamientoInner() {
 
   const [activeTab, setActiveTab] = useState<TabId>("ofertas");
   const [offers, setOffers] = useState<RbfOffer[]>(DEFAULT_OFFERS);
-  const [fullRevenueMax, setFullRevenueMax] = useState<number>(DEFAULT_OFFERS[0].receive * 3);
+  const [fullRevenueMax, setFullRevenueMax] = useState<number>(DEFAULT_OFFERS[0].receive * 2);
   const [personaType, setPersonaType] = useState<"fisica" | "moral">("fisica");
   const [consentChecked, setConsentChecked] = useState(false);
   const [surveyOpen, setSurveyOpen] = useState(false);
@@ -95,7 +95,7 @@ function FinanciamientoInner() {
           data.base_amount ??
           (data.offers && data.offers[0] ? data.offers[0].receive : null);
         if (baseAmount) {
-          setFullRevenueMax(baseAmount * 3);
+          setFullRevenueMax(baseAmount * 2);
           sessionStorage.setItem(SS_BASE_AMOUNT, String(baseAmount));
         }
 

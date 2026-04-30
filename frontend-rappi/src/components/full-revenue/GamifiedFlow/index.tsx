@@ -107,7 +107,7 @@ export function GamifiedApplicationForm() {
   const [offerAmounts, setOfferAmounts] = useState({
     base:   FALLBACK_BASE,
     social: Math.round(FALLBACK_BASE * 1.5),
-    fiscal: Math.round(FALLBACK_BASE * 3),
+    fiscal: Math.round(FALLBACK_BASE * 2),
   });
 
   /* ── Hydrate from sessionStorage after mount (SSR-safe) ── */
@@ -117,7 +117,7 @@ export function GamifiedApplicationForm() {
       setOfferAmounts({
         base,
         social: Math.round(base * 1.5),
-        fiscal: Math.round(base * 3),
+        fiscal: Math.round(base * 2),
       });
     }
     const savedStep = sessionStorage.getItem(SS_FLOW_STEP);
@@ -319,7 +319,7 @@ export function GamifiedApplicationForm() {
     setOfferAmounts({
       base,
       social: Math.round(base * 1.5),
-      fiscal: Math.round(base * 3),
+      fiscal: Math.round(base * 2),
     });
 
     setIsSubmitting(false);
