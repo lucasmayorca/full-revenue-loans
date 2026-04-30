@@ -49,6 +49,7 @@ type ApplyOfferData struct {
 	BaseAmount int
 	Stage      string // "bureau" | "fiscal"
 	Rate       string
+	Errors     map[string]string
 	Step       StepMeta
 }
 

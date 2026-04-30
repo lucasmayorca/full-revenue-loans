@@ -37,7 +37,10 @@ func (h *Handler) ApplyStep1Post(w http.ResponseWriter, r *http.Request) {
 	taxID := required(r, "tax_id", "RFC", errs)
 	phone := required(r, "phone", "Teléfono", errs)
 	legalName := r.FormValue("legal_name")
-	address := r.FormValue("address")
+	address := required(r, "address", "Domicilio", errs)
+	if address != "" && len(address) < 5 {
+		errs["address"] = "Domicilio debe tener al menos 5 caracteres"
+	}
 
 	// Basic RFC validation: 12-13 alphanumeric chars.
 	if taxID != "" && (len(taxID) < 12 || len(taxID) > 13) {
@@ -163,6 +166,7 @@ func (h *Handler) ApplyOffer1Get(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/full-revenue/apply", http.StatusFound)
 		return
 	}
+	errs := session.PopErrors(sess)
 	h.store.Save(w, sessID, sess)
 
 	h.render(w, "apply_offer1", ApplyOfferData{
@@ -170,6 +174,7 @@ func (h *Handler) ApplyOffer1Get(w http.ResponseWriter, r *http.Request) {
 		BaseAmount: sess.OfferAmounts.Base,
 		Stage:      "bureau",
 		Rate:       "3.8%",
+		Errors:     errs,
 		Step:       StepMeta{Current: 3, Total: 5, Label: "Tu primera oferta"},
 	})
 }
@@ -268,6 +273,7 @@ func (h *Handler) ApplyOffer2Get(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/full-revenue/apply", http.StatusFound)
 		return
 	}
+	errs := session.PopErrors(sess)
 	h.store.Save(w, sessID, sess)
 
 	h.render(w, "apply_offer2", ApplyOfferData{
@@ -275,6 +281,7 @@ func (h *Handler) ApplyOffer2Get(w http.ResponseWriter, r *http.Request) {
 		BaseAmount: sess.OfferAmounts.Base,
 		Stage:      "fiscal",
 		Rate:       "3.0%",
+		Errors:     errs,
 		Step:       StepMeta{Current: 5, Total: 5, Label: "Tu oferta final"},
 	})
 }

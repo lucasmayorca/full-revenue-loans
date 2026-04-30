@@ -49,9 +49,10 @@
       </div>
 
       <div style="display: flex; flex-direction: column; gap: 6px;">
-        <label style="font-size: 13px; font-weight: 600; color: #1A1A1A;">Domicilio del negocio <span style="font-weight: 400; color: #9E9E9E;">(opcional)</span></label>
-        <input type="text" name="address" value="{{.Prefill.Address}}" placeholder="Calle, Colonia, Ciudad"
-               style="border: 1px solid #E8E8E8; border-radius: 8px; padding: 12px 14px; font-size: 14px; outline: none; width: 100%;">
+        <label style="font-size: 13px; font-weight: 600; color: #1A1A1A;">Domicilio del negocio</label>
+        <input type="text" name="address" value="{{.Prefill.Address}}" placeholder="Calle, Colonia, Ciudad" required
+               style="border: 1px solid {{if index .Errors "address"}}#EF4444{{else}}#E8E8E8{{end}}; border-radius: 8px; padding: 12px 14px; font-size: 14px; outline: none; width: 100%;">
+        {{if index .Errors "address"}}<span style="font-size: 12px; color: #EF4444;">{{index .Errors "address"}}</span>{{end}}
       </div>
 
       <button type="submit"

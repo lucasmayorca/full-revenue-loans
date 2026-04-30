@@ -23,13 +23,26 @@ func New(baseURL string) *Client {
 
 // ---- Domain types ----
 
+type creditOffer struct {
+	ApprovedAmount int `json:"approved_amount"`
+}
+
+type decisionPayload struct {
+	CreditOffer creditOffer `json:"credit_offer"`
+}
+
 type Application struct {
-	ID             string `json:"id"`
-	MerchantID     string `json:"merchant_id"`
-	DecisionStatus string `json:"decision_status"`
-	ApprovedAmount int    `json:"approved_amount"`
-	TaxID          string `json:"tax_id"`
-	Email          string `json:"email"`
+	ID              string          `json:"id"`
+	MerchantID      string          `json:"merchant_id"`
+	DecisionStatus  string          `json:"decision_status"`
+	DecisionPayload decisionPayload `json:"decision_payload"`
+	TaxID           string          `json:"tax_id"`
+	Email           string          `json:"email"`
+}
+
+// ApprovedAmount returns the approved amount from the nested decision payload.
+func (a *Application) ApprovedAmount() int {
+	return a.DecisionPayload.CreditOffer.ApprovedAmount
 }
 
 type PrefillOffer struct {
@@ -72,20 +85,33 @@ type PrequalResult struct {
 	ApprovedAmount float64 `json:"approved_amount"`
 }
 
+// submitFormData matches the backend's formDataSchema exactly.
+type submitFormData struct {
+	Email               string `json:"email"`
+	Address             string `json:"address"`
+	ConsentGiven        bool   `json:"consent_given"`
+	TaxID               string `json:"tax_id,omitempty"`
+	LegalName           string `json:"legal_name,omitempty"`
+	Phone               string `json:"phone,omitempty"`
+	CIEC                string `json:"ciec,omitempty"`
+	GoogleBusinessURL   string `json:"google_business_url,omitempty"`
+	FacebookAccessToken string `json:"facebook_access_token,omitempty"`
+}
+
 type SubmitPayload struct {
-	TaxID         string `json:"tax_id"`
-	Email         string `json:"email"`
-	Phone         string `json:"phone"`
-	LegalName     string `json:"legal_name"`
-	Address       string `json:"address"`
-	GoogleMapsURL string `json:"google_maps_url"`
-	FacebookToken string `json:"facebook_token"`
-	CIEC          string `json:"ciec"`
-	WithFiscal    bool   `json:"with_fiscal"`
-	WithSocial    bool   `json:"with_social"`
-	ConsentGiven  bool   `json:"consent_given"`
-	BureauConsent bool   `json:"bureau_consent"`
-	TwilioConsent bool   `json:"twilio_consent"`
+	TaxID         string
+	Email         string
+	Phone         string
+	LegalName     string
+	Address       string
+	GoogleMapsURL string
+	FacebookToken string
+	CIEC          string
+	WithFiscal    bool
+	WithSocial    bool
+	ConsentGiven  bool
+	BureauConsent bool
+	TwilioConsent bool
 }
 
 // ---- API methods ----
@@ -102,9 +128,9 @@ func (c *Client) CreateApplication(merchantID string) (string, error) {
 
 func (c *Client) SubmitConsent(appID string, bureau, twilio bool) error {
 	return c.post("/full-revenue/applications/"+appID+"/consent", map[string]any{
-		"bureau_consent": bureau,
-		"twilio_consent": twilio,
-		"data_consent":   true,
+		"bureau_consent":          bureau,
+		"twilio_consent":          twilio,
+		"data_processing_consent": true,
 	}, nil)
 }
 
@@ -117,7 +143,20 @@ func (c *Client) Prequalify(appID string) (*PrequalResult, error) {
 }
 
 func (c *Client) SubmitApplication(appID string, payload SubmitPayload) error {
-	return c.post("/full-revenue/applications/"+appID+"/submit", payload, nil)
+	body := map[string]any{
+		"form_data": submitFormData{
+			Email:               payload.Email,
+			Address:             payload.Address,
+			ConsentGiven:        true,
+			TaxID:               payload.TaxID,
+			LegalName:           payload.LegalName,
+			Phone:               payload.Phone,
+			CIEC:                payload.CIEC,
+			GoogleBusinessURL:   payload.GoogleMapsURL,
+			FacebookAccessToken: payload.FacebookToken,
+		},
+	}
+	return c.post("/full-revenue/applications/"+appID+"/submit", body, nil)
 }
 
 func (c *Client) GetApplication(appID string) (*Application, error) {

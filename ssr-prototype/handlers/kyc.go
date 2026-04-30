@@ -251,10 +251,12 @@ func (h *Handler) KYCStep5Get(w http.ResponseWriter, r *http.Request) {
 	sess, sessID := h.store.Get(r)
 	h.store.Save(w, sessID, sess)
 
+	amount := h.resolveApprovedAmount(appID, sess.OfferAmounts.Fiscal)
+
 	h.render(w, "kyc_step5", KYCStep5Data{
 		AppID:     appID,
 		FirstName: sess.KYCPersonal.FirstName,
-		Amount:    sess.OfferAmounts.Fiscal,
+		Amount:    amount,
 		Step:      StepMeta{Current: 5, Total: 5, Label: "Firma del contrato"},
 	})
 }
@@ -297,6 +299,7 @@ func (h *Handler) KYCStep5Post(w http.ResponseWriter, r *http.Request) {
 // ---- KYC Success ----
 
 func (h *Handler) KYCSuccessGet(w http.ResponseWriter, r *http.Request) {
+	appID := r.PathValue("id")
 	sess, sessID := h.store.Get(r)
 	h.store.Save(w, sessID, sess)
 
@@ -305,9 +308,24 @@ func (h *Handler) KYCSuccessGet(w http.ResponseWriter, r *http.Request) {
 		firstName = sess.Prefill.FirstName
 	}
 
+	amount := h.resolveApprovedAmount(appID, sess.OfferAmounts.Fiscal)
+
 	h.render(w, "kyc_success", KYCSuccessData{
 		FirstName: firstName,
-		Amount:    sess.OfferAmounts.Fiscal,
+		Amount:    amount,
 		ReturnURL: sess.ReturnURL,
 	})
+}
+
+// resolveApprovedAmount fetches the actual approved amount from the backend.
+// Falls back to the session amount if the backend call fails or returns 0.
+func (h *Handler) resolveApprovedAmount(appID string, fallback int) int {
+	if appID == "" {
+		return fallback
+	}
+	app, err := h.backend.GetApplication(appID)
+	if err != nil || app.ApprovedAmount() == 0 {
+		return fallback
+	}
+	return app.ApprovedAmount()
 }

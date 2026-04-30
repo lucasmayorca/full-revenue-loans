@@ -3,7 +3,6 @@
 
 document.addEventListener('DOMContentLoaded', function () {
   runCountUp();
-  setupFileInputs();
 });
 
 // Count-up animation for offer amounts marked with data-countup="<target>".
@@ -23,7 +22,7 @@ function runCountUp() {
       // Ease-out cubic
       var eased = 1 - Math.pow(1 - progress, 3);
       var current = Math.round(eased * target);
-      el.textContent = formatMXN(current);
+      if (progress > 0) el.textContent = formatMXN(current);
       if (progress < 1) {
         requestAnimationFrame(step);
       } else {
