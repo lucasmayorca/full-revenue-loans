@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import type { CreditOffer } from "@/types/application";
 
 interface Props {
@@ -20,8 +19,7 @@ function withholdingPct(approvedAmount: number): number {
   return 15;
 }
 
-export function CreditOfferCard({ offer, basicAmount = 50000, applicationId }: Props) {
-  const router = useRouter();
+export function CreditOfferCard({ offer, basicAmount = 50000 }: Omit<Props, "applicationId"> & { applicationId?: string }) {
   const multiplier = Math.round(offer.approved_amount / basicAmount);
   const interestPct = (offer.interest_rate_monthly * 100).toFixed(1);
   const annualRate = (offer.interest_rate_monthly * 12 * 100).toFixed(0);
@@ -183,18 +181,22 @@ export function CreditOfferCard({ offer, basicAmount = 50000, applicationId }: P
         </div>
       </div>
 
-      {/* ── CTA Aplicar ── */}
-      <div className="space-y-3 pb-6">
-        <button
-          onClick={() => router.push(`/full-revenue/kyc/${applicationId}`)}
-          className="w-full bg-rappi-orange text-white font-bold py-4 rounded-2xl text-lg shadow-lg shadow-orange-200 active:scale-95 transition-all duration-150 hover:bg-rappi-orange-dark focus:outline-none focus:ring-2 focus:ring-rappi-orange focus:ring-offset-2"
-        >
-          Aplicar al préstamo
-        </button>
-        <p className="text-xs text-center text-gray-400 leading-relaxed">
-          Al continuar iniciás el proceso de verificación (KYC).
-          Tu oferta queda reservada por{" "}
-          <span className="font-medium text-gray-500">72 horas</span>.
+      {/* ── Aplicación recibida ── */}
+      <div className="bg-green-50 border border-green-200 rounded-2xl p-5 space-y-3 pb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+            <svg className="w-5 h-5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+            </svg>
+          </div>
+          <div>
+            <p className="font-semibold text-green-800 text-base">Aplicación recibida</p>
+            <p className="text-xs text-green-600">R2 Capital Technologies MX</p>
+          </div>
+        </div>
+        <p className="text-sm text-green-700 leading-relaxed">
+          Tu solicitud fue enviada exitosamente. Un especialista de R2 Capital se pondrá en contacto contigo en las próximas{" "}
+          <span className="font-semibold">24 a 48 horas</span> para continuar el proceso.
         </p>
       </div>
     </div>
