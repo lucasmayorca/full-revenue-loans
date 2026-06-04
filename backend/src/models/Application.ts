@@ -148,6 +148,8 @@ export interface FacebookResult {
   talking_about_count?: number;   // engagement reciente
   were_here_count?: number;       // gente que reportó haber estado
   posts_last_30d?: number;        // frecuencia de posteo
+  avg_reactions_per_post?: number; // engagement promedio (likes+amor+wow) por post
+  avg_comments_per_post?: number;  // comentarios promedio por post (Facebook)
   // Status / kill switches
   is_published?: boolean;
   is_permanently_closed?: boolean;
@@ -326,10 +328,14 @@ export interface DecisionPayload {
   // Facebook Pages
   facebook_fan_count?: number;
   facebook_rating?: number;
+  facebook_composite_score?: number;      // score 0–100 con todas las señales
+  facebook_engagement_per_post?: number;  // reacciones promedio por post
 
   // Instagram Business
   instagram_followers?: number;
   instagram_media_count?: number;
+  instagram_composite_score?: number;     // score 0–100 con todas las señales
+  instagram_engagement_rate?: number;     // engagement rate real (likes+comments/followers)
 
   // Twilio Lookup
   twilio_identity_match?: boolean;

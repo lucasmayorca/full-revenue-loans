@@ -337,8 +337,8 @@ export async function runUnderwriting(
     bureauScore,
     tenureMonths,
     syntageCompliance,
-    facebookFanCount,
-    instagramFollowers,
+    facebookResult,
+    instagramResult,
     twilioIdentityMatch,
     twilioWhatsapp,
     twilioSimSwap,
@@ -368,6 +368,10 @@ export async function runUnderwriting(
     ? "MANUAL_REVIEW"
     : "REJECTED";
 
+  // Calcular scores sociales para incluir en el payload
+  const fbCompositeScore = facebookResult?.connected ? computeFacebookScore(facebookResult) : 0;
+  const igCompositeScore = instagramResult?.connected ? computeInstagramScore(instagramResult) : 0;
+
   const payload: DecisionPayload = {
     credit_offer: creditOffer,
     reason: buildReason({
@@ -385,6 +389,10 @@ export async function runUnderwriting(
       syntageCompliance,
       facebookFanCount,
       instagramFollowers,
+      facebookCompositeScore: fbCompositeScore,
+      instagramCompositeScore: igCompositeScore,
+      facebookEngagementPerPost: facebookResult?.avg_reactions_per_post,
+      instagramEngagementRate: instagramResult?.engagement_rate,
       twilioIdentityMatch,
       twilioWhatsapp,
       twilioSimSwap,
@@ -402,8 +410,12 @@ export async function runUnderwriting(
     places_review_count: placesResult?.total_review_count,
     facebook_fan_count: facebookFanCount,
     facebook_rating: facebookResult?.rating,
+    facebook_composite_score: fbCompositeScore || undefined,
+    facebook_engagement_per_post: facebookResult?.avg_reactions_per_post,
     instagram_followers: instagramFollowers,
     instagram_media_count: instagramResult?.media_count,
+    instagram_composite_score: igCompositeScore || undefined,
+    instagram_engagement_rate: instagramResult?.engagement_rate,
     twilio_identity_match: twilioIdentityMatch,
     twilio_whatsapp_business: twilioWhatsapp,
     twilio_sim_swap_detected: twilioSimSwap,
@@ -448,7 +460,127 @@ export async function runUnderwriting(
 }
 
 /**
+ * Score compuesto de Facebook (0–100).
+ * Usa todas las señales disponibles, no solo fan_count.
+ */
+function computeFacebookScore(fb: FacebookResult): number {
+  if (!fb.connected || fb.is_permanently_closed) return 0;
+
+  let score = 0;
+
+  // Comunidad — fan_count: máx 25 pts (escala logarítmica para evitar sesgo de compra)
+  if (fb.fan_count !== undefined) {
+    if (fb.fan_count >= 50_000) score += 25;
+    else if (fb.fan_count >= 10_000) score += 20;
+    else if (fb.fan_count >= 5_000)  score += 15;
+    else if (fb.fan_count >= 1_000)  score += 10;
+    else if (fb.fan_count >= 200)    score += 5;
+  }
+
+  // Reputación — rating: máx 20 pts
+  if (fb.rating !== undefined && fb.rating > 0) {
+    score += Math.round(((fb.rating - 1) / 4) * 20);
+  }
+
+  // Volumen de reseñas — máx 10 pts
+  if (fb.review_count !== undefined) {
+    if (fb.review_count >= 500)      score += 10;
+    else if (fb.review_count >= 200) score += 8;
+    else if (fb.review_count >= 50)  score += 5;
+    else if (fb.review_count >= 10)  score += 2;
+  }
+
+  // Madurez — page_age_years: máx 10 pts
+  if (fb.page_age_years !== undefined) {
+    if (fb.page_age_years >= 5)      score += 10;
+    else if (fb.page_age_years >= 3) score += 7;
+    else if (fb.page_age_years >= 1) score += 4;
+  }
+
+  // Presencia física — were_here_count + checkins: máx 10 pts
+  const physicalSignal = (fb.were_here_count ?? 0) + (fb.checkins ?? 0);
+  if (physicalSignal >= 1000)      score += 10;
+  else if (physicalSignal >= 200)  score += 7;
+  else if (physicalSignal >= 50)   score += 4;
+
+  // Engagement de posts — reactions: máx 10 pts
+  const avgReactions = fb.avg_reactions_per_post ?? (fb.talking_about_count ? Math.round(fb.talking_about_count / 10) : 0);
+  if (avgReactions >= 100)      score += 10;
+  else if (avgReactions >= 30)  score += 7;
+  else if (avgReactions >= 10)  score += 4;
+  else if (avgReactions >= 1)   score += 1;
+
+  // Actividad reciente — posts_last_30d: máx 10 pts
+  if (fb.posts_last_30d !== undefined) {
+    if (fb.posts_last_30d >= 12)     score += 10;
+    else if (fb.posts_last_30d >= 6) score += 7;
+    else if (fb.posts_last_30d >= 2) score += 4;
+    else if (fb.posts_last_30d >= 1) score += 2;
+  }
+
+  // Verificación — +5 pts
+  if (fb.is_verified) score += 5;
+
+  return Math.min(score, 100);
+}
+
+/**
+ * Score compuesto de Instagram (0–100).
+ * Prioriza engagement_rate sobre follower count (calidad vs cantidad).
+ */
+function computeInstagramScore(ig: InstagramResult): number {
+  if (!ig.connected) return 0;
+
+  let score = 0;
+
+  // Engagement rate — señal más importante (máx 40 pts)
+  // Tasa promedio para negocios: 1–3%. >5% es excelente.
+  if (ig.engagement_rate !== undefined) {
+    if (ig.engagement_rate >= 0.08)      score += 40;
+    else if (ig.engagement_rate >= 0.05) score += 32;
+    else if (ig.engagement_rate >= 0.03) score += 24;
+    else if (ig.engagement_rate >= 0.01) score += 14;
+    else                                  score += 5;
+  }
+
+  // Seguidores — secundario (máx 25 pts)
+  if (ig.followers_count !== undefined) {
+    if (ig.followers_count >= 50_000)      score += 25;
+    else if (ig.followers_count >= 10_000) score += 20;
+    else if (ig.followers_count >= 5_000)  score += 15;
+    else if (ig.followers_count >= 1_000)  score += 10;
+    else if (ig.followers_count >= 200)    score += 4;
+  }
+
+  // Actividad reciente — posts_last_30d: máx 15 pts
+  if (ig.posts_last_30d !== undefined) {
+    if (ig.posts_last_30d >= 16)     score += 15;
+    else if (ig.posts_last_30d >= 8) score += 10;
+    else if (ig.posts_last_30d >= 4) score += 6;
+    else if (ig.posts_last_30d >= 1) score += 3;
+  }
+
+  // Historial de contenido — media_count: máx 10 pts
+  if (ig.media_count !== undefined) {
+    if (ig.media_count >= 200)      score += 10;
+    else if (ig.media_count >= 50)  score += 6;
+    else if (ig.media_count >= 10)  score += 3;
+  }
+
+  // Cuenta de negocio — +5 pts
+  if (ig.is_business) score += 5;
+
+  // Reach orgánico — insights: +5 pts extra si disponible
+  if (ig.insights?.reach_28d && ig.followers_count && ig.insights.reach_28d > ig.followers_count) {
+    score += 5; // reach supera a seguidores → audiencia amplificada
+  }
+
+  return Math.min(score, 100);
+}
+
+/**
  * Ingreso total ponderado para el analista.
+ * Social boost ahora usa scores compuestos en vez de solo fan_count/followers.
  * Multiplicadores Twilio sumados: identity +5%, WhatsApp +3%, post-pago +3%,
  * tenure established +3%, SIM swap -10%, call forwarding -15%, new number -10%,
  * risk_score < 50 -8% (reaseguro compuesto).
@@ -459,8 +591,8 @@ function computeTotalRevenue(
   bureauScore: number | undefined,
   tenureMonths: number | undefined,
   taxCompliance: boolean,
-  facebookFans: number | undefined,
-  instagramFollowers: number | undefined,
+  facebookResult: FacebookResult | undefined,
+  instagramResult: InstagramResult | undefined,
   twilioIdentityMatch: boolean | undefined,
   twilioWhatsapp: boolean | undefined,
   twilioSimSwap: boolean | undefined,
@@ -474,19 +606,13 @@ function computeTotalRevenue(
   // Google Places: boost máx 20%
   const placesBoost = 1 + (placesScore / 100) * 0.20;
 
-  // Facebook: boost máx 8% según tamaño de comunidad
-  const facebookBoost =
-    facebookFans === undefined ? 0
-    : facebookFans >= 5000     ? 0.08
-    : facebookFans >= 1000     ? 0.05
-    :                            0.02;
+  // Facebook: score compuesto 0–100 → boost 0–12%
+  const fbScore = facebookResult?.connected ? computeFacebookScore(facebookResult) : 0;
+  const facebookBoost = (fbScore / 100) * 0.12;
 
-  // Instagram: boost máx 7% según seguidores
-  const instagramBoost =
-    instagramFollowers === undefined ? 0
-    : instagramFollowers >= 5000     ? 0.07
-    : instagramFollowers >= 1000     ? 0.04
-    :                                  0.01;
+  // Instagram: score compuesto 0–100 → boost 0–10%
+  const igScore = instagramResult?.connected ? computeInstagramScore(instagramResult) : 0;
+  const instagramBoost = (igScore / 100) * 0.10;
 
   const socialBoost = 1 + facebookBoost + instagramBoost;
 
@@ -564,6 +690,10 @@ function buildReason(params: {
   syntageCompliance: boolean;
   facebookFanCount: number | undefined;
   instagramFollowers: number | undefined;
+  facebookCompositeScore: number;
+  instagramCompositeScore: number;
+  facebookEngagementPerPost: number | undefined;
+  instagramEngagementRate: number | undefined;
   twilioIdentityMatch: boolean | undefined;
   twilioWhatsapp: boolean | undefined;
   twilioSimSwap: boolean | undefined;
@@ -579,7 +709,7 @@ function buildReason(params: {
   if (params.syntageAvailable) {
     parts.push(
       `Ventas SAT: $${params.syntageMonthlyRevenue.toLocaleString("es-MX")} MXN/mes.` +
-        (!params.syntageCompliance ? " ⚠️ Deuda activa con SAT detectada." : "")
+        (!params.syntageCompliance ? " ALERTA: Deuda activa con SAT detectada." : "")
     );
   } else {
     parts.push("Datos SAT no disponibles — requiere verificación manual.");
@@ -589,10 +719,16 @@ function buildReason(params: {
     parts.push(`Score Google Places: ${params.placesScore}/100.`);
   }
   if (params.facebookAvailable && params.facebookFanCount !== undefined) {
-    parts.push(`Facebook: ${params.facebookFanCount.toLocaleString("es-MX")} seguidores.`);
+    const fbParts = [`${params.facebookFanCount.toLocaleString("es-MX")} fans`];
+    if (params.facebookCompositeScore > 0) fbParts.push(`score ${params.facebookCompositeScore}/100`);
+    if (params.facebookEngagementPerPost !== undefined) fbParts.push(`${params.facebookEngagementPerPost} reacciones/post`);
+    parts.push(`Facebook: ${fbParts.join(", ")}.`);
   }
   if (params.instagramAvailable && params.instagramFollowers !== undefined) {
-    parts.push(`Instagram: ${params.instagramFollowers.toLocaleString("es-MX")} seguidores.`);
+    const igParts = [`${params.instagramFollowers.toLocaleString("es-MX")} seguidores`];
+    if (params.instagramCompositeScore > 0) igParts.push(`score ${params.instagramCompositeScore}/100`);
+    if (params.instagramEngagementRate !== undefined) igParts.push(`${(params.instagramEngagementRate * 100).toFixed(1)}% engagement`);
+    parts.push(`Instagram: ${igParts.join(", ")}.`);
   }
   if (params.twilioAvailable) {
     const twilioNotes: string[] = [];

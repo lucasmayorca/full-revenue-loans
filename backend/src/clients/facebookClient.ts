@@ -44,6 +44,8 @@ const DEMO_FACEBOOK_STUB: FacebookResult = {
   talking_about_count: 184,
   were_here_count: 936,
   posts_last_30d: 12,
+  avg_reactions_per_post: 47,
+  avg_comments_per_post: 8,
   // Status
   is_published: true,
   is_permanently_closed: false,
@@ -203,15 +205,38 @@ class FacebookClient {
         pageAgeYears = ageMs > 0 ? Math.floor(ageMs / (365.25 * 86400_000)) : undefined;
       }
 
-      // Posts last 30d — best-effort (requiere pages_read_engagement)
+      // Posts last 30d con engagement — best-effort (requiere pages_read_engagement)
       let postsLast30d: number | undefined;
+      let avgReactionsPerPost: number | undefined;
+      let avgCommentsPerPost: number | undefined;
       try {
         const since = Math.floor((Date.now() - 30 * 86400_000) / 1000);
         const postsResp = await axios.get(`${GRAPH_BASE}/${page.id}/posts`, {
-          params: { access_token: userAccessToken, since, limit: 100, fields: "id" },
+          params: {
+            access_token: userAccessToken,
+            since,
+            limit: 100,
+            // reactions + comments no requieren permisos extra sobre pages_read_engagement
+            fields: "id,reactions.summary(total_count),comments.summary(total_count)",
+          },
           timeout: 6000,
         });
-        postsLast30d = Array.isArray(postsResp.data?.data) ? postsResp.data.data.length : undefined;
+        const posts: Array<{
+          id: string;
+          reactions?: { summary?: { total_count?: number } };
+          comments?: { summary?: { total_count?: number } };
+        }> = Array.isArray(postsResp.data?.data) ? postsResp.data.data : [];
+        postsLast30d = posts.length;
+        if (posts.length > 0) {
+          const totalReactions = posts.reduce(
+            (sum, p) => sum + (p.reactions?.summary?.total_count ?? 0), 0
+          );
+          const totalComments = posts.reduce(
+            (sum, p) => sum + (p.comments?.summary?.total_count ?? 0), 0
+          );
+          avgReactionsPerPost = Math.round(totalReactions / posts.length);
+          avgCommentsPerPost  = Math.round(totalComments  / posts.length);
+        }
       } catch {
         // sin permiso → undefined
       }
@@ -248,6 +273,8 @@ class FacebookClient {
         talking_about_count: page.talking_about_count,
         were_here_count: page.were_here_count,
         posts_last_30d: postsLast30d,
+        avg_reactions_per_post: avgReactionsPerPost,
+        avg_comments_per_post: avgCommentsPerPost,
         is_published: page.is_published,
         is_permanently_closed: page.is_permanently_closed,
         parent_page_id: page.parent_page?.id,
