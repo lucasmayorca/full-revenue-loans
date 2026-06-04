@@ -248,10 +248,13 @@ CREATE TABLE prefill_links (
 - ✅ Hidratación de ofertas + prefill
 - ✅ Pre-fill en GamifiedFlow + KYC
 - ✅ Tracking de `opened_at`
+- ✅ FOUC fix: skeleton mientras hidrata (no flash de defaults $62k/$188k)
 - ⏳ Marcar `used_at` cuando el merchant completa la aplicación
 - ⏳ Endpoint POST `/admin/prefill-links/:token/revoke`
 - ⏳ Métricas por link (conversion rate individual)
 - ⏳ Upload directo de CSV (hoy solo paste)
+
+**FOUC fix (2026-04-29):** Cuando se abría `/offers?t=token`, el componente arrancaba con `DEFAULT_OFFERS` ($62,800 base, $188,400 hasta) y renderizaba eso por ~200-500ms hasta que terminaba el fetch del prefill — el merchant veía flash de montos genéricos antes del personalizado. Fix: nuevo state `prefillResolved` que arranca en `false` si `searchParams.get("t") !== null`, y se setea a `true` en el `.finally()` del fetch. Mientras `!prefillResolved`, se renderizan **3 cards skeleton con `animate-pulse` + `aria-busy="true"`** en lugar del grid real. Aplicado en ambos frontends (`frontend/src/app/offers/page.tsx` y `frontend-rappi/src/app/offers/page.tsx`).
 
 ### Demo Mode
 Con `DEMO_MODE=true`, todos los clientes usan stubs sin llamadas reales:
@@ -294,6 +297,7 @@ Merchants piden activamente:
 8. **Prefill Links (Fase 1):** Generación bulk desde CSV de URLs personalizadas por merchant (`/offers?t=token`) con ofertas RBF custom + pre-fill de campos en aplicación y KYC. Admin UI en `/admin/prefill`. Tabla `prefill_links` en Postgres con fallback in-memory. Resuelve sesgo en experimentos por mostrar ofertas genéricas.
 9. **Multiplicadores ajustados:** Bureau 1.25x, Social 1.5x, Fiscal 3x (antes 1.5x/2x/4x). FullRevenueCard ahora calcula `maxAmount = base × 3` en vez de `× 4`. Base por defecto: $62,800 alineado con oferta RBF real del merchant.
 10. **Validation cleanup:** `legal_name` opcional (Razón Social ya no requerida en Step 1), `tax_id` (RFC) movido a Step 1 como requerido, `phone` acepta cualquier país en formato E.164 (`+\d{7,15}`), `curp` removido del schema.
+11. **Vercel env var fix + FOUC fix (2026-04-29):** `frontend-rappi` no tenía `NEXT_PUBLIC_API_URL` en Vercel — agregada apuntando a Railway prod. Además, fix de Flash Of Unstyled Content en `/offers?t=token`: ahora cuando hay token, se muestran 3 cards skeleton (`animate-pulse` + `aria-busy="true"`) hasta que termina el fetch del prefill. Cero flash de defaults ($62k/$188k) antes del monto personalizado.
 
 ## Variables de entorno / Credenciales
 
@@ -472,6 +476,37 @@ El cliente `facebookClient.getPageData` hace degradación elegante: si los scope
 **Auto-deploy:** push a `main` en GitHub dispara build en ambos.
 **Manual redeploy:** `cd backend && npx --yes @railway/cli up --detach` (sube código local como nueva build — útil cuando el auto-deploy de GitHub no jaló el commit más reciente).
 **⚠️ Importante:** `railway redeploy` solo re-lanza el último deployment con el mismo SHA — NO jala código nuevo. Usar `railway up` para forzar build desde el código actual.
+
+### Variables de entorno por proyecto Vercel (críticas)
+
+Cada proyecto Vercel necesita `NEXT_PUBLIC_API_URL` apuntando al backend de Railway, sino el bundle deployado cae al fallback `http://localhost:3001/full-revenue` y los fetches al backend fallan en prod.
+
+| Proyecto | Variable requerida | Valor |
+|---|---|---|
+| `frontend-rappi` | `NEXT_PUBLIC_API_URL` | `https://full-revenue-backend-production.up.railway.app/full-revenue` |
+| `full-revenue-frontend-zw22` | `NEXT_PUBLIC_API_URL` | (ya configurada hace 60+ días) |
+| `full-revenue-frontend` | `NEXT_PUBLIC_API_URL` | (ya configurada) |
+
+Setear: `cd <proyecto> && echo "<value>" \| npx --yes vercel env add NEXT_PUBLIC_API_URL production` y luego `npx --yes vercel deploy --prod --yes`.
+
+Verificar que el bundle prod tiene la URL correcta:
+```bash
+curl -s "https://frontend-rappi.vercel.app/offers" | grep -oE '/_next/static/chunks/app/offers/page-[a-f0-9]+\.js' | head -1 \
+  | xargs -I{} curl -s "https://frontend-rappi.vercel.app{}" | grep -oE '"https?://[^"]+"' | sort -u
+```
+Debe devolver `"https://full-revenue-backend-production.up.railway.app/full-revenue"` — NO `localhost:3001`.
+
+### Railway projects zombies (notificaciones de Build failed)
+
+Hay 2 proyectos zombie en Railway que pueden mandar emails de "Build failed" porque están conectados al repo pero usan Railpack auto-detect (no Dockerfile) y se confunden con el monorepo (`backend/`, `frontend/`, `frontend-rappi/`):
+
+| Proyecto | Estado |
+|---|---|
+| `discerning-emotion` / `full-revenue-backend` | ✅ Activo — el real |
+| `marvelous-courage` / `full-revenue-loans` | ❌ Zombie — falla cada push |
+| `hospitable-enjoyment` / `full-revenue-loans` | ❌ Zombie — falla cada push |
+
+**No afectan funcionalidad** (el backend prod sigue corriendo en `discerning-emotion`). Solo generan ruido de email. Para silenciarlos: ir a `https://railway.com/project/<nombre>/settings` → eliminar proyecto, o desconectar GitHub source en cada uno.
 
 ### Página admin disponibles
 - `/admin/metrics` — Funnel + tracking events (público, sin auth en este prototipo)
@@ -689,10 +724,19 @@ merchant_id, partner, first_name, last_name, email, phone, base_amount, token, u
 
 1. **Encoding `ñ` en `BANK__HOLDER_NAME`:** la `ñ` se exporta corrupta desde Snowflake (ej. `"VILLASEvOR"` en vez de `"VILLASEÑOR"`). Solo afecta `account_holder`; `legal_name` y nombres del rep legal vienen bien. No bloqueante.
 2. **Alert en oferta-base RBF:** `frontend-rappi/src/app/offers/page.tsx:143` muestra `alert("Esta oferta base no está disponible en el prototipo. Prueba Préstamo MÁS.")` al clickear cards RBF — bloquea conversión. Decidir antes del envío masivo.
-3. **`opened_at` se marca en primer GET:** cualquier verificación manual ensucia métricas. Para smoke tests usar tokens dedicados.
+3. **`opened_at` se marca en primer GET:** cualquier verificación manual ensucia métricas. Para smoke tests usar tokens dedicados (no usar tokens reales del piloto).
 4. **Python 3.14 + urllib:** SSL handshake falla por certs no configurados. Workaround: `curl` para HTTPS externos.
 5. **MERCHANTS_BY_PHONES sin UberEats:** los merchants UberEats no tienen teléfono — outreach solo por email.
 6. **Refresh:** los tokens expiran en 30 días. Re-correr query y carga si el piloto se extiende.
+7. **`next build` rompe el dev server:** correr `next build` mientras hay un `next dev` activo corrompe `.next/` y el dev server tira `Cannot find module './XXX.js'`. Fix: `rm -rf .next/` y reiniciar dev server.
+
+### Issues resueltos (referencia histórica)
+
+- **2026-04-29 — `frontend-rappi` apuntaba a `localhost:3001` en prod:** el proyecto Vercel `frontend-rappi` no tenía la env var `NEXT_PUBLIC_API_URL` configurada, así que el bundle deployado caía al fallback local y el fetch a `/prefill/:token` fallaba con "Failed to fetch" → frontend mostraba "Link inválido. Te mostramos las ofertas base." y montos default. **Fix:** `cd frontend-rappi && vercel env add NEXT_PUBLIC_API_URL=https://full-revenue-backend-production.up.railway.app/full-revenue production` + `vercel deploy --prod`. Verificar siempre que el bundle deployado tenga la URL correcta:
+  ```bash
+  curl -s "https://frontend-rappi.vercel.app/offers" | grep -oE '/_next/static/chunks/app/offers/page-[a-f0-9]+\.js' | head -1 | xargs -I{} curl -s "https://frontend-rappi.vercel.app{}" | grep -oE '"https?://[^"]+"' | sort -u
+  ```
+- **2026-04-29 — FOUC en /offers:** flash de $62,800/$188,400 antes del prefill. Ver "FOUC fix" en sección Prefill Links arriba.
 
 ### Próximos pasos sugeridos
 
